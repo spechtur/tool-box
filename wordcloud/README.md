@@ -1,7 +1,7 @@
 # PHGR Wortwolke
 
 Echtzeit-Wortwolke für Weiterbildungen und Workshops an der Pädagogischen Hochschule Graubünden.  
-Teilnehmende scannen einen QR-Code, geben Stichwörter ein – die Wolke wächst live auf dem Beamer.
+Teilnehmende scannen einen QR-Code, geben Stichwörter ein – die Wolke wächst live auf dem Beamer. Die Wortsammlung kann auch als Liste grafisch aufbereitet eingeblendet und als csv-Datei archiviert werden.
 
 **Live:** [spechtur.github.io/tool-box/wordcloud/presenter.html](https://spechtur.github.io/tool-box/wordcloud/presenter.html)
 
