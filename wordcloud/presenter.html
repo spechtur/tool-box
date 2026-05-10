@@ -50,7 +50,7 @@
     #cloud-area {
       flex: 1; display: flex; flex-wrap: wrap; align-content: center;
       align-items: center; justify-content: center;
-      gap: 10px 18px; padding: 28px; overflow: hidden; min-height: 0;
+      gap: 10px 18px; padding: 32px 40px; overflow: hidden; min-height: 0;
       background: var(--hg);
     }
     #empty-state { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
@@ -181,7 +181,7 @@
 
     <!-- Top words (dynamisch) -->
     <div class="s-sec" id="top-sec" style="display:none">
-      <span class="s-label">Top-Begriffe</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span class="s-label" style="margin-bottom:0">Top-Begriffe</span><button onclick="openTWOverlay()" style="background:var(--tuerkis);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">Gross &#8599;</button></div>
       <div id="top-list"></div>
     </div>
 
@@ -347,8 +347,8 @@ function renderCloud() {
 
   // Base size is purely about number of unique words — all words start here
   const baseS = n <= 2 ? 110 : n <= 4 ? 85 : n <= 7 ? 68 : n <= 12 ? 52 : n <= 20 ? 40 : n <= 35 ? 30 : 22;
-  // Top word gets a bonus up to 1.8× base, scaled by how dominant it is
-  const bonus = Math.round(baseS * 0.8 * Math.min(1, (mx - 1) / 3));
+  // Top word can be up to 2.8× the base; more dramatic spread
+  const bonus = Math.round(baseS * 1.8 * Math.min(1, (mx - 1) / 4));
 
   // Dynamic gap
   area.style.gap = n <= 4 ? '20px 32px' : n <= 10 ? '14px 22px' : n <= 20 ? '10px 16px' : '7px 12px';
@@ -356,7 +356,7 @@ function renderCloud() {
   entries.forEach(([w, c], i) => {
     const ratio  = rng > 0 ? (c - mn) / rng : 0;
     const size   = Math.round(baseS + ratio * bonus);
-    const weight = c === mx ? 900 : c > mx * .6 ? 700 : 500;
+    const weight = c === mx ? 900 : c > mx * .5 ? 800 : c > mx * .25 ? 600 : 400;
     const color  = WC[i % WC.length];
     const isNew  = !prevWords[w] || prevWords[w] < c;
 
