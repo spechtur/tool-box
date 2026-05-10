@@ -181,7 +181,7 @@
 
     <!-- Top words (dynamisch) -->
     <div class="s-sec" id="top-sec" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span class="s-label" style="margin-bottom:0">Top-Begriffe</span><button onclick="openTWOverlay()" style="background:var(--tuerkis);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">Gross &#8599;</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span class="s-label" style="margin-bottom:0">Top-Begriffe</span><div style="display:flex;gap:5px"><button onclick="openTWOverlay()" style="background:var(--tuerkis);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">Gross &#8599;</button><button onclick="downloadStats()" title="Als CSV herunterladen" style="background:var(--gelb);color:#111;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">&#8595; CSV</button></div></div>
       <div id="top-list"></div>
     </div>
 
@@ -415,6 +415,22 @@ function openTWOverlay() {
 }
 function closeTWOverlay() {
   document.getElementById('tw-overlay').style.display = 'none';
+}
+
+// =========================================================
+// Download Stats as CSV
+// =========================================================
+function downloadStats() {
+  const entries = Object.entries(words).sort((a,b) => b[1]-a[1]);
+  if (!entries.length) return;
+  const lines = ['Begriff,Nennungen', ...entries.map(([w,c]) => `${w},${c}`)];
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `wortwolke-${sessionId || 'export'}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // =========================================================
