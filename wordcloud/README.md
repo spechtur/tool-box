@@ -1,7 +1,26 @@
 # PHGR Wortwolke
 
-Echtzeit-Wortwolke für Weiterbildungen und Workshops.  
-Präsenter-Laptop und Teilnehmer-Smartphones kommunizieren via Supabase.
+Echtzeit-Wortwolke für Weiterbildungen und Workshops an der Pädagogischen Hochschule Graubünden.  
+Teilnehmende scannen einen QR-Code, geben Stichwörter ein – die Wolke wächst live auf dem Beamer.
+
+**Live:** [spechtur.github.io/tool-box/wordcloud/presenter.html](https://spechtur.github.io/tool-box/wordcloud/presenter.html)
+
+---
+
+## Wie es funktioniert
+
+```
+Präsenter (Laptop/Beamer)          Teilnehmende (Smartphone)
+presenter.html                     join.html
+      │                                  │
+      └──────── Supabase (tool-box) ─────┘
+                  Echtzeit-Sync
+```
+
+1. Präsenter öffnet `presenter.html`, gibt eine Session-ID ein
+2. QR-Code erscheint automatisch → auf den Beamer projizieren
+3. Teilnehmende scannen, geben 1–5 Stichwörter ein, schicken ab
+4. Wortwolke wächst live, häufige Begriffe erscheinen grösser
 
 ---
 
@@ -9,71 +28,70 @@ Präsenter-Laptop und Teilnehmer-Smartphones kommunizieren via Supabase.
 
 | Datei | Zweck |
 |---|---|
-| `config.js` | Supabase-Zugangsdaten & Basis-URL (einmal anpassen) |
-| `presenter.html` | Präsenter-Ansicht (Laptop/Beamer) |
-| `join.html` | Teilnehmer-Ansicht (Smartphone via QR-Code) |
-| `setup.sql` | Supabase-Tabelle anlegen (einmalig im SQL-Editor) |
+| `presenter.html` | Präsenter-Ansicht: Wortwolke, QR-Code, Statistik |
+| `join.html` | Teilnehmer-Ansicht: Eingabeformular (Smartphone) |
+| `config.js` | Supabase-Zugangsdaten & Basis-URL |
+| `setup.sql` | Supabase-Tabelle anlegen (einmalig) |
 
 ---
 
-## Einmaliges Setup (ca. 15 Minuten)
+## Bedienung
 
-### 1. Supabase-Tabelle erstellen
+### Vor der Weiterbildung
+- `presenter.html` öffnen
+- **Session-ID** eingeben (z.B. `cas-bildung-2026-09`) → neue ID = frische, leere Wolke
+- **Stichwörter pro Person** wählen (1–5)
+- Seite in den Vollbildmodus (F11) und auf den Beamer projizieren
 
-Im Supabase-Dashboard → **SQL Editor** → Inhalt von `setup.sql` einfügen → **Run**.
+### Während der Weiterbildung
+- QR-Code ist in der Sidebar sichtbar – auf Klick öffnet er sich gross zum Abscannen
+- Teilnehmende besuchen die angezeigte URL oder scannen den QR-Code
+- Wolke aktualisiert sich alle 2.5 Sekunden automatisch
 
-### 2. GitHub-Repository anlegen
+### Auswertung
+- **Gross ↗** – öffnet die scrollbare Rangliste aller Begriffe
+- **↓ CSV** – lädt eine CSV-Datei herunter (`wortwolke-SESSION-DATUM.csv`) zur Archivierung
+- **Session zurücksetzen** – löscht alle Beiträge der aktuellen Session
 
-```
-Neues Repo erstellen (z.B. "phgr-wordcloud") oder Subfolder in bestehendem Repo.
-Diese vier Dateien hineinlegen.
-Settings → Pages → Source: main / root → Save.
-```
+---
 
-GitHub Pages URL merken: `https://DEIN-USERNAME.github.io/phgr-wordcloud`
+## Setup (einmalig, ca. 15 Minuten)
 
-### 3. `config.js` anpassen
+### 1. Supabase-Tabelle anlegen
+Im [Supabase-Dashboard](https://supabase.com) → Projekt `tool-box` → **SQL Editor** → Inhalt von `setup.sql` einfügen → **Run**.
 
+### 2. `config.js` anpassen
 ```js
 const SUPABASE_URL  = 'https://DEIN-PROJEKT.supabase.co';
-const SUPABASE_ANON = 'eyJ...';   // Anon-Key (öffentlich sicher)
-const BASE_URL      = 'https://DEIN-USERNAME.github.io/phgr-wordcloud';
+const SUPABASE_ANON = 'sb_publishable_...';
+const BASE_URL      = 'https://DEIN-USERNAME.github.io/tool-box/wordcloud';
 ```
+URL und Key: Supabase Dashboard → **Settings → API Keys**.
 
-Supabase-URL und Anon-Key: Dashboard → **Settings → API**.
-
----
-
-## Nutzung in der Weiterbildung
-
-### Präsenter
-1. `presenter.html` öffnen (Vollbild: F11)
-2. **Session-ID** eingeben (z.B. `cas-2026-03-ilanz`)
-3. **Stichwörter pro Person** wählen (1–5)
-4. QR-Code erscheint automatisch → auf Beamer projizieren
-
-### Teilnehmende
-1. QR-Code scannen
-2. Begriff(e) eingeben → Abschicken
-3. Wortwolke beim Präsenter wächst in Echtzeit
-
-### Neue Session (nächste Weiterbildung)
-Einfach eine neue Session-ID eingeben → leere Wolke, frischer Start.  
-Altes Datenmaterial bleibt in Supabase (ggf. über Dashboard löschen).
+### 3. GitHub Pages aktivieren
+Repository → **Settings → Pages** → Branch: `main`, Folder: `/ (root)` → **Save**.
 
 ---
 
-## Sicherheitshinweis
+## Neue Weiterbildung starten
 
-Der Supabase **Anon-Key** ist für Client-Seiten-Verwendung gedacht und darf öffentlich in `config.js` stehen. Er hat nur die Rechte, die in den RLS-Policies definiert sind (Insert, Select, Delete auf `wordcloud_submissions`). Kein Zugriff auf andere Tabellen.
+Einfach eine neue **Session-ID** eingeben – keine weitere Konfiguration nötig.  
+Alle Sessions bleiben in Supabase gespeichert und können dort eingesehen oder gelöscht werden.
 
 ---
 
-## Troubleshooting
+## Technischer Stack
 
-| Problem | Lösung |
+| Komponente | Technologie |
 |---|---|
-| QR-Code erscheint nicht | Session-ID in `presenter.html` eingeben |
-| Teilnehmer sehen Fehler | Supabase RLS-Policies prüfen (`setup.sql` nochmal ausführen) |
-| Wolke aktualisiert sich nicht | Browser-Console prüfen; Supabase-URL in `config.js` korrekt? |
-| CORS-Fehler | In Supabase unter **Settings → API → Allowed Origins** GitHub-Pages-URL eintragen |
+| Hosting | GitHub Pages (kostenlos) |
+| Datenbank | Supabase (kostenlos, EU-Region) |
+| QR-Code | api.qrserver.com |
+| Frontend | Vanilla HTML/CSS/JS, kein Framework |
+
+---
+
+## Teil der PHGR tool-box
+
+Dieses Tool ist Teil der [PHGR tool-box](https://spechtur.github.io/tool-box) –  
+einer Sammlung kleiner Web-Werkzeuge für Lehre und Weiterbildung.
