@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHGR Feedback – Präsentation</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb:    #c7d200;
+      --tuerkis: #23b2c6;
+      --rot:     #ed6a69;
+      --orange:  #fbb900;
+      --violett: #6169af;
+      --dg:      #878787;
+      --mg:      #c6c6c6;
+      --bg:      #ececec;
+      --sidebar: #ffffff;
+    }
+    html, body { height: 100%; overflow: hidden; font-family: Arial, Helvetica, sans-serif; }
+    body { display: flex; flex-direction: column; background: var(--bg); color: #1a1a1a; }
+
+    /* Logo */
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 22px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 22px; color: #111; letter-spacing: .04em; }
+
+    /* Topbar */
+    #topbar { background: var(--gelb); padding: 13px 22px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 16px; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .stats-pill { background: rgba(0,0,0,.13); border-radius: 24px; padding: 7px 18px; font-size: 15px; color: #222; font-weight: 700; white-space: nowrap; }
+    button { font-family: Arial; cursor: pointer; }
+    .btn-reset { background: var(--rot); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; font-weight: 700; }
+    .btn-icon  { background: rgba(0,0,0,.13); border: none; border-radius: 8px; padding: 9px 14px; font-size: 15px; color: #222; font-weight: 700; }
+
+    /* Body */
+    #body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+    /* ── Main canvas ── */
+    #canvas {
+      flex: 1; padding: 28px 32px; overflow-y: auto;
+      display: flex; flex-wrap: wrap; align-content: flex-start;
+      gap: 14px; min-height: 0;
+    }
+    #canvas:fullscreen { background: var(--bg); padding: 40px; align-content: center; }
+
+    /* Empty state */
+    #empty { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 60px 0; }
+    .empty-icon { font-size: 60px; color: var(--mg); }
+    .empty-text { color: var(--dg); font-size: 16px; }
+
+    /* ── Bubble cards ── */
+    .bubble {
+      background: white; border-radius: 14px; padding: 16px 18px;
+      max-width: 320px; min-width: 200px; flex: 1 1 220px;
+      border-left: 5px solid var(--tuerkis);
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      cursor: pointer; transition: opacity .2s, transform .2s;
+      position: relative;
+    }
+    .bubble:hover .hide-btn { opacity: 1; }
+    .bubble.hidden-bubble { opacity: .28; }
+    .bubble-name { font-size: 12px; font-weight: 700; color: var(--dg); margin-bottom: 5px; }
+    .bubble-msg  { font-size: 15px; color: #1a1a1a; line-height: 1.5; word-break: break-word; }
+    .bubble-time { font-size: 11px; color: var(--mg); margin-top: 8px; }
+    .hide-btn {
+      position: absolute; top: 10px; right: 12px;
+      opacity: 0; font-size: 16px; color: var(--mg);
+      transition: opacity .15s; background: none; border: none; padding: 2px 4px;
+    }
+    .hide-btn:hover { color: var(--rot); }
+    @keyframes bubblein { 0%{opacity:0;transform:scale(.8) translateY(10px)} 100%{opacity:1;transform:none} }
+    .bubble.new { animation: bubblein .35s ease forwards; }
+
+    /* ── Sidebar ── */
+    #sidebar { width: 268px; flex-shrink: 0; background: var(--sidebar); border-left: 1px solid var(--mg); display: flex; flex-direction: column; overflow-y: auto; }
+    .s-sec   { padding: 16px 18px; border-bottom: 1px solid #ececec; }
+    .s-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 10px; }
+    .s-input { width: 100%; background: var(--bg); border: 1px solid var(--mg); color: #1a1a1a; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: Arial; outline: none; margin-bottom: 6px; }
+    .s-input:focus { border-color: var(--tuerkis); }
+    .s-hint  { font-size: 11px; color: var(--dg); line-height: 1.4; }
+    textarea.s-input { resize: vertical; min-height: 60px; font-family: Arial; }
+
+    /* QR */
+    .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 160px; cursor: pointer; }
+    #qrcode  { width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; }
+    #qrcode img { display: block; }
+
+    /* View mode buttons */
+    .mode-row { display: flex; gap: 5px; }
+    .mode-btn { flex: 1; padding: 8px 4px; border-radius: 6px; font-size: 12px; font-weight: 700; border: 2px solid var(--mg); background: var(--bg); color: var(--dg); cursor: pointer; font-family: Arial; transition: all .15s; text-align: center; }
+    .mode-btn.on { border-color: var(--tuerkis); background: var(--tuerkis); color: white; }
+
+    /* Action buttons */
+    .action-btn { width: 100%; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; font-family: Arial; margin-bottom: 7px; }
+    .ab-gelb   { background: var(--gelb); color: #111; }
+    .ab-violet { background: var(--violett); color: white; }
+
+    /* Bottom hint */
+    #fs-hint { padding: 12px 18px; border-top: 1px solid #ececec; margin-top: auto; }
+    .fs-btn  { width: 100%; background: var(--bg); border: 1px solid var(--mg); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: var(--dg); cursor: pointer; }
+
+    /* ── QR Overlay ── */
+    .overlay-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 900; align-items: center; justify-content: center; }
+    .overlay-bg.open { display: flex; }
+    .overlay-card { background: white; border-radius: 24px; padding: 28px 32px; border: 8px solid var(--gelb); text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+    .overlay-hint { margin-top: 14px; color: var(--dg); font-size: 13px; }
+
+    /* ── Spotlight Overlay ── */
+    #spotlight { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 950; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+    #spotlight.open { display: flex; }
+    .sp-counter { color: rgba(255,255,255,.45); font-size: 14px; font-weight: 700; letter-spacing: .1em; }
+    .sp-card {
+      background: white; border-radius: 20px; padding: 36px 44px;
+      max-width: 640px; width: 90%; border-left: 8px solid var(--tuerkis);
+      box-shadow: 0 12px 48px rgba(0,0,0,.5);
+    }
+    .sp-name { font-size: 14px; font-weight: 700; color: var(--dg); margin-bottom: 12px; letter-spacing: .04em; }
+    .sp-msg  { font-size: 26px; color: #1a1a1a; line-height: 1.45; font-weight: 500; }
+    .sp-nav  { display: flex; gap: 16px; }
+    .sp-btn  { background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.25); color: white; border-radius: 10px; padding: 12px 28px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: Arial; transition: background .15s; }
+    .sp-btn:hover { background: rgba(255,255,255,.28); }
+    .sp-btn:disabled { opacity: .25; cursor: default; }
+    .sp-close { position: fixed; top: 20px; right: 24px; background: none; border: none; color: rgba(255,255,255,.5); font-size: 28px; cursor: pointer; }
+
+    /* ── Gesamtschau overlay ── */
+    #gesamtschau { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 940; align-items: center; justify-content: center; }
+    #gesamtschau.open { display: flex; }
+    .gs-card { background: white; border-radius: 20px; padding: 28px 32px; max-width: 720px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+    .gs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-shrink: 0; }
+    .gs-title { font-size: 20px; font-weight: 800; color: #1a1a1a; }
+    .gs-close { background: var(--bg); border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--dg); }
+    #gs-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+    .gs-row { padding: 12px 16px; border-radius: 10px; background: var(--bg); border-left: 4px solid var(--tuerkis); }
+    .gs-row.hidden-row { opacity: .35; }
+    .gs-row-name { font-size: 11px; font-weight: 700; color: var(--dg); margin-bottom: 4px; }
+    .gs-row-msg  { font-size: 15px; color: #1a1a1a; line-height: 1.4; }
+    .gs-row-meta { font-size: 11px; color: var(--mg); margin-top: 4px; display: flex; gap: 12px; align-items: center; }
+    .gs-hide-btn { font-size: 11px; font-weight: 700; background: none; border: none; cursor: pointer; color: var(--dg); padding: 0; }
+    .gs-hide-btn:hover { color: var(--rot); }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="topbar-right">
+    <span class="stats-pill" id="stats">0 Beiträge</span>
+    <span class="stats-pill" id="session-badge">Session: –</span>
+    <button class="btn-reset" onclick="confirmReset()">↺ Reset</button>
+    <button class="btn-icon"  onclick="toggleFullscreen()">⛶</button>
+  </div>
+</div>
+
+<!-- QR OVERLAY -->
+<div class="overlay-bg" id="qr-overlay" onclick="closeQROverlay()">
+  <div class="overlay-card" onclick="event.stopPropagation()">
+    <div id="qr-overlay-img" style="width:480px;height:480px;display:flex;align-items:center;justify-content:center"></div>
+    <p class="overlay-hint">Klick oder Esc zum Schliessen</p>
+  </div>
+</div>
+
+<!-- SPOTLIGHT -->
+<div id="spotlight">
+  <button class="sp-close" onclick="closeSpotlight()">✕</button>
+  <div class="sp-counter" id="sp-counter">1 / 1</div>
+  <div class="sp-card" id="sp-card">
+    <div class="sp-name" id="sp-name"></div>
+    <div class="sp-msg"  id="sp-msg"></div>
+  </div>
+  <div class="sp-nav">
+    <button class="sp-btn" id="sp-prev" onclick="spNav(-1)">← Zurück</button>
+    <button class="sp-btn" id="sp-next" onclick="spNav(1)">Weiter →</button>
+  </div>
+</div>
+
+<!-- GESAMTSCHAU -->
+<div id="gesamtschau" onclick="closeGesamtschau()">
+  <div class="gs-card" onclick="event.stopPropagation()">
+    <div class="gs-header">
+      <span class="gs-title">Alle Rückmeldungen</span>
+      <button class="gs-close" onclick="closeGesamtschau()">Schliessen ✕</button>
+    </div>
+    <div id="gs-list"></div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div id="body">
+  <!-- Canvas -->
+  <div id="canvas">
+    <div id="empty">
+      <div class="empty-icon">💬</div>
+      <div class="empty-text">Warte auf Rückmeldungen…</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <!-- Session -->
+    <div class="s-sec">
+      <span class="s-label">Session</span>
+      <input class="s-input" id="session-input" placeholder="z.B. feedback-2026-09" oninput="onSessionChange()">
+      <div class="s-hint">Neue Session-ID = leere Ansicht.</div>
+    </div>
+
+    <!-- Leitfrage -->
+    <div class="s-sec">
+      <span class="s-label">Leitfrage</span>
+      <textarea class="s-input" id="question-input" rows="3" placeholder="Was nimmst du heute mit?" oninput="refreshQR()"></textarea>
+      <div class="s-hint">Erscheint gross auf den Smartphones der TN.</div>
+    </div>
+
+    <!-- QR -->
+    <div class="s-sec">
+      <span class="s-label">Teilnahme-QR-Code</span>
+      <div class="qr-wrap" onclick="openQROverlay()" title="Klick zum Vergrössern">
+        <div id="qrcode"><span style="color:var(--dg);font-size:11px;text-align:center;padding:8px;line-height:1.6">Session + Frage<br>eingeben →<br>QR erscheint</span></div>
+      </div>
+      <div style="text-align:center;margin-top:6px;font-size:11px;color:var(--mg)">▲ Klick zum Vergrössern</div>
+      <div class="s-hint" style="margin-top:4px;word-break:break-all" id="join-url-text"></div>
+    </div>
+
+    <!-- Ansicht -->
+    <div class="s-sec">
+      <span class="s-label">Ansicht</span>
+      <div class="mode-row" style="margin-bottom:10px">
+        <button class="mode-btn on" data-m="live"    onclick="setMode('live')">Live</button>
+        <button class="mode-btn"    data-m="gesamt"  onclick="openGesamtschau()">Gesamt</button>
+        <button class="mode-btn"    data-m="spot"    onclick="startSpotlight()">Spotlight</button>
+      </div>
+      <button class="action-btn ab-gelb" onclick="downloadCSV()">↓ CSV herunterladen</button>
+    </div>
+
+    <div id="fs-hint">
+      <button class="fs-btn" onclick="toggleFullscreen()">⛶ Vollbild (F11)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Farben ──────────────────────────────────────────────────────────────
+const COLORS = ['#23b2c6','#6169af','#ed6a69','#fbb900','#c7d200','#878787'];
+const LIGHT  = ['rgba(35,178,198,.13)','rgba(97,105,175,.13)','rgba(237,106,105,.13)',
+                 'rgba(251,185,0,.13)','rgba(199,210,0,.16)','rgba(135,135,135,.13)'];
+
+// ── State ────────────────────────────────────────────────────────────────
+let sb, sessionId='', submissions=[], hidden=new Set(), pollTimer=null;
+let spItems=[], spIdx=0;
+
+// ── Init ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }
+  catch(e) { alert('Supabase konnte nicht initialisiert werden.'); return; }
+
+  const saved = localStorage.getItem('phgr-fb-session') || todayId();
+  document.getElementById('session-input').value = saved;
+  sessionId = saved;
+  updateBadge();
+  refreshQR();
+  startPolling();
+});
+
+function todayId() {
+  return 'feedback-' + new Date().toISOString().slice(0,10);
+}
+
+// ── Session ───────────────────────────────────────────────────────────────
+function onSessionChange() {
+  const v = document.getElementById('session-input').value.trim().toLowerCase().replace(/\s+/g,'-');
+  sessionId = v;
+  localStorage.setItem('phgr-fb-session', v);
+  updateBadge();
+  refreshQR();
+  submissions = []; hidden = new Set();
+  renderCanvas();
+}
+function updateBadge() {
+  document.getElementById('session-badge').textContent = sessionId ? `Session: ${sessionId}` : 'Session: –';
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────
+function startPolling() { load(); pollTimer = setInterval(load, 2500); }
+
+async function load() {
+  if (!sb || !sessionId) return;
+  const { data, error } = await sb.from('feedback_submissions')
+    .select('id,name,message,created_at').eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+  if (error) { console.warn(error.message); return; }
+  const prev = new Set(submissions.map(s=>s.id));
+  submissions = data || [];
+  submissions.forEach(s => { if (!prev.has(s.id)) s._new = true; });
+  renderCanvas();
+  updateStats();
+}
+
+// ── Canvas ────────────────────────────────────────────────────────────────
+function renderCanvas() {
+  const canvas = document.getElementById('canvas');
+  const empty  = document.getElementById('empty');
+  const vis    = submissions.filter(s => !hidden.has(s.id));
+
+  canvas.querySelectorAll('.bubble').forEach(e => e.remove());
+
+  if (!submissions.length) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+
+  submissions.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className  = 'bubble' + (s._new ? ' new' : '') + (hidden.has(s.id) ? ' hidden-bubble' : '');
+    el.dataset.id = s.id;
+    el.style.borderLeftColor = COLORS[i % COLORS.length];
+
+    const time = new Date(s.created_at).toLocaleTimeString('de-CH', {hour:'2-digit',minute:'2-digit'});
+    el.innerHTML = `
+      <button class="hide-btn" onclick="toggleHide(event,'${s.id}')" title="${hidden.has(s.id)?'Einblenden':'Ausblenden'}">
+        ${hidden.has(s.id) ? '👁' : '🚫'}
+      </button>
+      ${s.name ? `<div class="bubble-name">${esc(s.name)}</div>` : ''}
+      <div class="bubble-msg">${esc(s.message)}</div>
+      <div class="bubble-time">${time}</div>
+    `;
+    canvas.appendChild(el);
+    if (s._new) setTimeout(() => { s._new = false; el.classList.remove('new'); }, 500);
+  });
+}
+
+function toggleHide(e, id) {
+  e.stopPropagation();
+  if (hidden.has(id)) hidden.delete(id);
+  else hidden.add(id);
+  renderCanvas();
+}
+
+function updateStats() {
+  const vis = submissions.filter(s => !hidden.has(s.id)).length;
+  document.getElementById('stats').textContent =
+    `${submissions.length} Beiträge${hidden.size ? ` · ${hidden.size} ausgeblendet` : ''}`;
+}
+
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────
+async function confirmReset() {
+  if (!sessionId || !submissions.length) return;
+  if (!confirm(`Session „${sessionId}" wirklich zurücksetzen?\n\nAlle Beiträge werden gelöscht.`)) return;
+  const { error } = await sb.from('feedback_submissions').delete().eq('session_id', sessionId);
+  if (error) { alert('Fehler: ' + error.message); return; }
+  submissions = []; hidden = new Set();
+  renderCanvas(); updateStats();
+}
+
+// ── QR ────────────────────────────────────────────────────────────────────
+let qrTimer = null;
+function refreshQR() {
+  clearTimeout(qrTimer);
+  qrTimer = setTimeout(() => {
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+    if (!sessionId) {
+      container.innerHTML = '<span style="color:var(--dg);font-size:11px;text-align:center;padding:8px;line-height:1.6">Session + Frage<br>eingeben →<br>QR erscheint</span>';
+      document.getElementById('join-url-text').textContent = '';
+      return;
+    }
+    const q   = document.getElementById('question-input').value.trim();
+    const url = `${BASE_URL}/join.html?session=${encodeURIComponent(sessionId)}${q?'&question='+encodeURIComponent(q):''}`;
+    document.getElementById('join-url-text').textContent = url;
+    const api = `https://api.qrserver.com/v1/create-qr-code/?size=148x148&qzone=2&data=${encodeURIComponent(url)}`;
+    container.innerHTML = `<img src="${api}" width="148" height="148" alt="QR-Code" style="display:block;border-radius:4px">`;
+  }, 500);
+}
+
+function openQROverlay() {
+  const url = document.getElementById('join-url-text').textContent;
+  if (!url) return;
+  const api = `https://api.qrserver.com/v1/create-qr-code/?size=480x480&qzone=2&data=${encodeURIComponent(url)}`;
+  document.getElementById('qr-overlay-img').innerHTML =
+    `<img src="${api}" width="480" height="480" alt="QR-Code" style="display:block;border-radius:6px">`;
+  document.getElementById('qr-overlay').classList.add('open');
+}
+function closeQROverlay() { document.getElementById('qr-overlay').classList.remove('open'); }
+
+// ── Spotlight ─────────────────────────────────────────────────────────────
+function startSpotlight() {
+  const vis = submissions.filter(s => !hidden.has(s.id));
+  if (!vis.length) return;
+  // Shuffle
+  spItems = [...vis].sort(() => Math.random() - .5);
+  spIdx = 0;
+  renderSpotlight();
+  document.getElementById('spotlight').classList.add('open');
+}
+
+function renderSpotlight() {
+  const s   = spItems[spIdx];
+  const col = COLORS[submissions.indexOf(s) % COLORS.length];
+  document.getElementById('sp-card').style.borderLeftColor = col;
+  document.getElementById('sp-name').textContent = s.name ? s.name : '';
+  document.getElementById('sp-name').style.display = s.name ? 'block' : 'none';
+  document.getElementById('sp-msg').textContent  = s.message;
+  document.getElementById('sp-counter').textContent = `${spIdx + 1} / ${spItems.length}`;
+  document.getElementById('sp-prev').disabled = spIdx === 0;
+  document.getElementById('sp-next').disabled = spIdx === spItems.length - 1;
+}
+
+function spNav(dir) {
+  spIdx = Math.max(0, Math.min(spItems.length - 1, spIdx + dir));
+  renderSpotlight();
+}
+
+function closeSpotlight() { document.getElementById('spotlight').classList.remove('open'); }
+
+// ── Gesamtschau ───────────────────────────────────────────────────────────
+function openGesamtschau() {
+  const list = document.getElementById('gs-list');
+  list.innerHTML = '';
+  submissions.forEach((s, i) => {
+    const time = new Date(s.created_at).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+    const row  = document.createElement('div');
+    row.className = 'gs-row' + (hidden.has(s.id) ? ' hidden-row' : '');
+    row.style.borderLeftColor = COLORS[i % COLORS.length];
+    row.innerHTML = `
+      ${s.name ? `<div class="gs-row-name">${esc(s.name)}</div>` : ''}
+      <div class="gs-row-msg">${esc(s.message)}</div>
+      <div class="gs-row-meta">
+        <span>${time}</span>
+        <button class="gs-hide-btn" onclick="toggleHideGs(event,'${s.id}',this)">
+          ${hidden.has(s.id) ? 'Einblenden' : 'Ausblenden'}
+        </button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  document.getElementById('gesamtschau').classList.add('open');
+}
+
+function toggleHideGs(e, id, btn) {
+  e.stopPropagation();
+  if (hidden.has(id)) { hidden.delete(id); btn.textContent='Ausblenden'; btn.closest('.gs-row').classList.remove('hidden-row'); }
+  else { hidden.add(id); btn.textContent='Einblenden'; btn.closest('.gs-row').classList.add('hidden-row'); }
+  renderCanvas(); updateStats();
+}
+
+function closeGesamtschau() { document.getElementById('gesamtschau').classList.remove('open'); }
+
+// ── Download CSV ──────────────────────────────────────────────────────────
+function downloadCSV() {
+  if (!submissions.length) return;
+  const rows = ['Datum,Uhrzeit,Name,Rückmeldung,Ausgeblendet'];
+  submissions.forEach(s => {
+    const d   = new Date(s.created_at);
+    const dat = d.toLocaleDateString('de-CH');
+    const tim = d.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+    const nm  = s.name || '';
+    const msg = `"${s.message.replace(/"/g,'""')}"`;
+    const hid = hidden.has(s.id) ? 'ja' : 'nein';
+    rows.push(`${dat},${tim},${nm},${msg},${hid}`);
+  });
+  const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `feedback-${sessionId || 'export'}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Mode toggle ───────────────────────────────────────────────────────────
+function setMode(m) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('on', b.dataset.m===m));
+}
+
+// ── Fullscreen ────────────────────────────────────────────────────────────
+function toggleFullscreen() {
+  const canvas = document.getElementById('canvas');
+  if (!document.fullscreenElement) canvas.requestFullscreen().catch(() => document.documentElement.requestFullscreen());
+  else document.exitFullscreen();
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape')      { closeQROverlay(); closeSpotlight(); closeGesamtschau(); }
+  if (e.key==='ArrowRight' && document.getElementById('spotlight').classList.contains('open')) spNav(1);
+  if (e.key==='ArrowLeft'  && document.getElementById('spotlight').classList.contains('open')) spNav(-1);
+  if (e.key==='F11') { e.preventDefault(); toggleFullscreen(); }
+});
+</script>
+</body>
+</html>

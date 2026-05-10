@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>PHGR – Rückmeldung</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb: #c7d200; --tuerkis: #23b2c6; --rot: #ed6a69;
+      --violett: #6169af; --dg: #878787; --mg: #c6c6c6; --bg: #ececec;
+    }
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Topbar */
+    .topbar { background: var(--gelb); padding: 12px 20px; flex-shrink: 0; }
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 21px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 21px; color: #111; letter-spacing: .04em; }
+
+    /* Form view */
+    .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 28px 20px 40px; gap: 18px; }
+    .question { width: 100%; max-width: 480px; background: white; border-radius: 14px; padding: 18px 20px; border-left: 5px solid var(--tuerkis); }
+    .q-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 6px; }
+    .q-text { font-size: 19px; font-weight: 700; color: #1a1a1a; line-height: 1.3; }
+    .fields { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 12px; }
+    .field-label { font-size: 12px; font-weight: 700; color: var(--dg); margin-bottom: 4px; letter-spacing: .05em; text-transform: uppercase; }
+    input[type="text"] { width: 100%; padding: 13px 16px; font-size: 16px; border-radius: 10px; border: 2px solid var(--mg); background: white; color: #1a1a1a; outline: none; font-family: Arial; }
+    input[type="text"]:focus { border-color: var(--tuerkis); box-shadow: 0 0 0 3px rgba(35,178,198,.12); }
+    .textarea-wrap { position: relative; }
+    textarea { width: 100%; padding: 14px 16px; font-size: 16px; border-radius: 10px; border: 2px solid var(--mg); background: white; color: #1a1a1a; outline: none; font-family: Arial; resize: none; line-height: 1.5; min-height: 130px; }
+    textarea:focus { border-color: var(--tuerkis); box-shadow: 0 0 0 3px rgba(35,178,198,.12); }
+    .char-count { position: absolute; bottom: 10px; right: 14px; font-size: 11px; color: var(--mg); }
+    .char-count.warn { color: var(--rot); }
+    .btn { width: 100%; max-width: 480px; background: var(--gelb); color: #111; border: none; border-radius: 12px; padding: 16px; font-size: 18px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .2s; }
+    .btn:disabled { opacity: .35; cursor: default; }
+    .err { color: var(--rot); font-size: 14px; text-align: center; max-width: 400px; background: #fff0f0; padding: 10px 16px; border-radius: 8px; display: none; }
+
+    /* Done view */
+    .done { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 32px; }
+    .check { width: 86px; height: 86px; border-radius: 50%; background: var(--gelb); display: flex; align-items: center; justify-content: center; font-size: 42px; }
+  </style>
+</head>
+<body>
+  <div class="topbar"><span class="ph">ph</span><span class="gr">GR</span></div>
+
+  <!-- Form -->
+  <div class="center" id="form-view">
+    <div class="question" id="question-box" style="display:none">
+      <div class="q-label">Leitfrage</div>
+      <div class="q-text" id="question-text"></div>
+    </div>
+    <div class="fields">
+      <div id="name-wrap">
+        <div class="field-label">Name <span style="font-weight:400;text-transform:none;letter-spacing:0">(freiwillig)</span></div>
+        <input type="text" id="name-input" placeholder="Dein Name…" autocomplete="given-name">
+      </div>
+      <div>
+        <div class="field-label">Rückmeldung</div>
+        <div class="textarea-wrap">
+          <textarea id="msg-input" placeholder="Deine Rückmeldung…" maxlength="300" oninput="updateCount()"></textarea>
+          <span class="char-count" id="char-count">0 / 300</span>
+        </div>
+      </div>
+    </div>
+    <p class="err" id="err"></p>
+    <button class="btn" id="submit-btn" onclick="doSubmit()">Abschicken →</button>
+  </div>
+
+  <!-- Done -->
+  <div class="done" id="done-view">
+    <div class="check">✓</div>
+    <h2 style="color:#1a1a1a;font-size:26px;font-weight:700">Danke!</h2>
+    <p style="color:var(--dg);text-align:center;font-size:15px">Deine Rückmeldung wurde gespeichert.</p>
+  </div>
+
+  <script>
+    const params    = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session') || 'default';
+    const question  = params.get('question') || '';
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Show question if provided
+    if (question) {
+      document.getElementById('question-text').textContent = question;
+      document.getElementById('question-box').style.display = 'block';
+    }
+
+    function updateCount() {
+      const len = document.getElementById('msg-input').value.length;
+      const el  = document.getElementById('char-count');
+      el.textContent = `${len} / 300`;
+      el.className   = 'char-count' + (len > 260 ? ' warn' : '');
+    }
+
+    async function doSubmit() {
+      const btn  = document.getElementById('submit-btn');
+      const errEl = document.getElementById('err');
+      const msg  = document.getElementById('msg-input').value.trim();
+      const name = document.getElementById('name-input').value.trim() || null;
+      errEl.style.display = 'none';
+      if (!msg) return;
+
+      btn.disabled   = true;
+      btn.textContent = 'Wird gespeichert…';
+
+      const { error } = await sb.from('feedback_submissions').insert([{ session_id: sessionId, name, message: msg }]);
+
+      if (error) {
+        errEl.textContent   = 'Fehler beim Speichern. Bitte nochmal versuchen.';
+        errEl.style.display = 'block';
+        btn.disabled        = false;
+        btn.textContent     = 'Abschicken →';
+        return;
+      }
+
+      document.getElementById('form-view').style.display = 'none';
+      const dv = document.getElementById('done-view');
+      dv.style.display = 'flex';
+    }
+
+    // Focus textarea on load
+    setTimeout(() => document.getElementById('msg-input')?.focus(), 300);
+  </script>
+</body>
+</html>
