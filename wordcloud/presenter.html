@@ -118,6 +118,14 @@
   </div>
 </div>
 
+<!-- ======== QR OVERLAY ======== -->
+<div id="qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center;cursor:pointer" onclick="closeQROverlay()">
+  <div onclick="event.stopPropagation()" style="background:white;border-radius:24px;padding:28px 32px;border:8px solid #c7d200;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <div id="qr-overlay-img" style="width:320px;height:320px;display:flex;align-items:center;justify-content:center"></div>
+    <p style="margin-top:14px;color:#878787;font-size:14px;font-family:Arial">Klick zum Schliessen · Esc</p>
+  </div>
+</div>
+
 <!-- ======== BODY ======== -->
 <div id="body">
 
@@ -143,7 +151,7 @@
     <!-- QR Code -->
     <div class="s-sec">
       <span class="s-label">Teilnahme-QR-Code</span>
-      <div class="qr-wrap">
+      <div class="qr-wrap" onclick="openQROverlay()" title="Klick zum Vergrössern" style="cursor:pointer">
         <div id="qrcode"><span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span></div>
       </div>
       <div class="s-hint" style="margin-top:8px" id="join-url-text"></div>
@@ -305,7 +313,6 @@ async function confirmReset() {
 // =========================================================
 // Word cloud rendering
 // =========================================================
-const ROTS = [-14, -8, -4, 0, 0, 0, 0, 4, 8, 14];
 
 function renderCloud() {
   const area  = document.getElementById('cloud-area');
@@ -323,15 +330,17 @@ function renderCloud() {
   }
   empty.style.display = 'none';
 
-  const mx = entries[0][1];
-  const mn = entries[entries.length - 1][1];
-  const rng = mx - mn || 1;
+  const n    = entries.length;
+  const maxS = Math.max(24, Math.round(82 - n * 1.6));   // shrinks as cloud grows
+  const minS = Math.max(15, Math.round(maxS * 0.4));
+  const mx   = entries[0][1];
+  const mn   = entries[entries.length - 1][1];
+  const rng  = mx - mn || 1;
 
   entries.forEach(([w, c], i) => {
     const ratio  = (c - mn) / rng;
-    const size   = Math.round(14 + ratio * 56);
+    const size   = Math.round(minS + ratio * (maxS - minS));
     const weight = c === mx ? 800 : c > mx * .5 ? 700 : 500;
-    const rot    = ROTS[i % ROTS.length];
     const color  = WC[i % WC.length];
     const isNew  = !prevWords[w] || prevWords[w] < c;
 
@@ -339,7 +348,7 @@ function renderCloud() {
     el.className = 'w-item' + (isNew ? ' new' : '');
     el.textContent = w;
     el.title = `${w}: ${c}×`;
-    el.style.cssText = `font-size:${size}px;color:${color};font-weight:${weight};transform:rotate(${rot}deg);`;
+    el.style.cssText = `font-size:${size}px;color:${color};font-weight:${weight};`;
     area.appendChild(el);
   });
 
@@ -369,6 +378,26 @@ function renderTop() {
     </div>
   `).join('');
 }
+
+// =========================================================
+// QR Overlay
+// =========================================================
+function openQROverlay() {
+  const url = document.getElementById('join-url-text').textContent;
+  if (!url) return;
+  const overlay = document.getElementById('qr-overlay');
+  const imgBox  = document.getElementById('qr-overlay-img');
+  imgBox.innerHTML = '';
+  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=2&data=${encodeURIComponent(url)}`;
+  imgBox.innerHTML = `<img src="${apiUrl}" width="320" height="320" alt="QR-Code" style="display:block;border-radius:4px">`;
+  overlay.style.display = 'flex';
+}
+function closeQROverlay() {
+  document.getElementById('qr-overlay').style.display = 'none';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeQROverlay();
+});
 
 // =========================================================
 // Fullscreen
