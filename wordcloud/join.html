@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>PHGR – Mitmachen</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb: #c7d200; --tuerkis: #23b2c6; --rot: #ed6a69;
+      --violett: #6169af; --dg: #878787; --bg: #0d111e;
+    }
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { background: var(--gelb); padding: 11px 18px; flex-shrink: 0; }
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 20px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 20px; color: #111; letter-spacing: .04em; }
+    .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px; gap: 16px; }
+    h1 { color: white; font-size: 21px; font-weight: 700; text-align: center; }
+    .sub { color: #444; font-size: 14px; text-align: center; }
+    .fields { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 11px; }
+    input { width: 100%; padding: 15px 16px; font-size: 17px; border-radius: 12px; border: 2px solid rgba(255,255,255,.13); background: rgba(255,255,255,.05); color: white; outline: none; font-family: Arial; }
+    input:focus { border-color: var(--tuerkis); }
+    .btn { width: 100%; max-width: 380px; background: var(--gelb); color: #111; border: none; border-radius: 12px; padding: 15px; font-size: 17px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .2s; }
+    .btn:disabled { opacity: .35; cursor: default; }
+    .btn.violet { background: var(--violett); color: white; }
+    .success { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 32px; }
+    .check { width: 82px; height: 82px; border-radius: 50%; background: var(--gelb); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+    .err { color: var(--rot); font-size: 14px; text-align: center; max-width: 320px; }
+  </style>
+</head>
+<body>
+  <div class="topbar"><span class="ph">ph</span><span class="gr">GR</span></div>
+
+  <div class="center" id="form-view">
+    <h1 id="title">Dein Beitrag</h1>
+    <p class="sub" id="subtitle">Begriff eingeben und abschicken</p>
+    <div class="fields" id="fields"></div>
+    <p class="err" id="err" style="display:none"></p>
+    <button class="btn" id="submit-btn" onclick="submitWords()">Abschicken →</button>
+  </div>
+
+  <div class="success" id="done-view">
+    <div class="check">✓</div>
+    <h2 style="color:white;font-size:24px;font-weight:700">Danke!</h2>
+    <p style="color:#444;text-align:center;font-size:14px">Deine Beiträge wurden gespeichert.</p>
+    <button class="btn violet" onclick="tryAgain()" style="max-width:240px">Nochmal mitmachen</button>
+  </div>
+
+  <script>
+    // URL-Parameter lesen
+    const params  = new URLSearchParams(window.location.search);
+    const session = params.get('session') || 'default';
+    const maxN    = parseInt(params.get('max') || '2', 10) || 2;
+
+    // Supabase initialisieren
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Formular aufbauen
+    document.getElementById('title').textContent =
+      maxN === 1 ? 'Was kommt dir in den Sinn?' : 'Deine Stichwörter';
+    document.getElementById('subtitle').textContent =
+      maxN === 1 ? 'Ein Begriff genügt' : `Bis zu ${maxN} Begriffe (auch weniger ist gut)`;
+
+    const fieldsEl = document.getElementById('fields');
+    for (let i = 0; i < maxN; i++) {
+      const inp = document.createElement('input');
+      inp.id          = `w${i}`;
+      inp.type        = 'text';
+      inp.placeholder = maxN === 1 ? 'Stichwort eingeben…' : `Begriff ${i + 1}${i > 0 ? ' (optional)' : ''}…`;
+      inp.autocomplete = 'off';
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter' && i === maxN - 1) submitWords(); });
+      fieldsEl.appendChild(inp);
+    }
+    // Erstes Feld fokussieren (kurze Verzögerung für iOS)
+    setTimeout(() => document.getElementById('w0')?.focus(), 300);
+
+    async function submitWords() {
+      const btn = document.getElementById('submit-btn');
+      const errEl = document.getElementById('err');
+      errEl.style.display = 'none';
+
+      const words = [];
+      for (let i = 0; i < maxN; i++) {
+        const v = document.getElementById(`w${i}`)?.value.trim().toLowerCase();
+        if (v) words.push(v);
+      }
+      if (!words.length) return;
+
+      btn.disabled   = true;
+      btn.textContent = 'Wird gespeichert…';
+
+      const rows = words.map(word => ({ session_id: session, word }));
+      const { error } = await sb.from('wordcloud_submissions').insert(rows);
+
+      if (error) {
+        errEl.textContent = 'Fehler beim Speichern. Bitte nochmal versuchen.';
+        errEl.style.display = 'block';
+        btn.disabled   = false;
+        btn.textContent = 'Abschicken →';
+        return;
+      }
+
+      document.getElementById('form-view').style.display = 'none';
+      const dv = document.getElementById('done-view');
+      dv.style.display = 'flex';
+      dv.style.flexDirection = 'column';
+    }
+
+    function tryAgain() {
+      for (let i = 0; i < maxN; i++) {
+        const el = document.getElementById(`w${i}`);
+        if (el) el.value = '';
+      }
+      document.getElementById('done-view').style.display = 'none';
+      document.getElementById('form-view').style.display = 'flex';
+      document.getElementById('form-view').style.flexDirection = 'column';
+      const btn = document.getElementById('submit-btn');
+      btn.disabled   = false;
+      btn.textContent = 'Abschicken →';
+      setTimeout(() => document.getElementById('w0')?.focus(), 200);
+    }
+  </script>
+</body>
+</html>

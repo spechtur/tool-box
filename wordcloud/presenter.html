@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHGR Wortwolke – Präsentation</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    /* ---- Reset & Tokens ---- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb:    #c7d200;
+      --tuerkis: #23b2c6;
+      --rot:     #ed6a69;
+      --orange:  #fbb900;
+      --violett: #6169af;
+      --dg:      #878787;
+      --mg:      #c6c6c6;
+      --bg:      #0d111e;
+      --sidebar: #080c18;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; }
+
+    /* ---- PHGR Logo ---- */
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 19px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 19px; color: #111; letter-spacing: .04em; }
+
+    /* ---- Topbar ---- */
+    #topbar {
+      background: var(--gelb); padding: 9px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; gap: 12px;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .stats-pill { background: rgba(0,0,0,.25); border-radius: 20px; padding: 3px 12px; font-size: 12px; color: #444; font-weight: 600; white-space: nowrap; }
+    button { font-family: Arial; cursor: pointer; }
+    .btn-reset { background: var(--rot); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+    .btn-icon  { background: rgba(0,0,0,.15); border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: #333; }
+    .btn-icon:hover { background: rgba(0,0,0,.25); }
+
+    /* ---- Body layout ---- */
+    #body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+    /* ---- Word cloud area ---- */
+    #cloud-area {
+      flex: 1; display: flex; flex-wrap: wrap; align-content: center;
+      align-items: center; justify-content: center;
+      gap: 10px 18px; padding: 24px; overflow: hidden; min-height: 0;
+    }
+    #empty-state { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .empty-icon { font-size: 64px; color: #1e2235; }
+    .empty-text  { color: #2e334a; font-size: 16px; text-align: center; }
+    .empty-hint  { color: #1e2235; font-size: 12px; }
+    .w-item { display: inline-block; line-height: 1.15; user-select: none; cursor: default; transition: font-size .5s ease; }
+    @keyframes wordin { 0% { opacity: 0; transform: scale(.65); } 100% { opacity: 1; transform: scale(1); } }
+    .w-item.new { animation: wordin .4s ease forwards; }
+
+    /* ---- Sidebar ---- */
+    #sidebar {
+      width: 256px; flex-shrink: 0; background: var(--sidebar);
+      border-left: 1px solid rgba(255,255,255,.06);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .s-sec { padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .s-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 10px; }
+    .s-input {
+      width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: white; border-radius: 6px; padding: 7px 10px; font-size: 13px;
+      font-family: Arial; outline: none; margin-bottom: 8px;
+    }
+    .s-input:focus { border-color: var(--tuerkis); }
+    .s-hint { font-size: 11px; color: #2d3148; line-height: 1.4; }
+
+    /* QR code container */
+    .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 172px; }
+    #qrcode { width: 156px; height: 156px; display: flex; align-items: center; justify-content: center; }
+    #qrcode canvas, #qrcode img { display: block !important; }
+
+    /* Max words selector */
+    .mw-row { display: flex; gap: 6px; }
+    .mw-btn {
+      flex: 1; padding: 8px 0; border-radius: 6px; font-weight: 700; font-size: 15px;
+      cursor: pointer; border: 2px solid rgba(255,255,255,.12); background: transparent; color: #666;
+      transition: all .2s; font-family: Arial;
+    }
+    .mw-btn.on { border-color: var(--gelb); background: var(--gelb); color: #111; }
+
+    /* Top words list */
+    .top-row { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; min-width: 0; }
+    .top-dot  { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+    .top-word { flex: 1; font-size: 12px; font-weight: 600; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-bar  { height: 3px; border-radius: 2px; flex-shrink: 0; min-width: 3px; }
+    .top-cnt  { font-size: 10px; color: #333; width: 14px; text-align: right; flex-shrink: 0; }
+
+    /* Session badge */
+    #session-badge { font-size: 12px; color: #3a3e50; padding: 4px 0; }
+
+    /* Fullscreen hint */
+    #fs-hint { padding: 12px 18px; border-top: 1px solid rgba(255,255,255,.04); margin-top: auto; }
+    .fs-btn { width: 100%; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: #333; cursor: pointer; }
+    .fs-btn:hover { background: rgba(255,255,255,.08); color: #555; }
+  </style>
+</head>
+<body>
+
+<!-- ======== TOPBAR ======== -->
+<div id="topbar">
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="topbar-right">
+    <span class="stats-pill" id="stats">0 Begriffe · 0 Beiträge</span>
+    <span class="stats-pill" id="session-badge">Session: –</span>
+    <button class="btn-reset" onclick="confirmReset()">↺ Session zurücksetzen</button>
+    <button class="btn-icon" onclick="toggleFullscreen()" title="Vollbild">⛶</button>
+  </div>
+</div>
+
+<!-- ======== BODY ======== -->
+<div id="body">
+
+  <!-- Word cloud -->
+  <div id="cloud-area">
+    <div id="empty-state">
+      <div class="empty-icon">☁</div>
+      <div class="empty-text">Warte auf Beiträge…</div>
+      <div class="empty-hint">QR-Code scannen und mitmachen</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+
+    <!-- Session -->
+    <div class="s-sec">
+      <span class="s-label">Session</span>
+      <input class="s-input" id="session-input" placeholder="z.B. cas-2026-01" oninput="onSessionChange()">
+      <div class="s-hint">Für jede Weiterbildung eine neue Session-ID → frische Wortwolke.</div>
+    </div>
+
+    <!-- QR Code -->
+    <div class="s-sec">
+      <span class="s-label">Teilnahme-QR-Code</span>
+      <div class="qr-wrap">
+        <div id="qrcode"><span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span></div>
+      </div>
+      <div class="s-hint" style="margin-top:8px" id="join-url-text"></div>
+    </div>
+
+    <!-- Max words -->
+    <div class="s-sec">
+      <span class="s-label">Stichwörter pro Person</span>
+      <div class="mw-row">
+        <button class="mw-btn on" data-n="1" onclick="setMax(1)">1</button>
+        <button class="mw-btn"    data-n="2" onclick="setMax(2)">2</button>
+        <button class="mw-btn"    data-n="3" onclick="setMax(3)">3</button>
+        <button class="mw-btn"    data-n="5" onclick="setMax(5)">5</button>
+      </div>
+    </div>
+
+    <!-- Top words (dynamisch) -->
+    <div class="s-sec" id="top-sec" style="display:none">
+      <span class="s-label">Top-Begriffe</span>
+      <div id="top-list"></div>
+    </div>
+
+    <!-- Fullscreen / help -->
+    <div id="fs-hint">
+      <button class="fs-btn" onclick="toggleFullscreen()">⛶ Vollbild (F11 oder Klick)</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// =========================================================
+// State
+// =========================================================
+const WC      = ['#23b2c6','#6169af','#ed6a69','#fbb900','#c7d200'];
+let sb        = null;
+let sessionId = '';
+let maxN      = 1;
+let words     = {};     // { word: count }
+let prevWords = {};     // für Animation neuer Wörter
+let pollTimer = null;
+
+// =========================================================
+// Init
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } catch(e) {
+    alert('Supabase konnte nicht initialisiert werden. Bitte config.js prüfen.');
+    return;
+  }
+
+  // Gespeicherte Session laden oder Default
+  const saved = localStorage.getItem('phgr-wc-session') || todayId();
+  document.getElementById('session-input').value = saved;
+  sessionId = saved;
+  updateSessionBadge();
+  refreshQR();
+
+  startPolling();
+});
+
+function todayId() {
+  return 'session-' + new Date().toISOString().slice(0,10);
+}
+
+// =========================================================
+// Session
+// =========================================================
+function onSessionChange() {
+  const val = document.getElementById('session-input').value.trim().toLowerCase().replace(/\s+/g,'-');
+  sessionId = val;
+  localStorage.setItem('phgr-wc-session', val);
+  updateSessionBadge();
+  refreshQR();
+  words = {}; prevWords = {};
+  renderCloud();
+}
+
+function updateSessionBadge() {
+  document.getElementById('session-badge').textContent = sessionId ? `Session: ${sessionId}` : 'Session: –';
+}
+
+// =========================================================
+// Max words
+// =========================================================
+function setMax(n) {
+  maxN = n;
+  document.querySelectorAll('.mw-btn').forEach(b => b.classList.toggle('on', parseInt(b.dataset.n) === n));
+  refreshQR();
+}
+
+// =========================================================
+// QR Code
+// =========================================================
+let qrObj = null, qrTimer = null;
+
+function refreshQR() {
+  clearTimeout(qrTimer);
+  qrTimer = setTimeout(() => {
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+    if (!sessionId) {
+      container.innerHTML = '<span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span>';
+      document.getElementById('join-url-text').textContent = '';
+      return;
+    }
+    const url = `${BASE_URL}/join.html?session=${encodeURIComponent(sessionId)}&max=${maxN}`;
+    document.getElementById('join-url-text').textContent = url;
+    try {
+      new QRCode(container, { text: url, width: 156, height: 156, colorDark: '#111', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+    } catch(e) {
+      container.innerHTML = '<span style="color:#ed6a69;font-size:11px">QR-Fehler – URL zu lang?</span>';
+    }
+  }, 400);
+}
+
+// =========================================================
+// Polling Supabase
+// =========================================================
+function startPolling() {
+  load();
+  pollTimer = setInterval(load, 2500);
+}
+
+async function load() {
+  if (!sb || !sessionId) return;
+  try {
+    const { data, error } = await sb
+      .from('wordcloud_submissions')
+      .select('word')
+      .eq('session_id', sessionId);
+    if (error) { console.warn('Supabase-Fehler:', error.message); return; }
+
+    // Aggregieren
+    const agg = {};
+    (data || []).forEach(row => {
+      const w = (row.word || '').trim().toLowerCase();
+      if (w) agg[w] = (agg[w] || 0) + 1;
+    });
+    prevWords = words;
+    words = agg;
+    renderCloud();
+  } catch(e) { console.warn('Netzwerkfehler:', e); }
+}
+
+// =========================================================
+// Reset
+// =========================================================
+async function confirmReset() {
+  if (!sessionId) return;
+  if (!confirm(`Session „${sessionId}" wirklich zurücksetzen?\n\nAlle Beiträge werden gelöscht.`)) return;
+  try {
+    const { error } = await sb.from('wordcloud_submissions').delete().eq('session_id', sessionId);
+    if (error) { alert('Fehler beim Zurücksetzen: ' + error.message); return; }
+    prevWords = {}; words = {};
+    renderCloud();
+  } catch(e) { alert('Netzwerkfehler beim Zurücksetzen.'); }
+}
+
+// =========================================================
+// Word cloud rendering
+// =========================================================
+const ROTS = [-14, -8, -4, 0, 0, 0, 0, 4, 8, 14];
+
+function renderCloud() {
+  const area  = document.getElementById('cloud-area');
+  const empty = document.getElementById('empty-state');
+  const entries = Object.entries(words).sort((a,b) => b[1] - a[1]);
+
+  // Alle Word-Items entfernen (nicht den empty-state)
+  area.querySelectorAll('.w-item').forEach(el => el.remove());
+
+  if (!entries.length) {
+    empty.style.display = 'flex';
+    updateStats();
+    renderTop();
+    return;
+  }
+  empty.style.display = 'none';
+
+  const mx = entries[0][1];
+  const mn = entries[entries.length - 1][1];
+  const rng = mx - mn || 1;
+
+  entries.forEach(([w, c], i) => {
+    const ratio  = (c - mn) / rng;
+    const size   = Math.round(14 + ratio * 56);
+    const weight = c === mx ? 800 : c > mx * .5 ? 700 : 500;
+    const rot    = ROTS[i % ROTS.length];
+    const color  = WC[i % WC.length];
+    const isNew  = !prevWords[w] || prevWords[w] < c;
+
+    const el = document.createElement('span');
+    el.className = 'w-item' + (isNew ? ' new' : '');
+    el.textContent = w;
+    el.title = `${w}: ${c}×`;
+    el.style.cssText = `font-size:${size}px;color:${color};font-weight:${weight};transform:rotate(${rot}deg);`;
+    area.appendChild(el);
+  });
+
+  updateStats();
+  renderTop();
+}
+
+function updateStats() {
+  const u = Object.keys(words).length;
+  const t = Object.values(words).reduce((a,b) => a+b, 0);
+  document.getElementById('stats').textContent = `${u} Begriffe · ${t} Beiträge`;
+}
+
+function renderTop() {
+  const sec  = document.getElementById('top-sec');
+  const list = document.getElementById('top-list');
+  const entries = Object.entries(words).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  if (!entries.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  const mx = entries[0][1];
+  list.innerHTML = entries.map(([w,c], i) => `
+    <div class="top-row">
+      <span class="top-dot" style="background:${WC[i%WC.length]}"></span>
+      <span class="top-word">${w}</span>
+      <div class="top-bar" style="width:${Math.max(3, Math.round((c/mx)*42))}px;background:${WC[i%WC.length]}"></div>
+      <span class="top-cnt">${c}</span>
+    </div>
+  `).join('');
+}
+
+// =========================================================
+// Fullscreen
+// =========================================================
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); } });
+</script>
+</body>
+</html>
