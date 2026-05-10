@@ -58,6 +58,7 @@
     .empty-text  { color: var(--dg); font-size: 16px; text-align: center; }
     .empty-hint  { color: var(--mg); font-size: 12px; }
     .w-item { display: inline-block; line-height: 1.15; user-select: none; cursor: default; transition: font-size .5s ease; }
+    #cloud-area:fullscreen { background: #ececec; padding: 40px; }
     @keyframes wordin { 0% { opacity: 0; transform: scale(.65); } 100% { opacity: 1; transform: scale(1); } }
     .w-item.new { animation: wordin .4s ease forwards; }
 
@@ -121,8 +122,17 @@
 <!-- ======== QR OVERLAY ======== -->
 <div id="qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center;cursor:pointer" onclick="closeQROverlay()">
   <div onclick="event.stopPropagation()" style="background:white;border-radius:24px;padding:28px 32px;border:8px solid #c7d200;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4)">
-    <div id="qr-overlay-img" style="width:320px;height:320px;display:flex;align-items:center;justify-content:center"></div>
+    <div id="qr-overlay-img" style="width:480px;height:480px;display:flex;align-items:center;justify-content:center"></div>
     <p style="margin-top:14px;color:#878787;font-size:14px;font-family:Arial">Klick zum Schliessen · Esc</p>
+  </div>
+</div>
+
+<!-- ======== TOP WORDS OVERLAY ======== -->
+<div id="tw-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center;cursor:pointer" onclick="closeTWOverlay()">
+  <div onclick="event.stopPropagation()" style="background:white;border-radius:24px;padding:32px 40px;border:8px solid #c7d200;min-width:380px;max-width:520px;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <h2 style="font-family:Arial;font-size:22px;font-weight:800;color:#1a1a1a;margin-bottom:20px;letter-spacing:-.01em">Top-Begriffe</h2>
+    <div id="tw-overlay-list"></div>
+    <p style="margin-top:20px;color:#878787;font-size:13px;font-family:Arial;text-align:center">Klick zum Schliessen · Esc</p>
   </div>
 </div>
 
@@ -331,16 +341,19 @@ function renderCloud() {
   empty.style.display = 'none';
 
   const n    = entries.length;
-  const maxS = Math.max(24, Math.round(82 - n * 1.6));   // shrinks as cloud grows
-  const minS = Math.max(15, Math.round(maxS * 0.4));
+  // Base size shrinks as more unique words appear, but stays generous
+  const maxS = n <= 2 ? 130 : n <= 4 ? 100 : n <= 7 ? 80 : n <= 12 ? 62 : n <= 20 ? 48 : 36;
+  const minS = Math.max(16, Math.round(maxS * 0.38));
   const mx   = entries[0][1];
   const mn   = entries[entries.length - 1][1];
   const rng  = mx - mn || 1;
+  // Dynamic gap: more space when fewer words
+  area.style.gap = n <= 4 ? '18px 28px' : n <= 10 ? '12px 20px' : '8px 14px';
 
   entries.forEach(([w, c], i) => {
     const ratio  = (c - mn) / rng;
     const size   = Math.round(minS + ratio * (maxS - minS));
-    const weight = c === mx ? 800 : c > mx * .5 ? 700 : 500;
+    const weight = c === mx ? 900 : c > mx * .6 ? 700 : 500;
     const color  = WC[i % WC.length];
     const isNew  = !prevWords[w] || prevWords[w] < c;
 
@@ -380,6 +393,28 @@ function renderTop() {
 }
 
 // =========================================================
+// Top Words Overlay
+// =========================================================
+function openTWOverlay() {
+  const entries = Object.entries(words).sort((a,b) => b[1]-a[1]);
+  if (!entries.length) return;
+  const mx = entries[0][1];
+  const list = document.getElementById('tw-overlay-list');
+  list.innerHTML = entries.map(([w,c],i) => `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="font-size:13px;font-weight:700;color:#878787;width:20px;text-align:right">${i+1}</span>
+      <span style="width:12px;height:12px;border-radius:3px;background:${WC[i%WC.length]};flex-shrink:0"></span>
+      <span style="flex:1;font-size:${Math.round(18 + (c/mx)*14)}px;font-weight:${c===mx?800:600};color:#1a1a1a;font-family:Arial">${w}</span>
+      <span style="font-size:13px;color:#878787;font-family:Arial;font-weight:600">${c}×</span>
+    </div>
+  `).join('');
+  document.getElementById('tw-overlay').style.display = 'flex';
+}
+function closeTWOverlay() {
+  document.getElementById('tw-overlay').style.display = 'none';
+}
+
+// =========================================================
 // QR Overlay
 // =========================================================
 function openQROverlay() {
@@ -388,23 +423,26 @@ function openQROverlay() {
   const overlay = document.getElementById('qr-overlay');
   const imgBox  = document.getElementById('qr-overlay-img');
   imgBox.innerHTML = '';
-  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=2&data=${encodeURIComponent(url)}`;
-  imgBox.innerHTML = `<img src="${apiUrl}" width="320" height="320" alt="QR-Code" style="display:block;border-radius:4px">`;
+  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=480x480&qzone=2&data=${encodeURIComponent(url)}`;
+  imgBox.innerHTML = `<img src="${apiUrl}" width="480" height="480" alt="QR-Code" style="display:block;border-radius:4px">`;
   overlay.style.display = 'flex';
 }
 function closeQROverlay() {
   document.getElementById('qr-overlay').style.display = 'none';
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeQROverlay();
+  if (e.key === 'Escape') { closeQROverlay(); closeTWOverlay(); }
 });
 
 // =========================================================
 // Fullscreen
 // =========================================================
 function toggleFullscreen() {
+  const cloud = document.getElementById('cloud-area');
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
+    cloud.requestFullscreen().catch(() => {
+      document.documentElement.requestFullscreen().catch(() => {});
+    });
   } else {
     document.exitFullscreen().catch(() => {});
   }
