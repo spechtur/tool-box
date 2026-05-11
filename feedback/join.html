@@ -59,8 +59,8 @@
       <div>
         <div class="field-label">Rückmeldung</div>
         <div class="textarea-wrap">
-          <textarea id="msg-input" placeholder="Deine Rückmeldung…" maxlength="300" oninput="updateCount()"></textarea>
-          <span class="char-count" id="char-count">0 / 300</span>
+          <textarea id="msg-input" placeholder="Deine Rückmeldung…" maxlength="400" oninput="updateCount()"></textarea>
+          <span class="char-count" id="char-count">0 / 400</span>
         </div>
       </div>
     </div>
@@ -91,8 +91,8 @@
     function updateCount() {
       const len = document.getElementById('msg-input').value.length;
       const el  = document.getElementById('char-count');
-      el.textContent = `${len} / 300`;
-      el.className   = 'char-count' + (len > 260 ? ' warn' : '');
+      el.textContent = `${len} / 400`;
+      el.className   = 'char-count' + (len > 340 ? ' warn' : '');
     }
 
     async function doSubmit() {
