@@ -7,21 +7,12 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --gelb:    #c7d200;
-      --tuerkis: #23b2c6;
-      --rot:     #ed6a69;
-      --orange:  #fbb900;
-      --violett: #6169af;
-      --gruen:   #5aab6e;
-      --dg:      #878787;
-      --mg:      #c6c6c6;
-      --hg:      #ececec;
-      --clr:     #5aab6e;   /* live color – changes with time */
+      --gelb: #c7d200; --tuerkis: #23b2c6; --rot: #ed6a69;
+      --orange: #fbb900; --violett: #6169af; --gruen: #5aab6e;
+      --dg: #878787; --mg: #c6c6c6; --hg: #ececec;
     }
-
     body { font-family: Arial, Helvetica, sans-serif; background: var(--hg); color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; user-select: none; }
 
-    /* ── Header ── */
     header { background: var(--gelb); padding: 13px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
     .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 21px; color: #111; }
     .gr { font-variant: small-caps; font-weight: 300; font-size: 21px; color: #111; letter-spacing: .04em; }
@@ -30,80 +21,67 @@
     .back-link { margin-left: auto; font-size: 13px; font-weight: 700; color: #333; text-decoration: none; background: rgba(0,0,0,.1); padding: 5px 13px; border-radius: 20px; }
     .back-link:hover { background: rgba(0,0,0,.18); }
 
-    /* ── Layout ── */
-    main { flex: 1; display: flex; gap: 0; overflow: hidden; min-height: 0; }
+    main { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 
-    /* ── Clock panel ── */
-    #clock-panel {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 32px; gap: 28px; background: white;
-    }
-    #clock-panel:fullscreen { background: white; justify-content: center; }
+    /* Clock panel */
+    #clock-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; gap: 24px; background: white; min-height: 0; }
 
-    /* Canvas wrapper */
-    #canvas-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
-    #timer-canvas { display: block; cursor: pointer; }
+    #canvas-wrap { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    #timer-canvas { display: block; cursor: pointer; transition: width .3s, height .3s; }
 
-    /* Digital overlay on canvas */
-    #digital-display {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      font-size: clamp(48px, 8vw, 96px); font-weight: 800; font-variant-numeric: tabular-nums;
-      color: #1a1a1a; letter-spacing: -.02em; text-align: center; line-height: 1;
-      pointer-events: none;
-    }
+    #digital-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-weight: 800; font-variant-numeric: tabular-nums; color: #1a1a1a; letter-spacing: -.02em; text-align: center; line-height: 1; pointer-events: none; white-space: nowrap; }
     #digital-display.overtime { color: var(--rot); }
     #digital-display.hidden { display: none; }
 
-    /* Pure digital (no canvas) */
-    #pure-digital {
-      font-size: clamp(80px, 18vw, 200px); font-weight: 800; font-variant-numeric: tabular-nums;
-      color: #1a1a1a; letter-spacing: -.03em; line-height: 1; text-align: center;
-      transition: color .5s;
-    }
+    #pure-digital { font-weight: 800; font-variant-numeric: tabular-nums; color: #1a1a1a; letter-spacing: -.03em; line-height: 1; text-align: center; transition: color .5s; }
     #pure-digital.overtime { color: var(--rot); }
     #pure-digital.hidden { display: none; }
 
-    /* Colour bar under digital */
     #color-bar { width: 100%; max-width: 500px; height: 8px; border-radius: 4px; background: var(--mg); overflow: hidden; }
     #color-bar-fill { height: 100%; border-radius: 4px; background: var(--gruen); width: 100%; transition: width .5s linear, background .5s; }
 
-    /* Controls row */
-    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
-    .btn { border: none; border-radius: 10px; padding: 12px 22px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .15s, transform .1s; }
-    .btn:hover { opacity: .85; }
-    .btn:active { transform: scale(.97); }
-    .btn-start  { background: var(--gruen); color: white; min-width: 110px; font-size: 17px; padding: 14px 28px; }
-    .btn-stop   { background: var(--rot);   color: white; min-width: 110px; font-size: 17px; padding: 14px 28px; }
-    .btn-reset  { background: var(--hg); color: #555; border: 2px solid var(--mg); }
-    .btn-add    { background: var(--tuerkis); color: white; padding: 10px 14px; font-size: 13px; }
-    .btn-fs     { background: var(--violett); color: white; padding: 12px 16px; font-size: 15px; }
-    .btn-fly    { background: var(--orange); color: #111; padding: 12px 16px; font-size: 15px; }
-
-    /* Overtime label */
     #overtime-label { font-size: 14px; font-weight: 700; color: var(--rot); display: none; letter-spacing: .05em; text-transform: uppercase; }
 
-    /* ── Sidebar ── */
-    #sidebar {
-      width: 280px; flex-shrink: 0; background: var(--hg); border-left: 1px solid var(--mg);
-      display: flex; flex-direction: column; overflow-y: auto; padding: 20px 18px; gap: 20px;
-    }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .btn { border: none; border-radius: 10px; padding: 12px 22px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .15s, transform .1s; }
+    .btn:hover { opacity: .85; } .btn:active { transform: scale(.97); }
+    .btn-start { background: var(--gruen); color: white; min-width: 110px; font-size: 17px; padding: 14px 28px; }
+    .btn-stop  { background: var(--rot);   color: white; min-width: 110px; font-size: 17px; padding: 14px 28px; }
+    .btn-reset { background: var(--hg); color: #555; border: 2px solid var(--mg); }
+    .btn-add   { background: var(--tuerkis); color: white; padding: 10px 14px; font-size: 13px; }
+    .btn-fs    { background: var(--violett); color: white; padding: 12px 16px; font-size: 15px; }
+    .btn-fly   { background: var(--orange); color: #111; padding: 12px 16px; font-size: 15px; }
+
+    /* Fullscreen styles */
+    #clock-panel:fullscreen { background: white; padding: 0; justify-content: center; gap: 32px; }
+    #clock-panel:fullscreen .controls { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,.92); padding: 12px 20px; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,.1); }
+    #clock-panel:-webkit-full-screen { background: white; padding: 0; justify-content: center; gap: 32px; }
+    #clock-panel:-webkit-full-screen .controls { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,.92); padding: 12px 20px; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,.1); }
+
+    /* Sidebar */
+    #sidebar { width: 280px; flex-shrink: 0; background: var(--hg); border-left: 1px solid var(--mg); display: flex; flex-direction: column; overflow-y: auto; padding: 20px 18px; gap: 20px; }
     .s-group { display: flex; flex-direction: column; gap: 10px; }
     .s-label { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--dg); }
 
-    /* Preset buttons */
     .presets { display: flex; flex-wrap: wrap; gap: 7px; }
-    .preset-btn { padding: 8px 14px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: #1a1a1a; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial; transition: all .15s; }
+    .preset-btn { padding: 8px 12px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: #1a1a1a; font-size: 13px; font-weight: 700; cursor: pointer; font-family: Arial; transition: all .15s; }
     .preset-btn:hover { border-color: var(--tuerkis); color: var(--tuerkis); }
     .preset-btn.active { background: var(--tuerkis); border-color: var(--tuerkis); color: white; }
 
-    /* Custom input */
     .time-input-row { display: flex; gap: 6px; align-items: center; }
     .time-spin { width: 60px; padding: 9px 8px; border-radius: 8px; border: 2px solid var(--mg); background: white; font-size: 18px; font-weight: 700; text-align: center; font-family: Arial; outline: none; }
     .time-spin:focus { border-color: var(--tuerkis); }
     .time-sep { font-size: 20px; font-weight: 800; color: var(--dg); }
     .set-btn { flex: 1; padding: 9px 12px; border-radius: 8px; background: var(--gelb); color: #111; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial; }
 
-    /* Toggle switch */
+    .mode-row { display: flex; gap: 6px; }
+    .mode-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-align: center; transition: all .15s; }
+    .mode-btn.on { background: var(--violett); border-color: var(--violett); color: white; }
+
+    .alert-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .alert-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-align: center; transition: all .15s; min-width: 60px; }
+    .alert-btn.on { background: var(--orange); border-color: var(--orange); color: #111; }
+
     .toggle-row { display: flex; align-items: center; justify-content: space-between; }
     .toggle-label { font-size: 13px; color: #333; font-weight: 600; }
     .switch { position: relative; width: 44px; height: 24px; }
@@ -113,41 +91,8 @@
     input:checked + .slider { background: var(--tuerkis); }
     input:checked + .slider:before { transform: translateX(20px); }
 
-    /* Mode selector */
-    .mode-row { display: flex; gap: 6px; }
-    .mode-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-align: center; transition: all .15s; }
-    .mode-btn.on { background: var(--violett); border-color: var(--violett); color: white; }
-
-    /* Alert options */
-    .alert-row { display: flex; gap: 6px; flex-wrap: wrap; }
-    .alert-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-align: center; transition: all .15s; min-width: 60px; }
-    .alert-btn.on { background: var(--orange); border-color: var(--orange); color: #111; }
-
-    /* ── Flash overlay ── */
     #flash { position: fixed; inset: 0; background: var(--rot); opacity: 0; pointer-events: none; z-index: 800; transition: opacity .1s; }
 
-    /* ── Floating mini-timer ── */
-    #flyover {
-      display: none; position: fixed; z-index: 700;
-      background: white; border-radius: 16px; padding: 10px 14px;
-      box-shadow: 0 6px 28px rgba(0,0,0,.22);
-      border: 3px solid var(--gelb);
-      cursor: grab; min-width: 130px;
-      flex-direction: column; align-items: center; gap: 6px;
-    }
-    #flyover.open { display: flex; }
-    #flyover:active { cursor: grabbing; }
-    #fly-canvas { display: block; }
-    #fly-time { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: #1a1a1a; text-align: center; line-height: 1; }
-    #fly-time.overtime { color: var(--rot); }
-    .fly-controls { display: flex; gap: 6px; }
-    .fly-btn { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; font-family: Arial; }
-    .fly-start { background: var(--gruen); color: white; }
-    .fly-stop  { background: var(--rot); color: white; }
-    .fly-close { background: var(--hg); color: var(--dg); border: 1px solid var(--mg); }
-    #fly-handle { width: 32px; height: 4px; border-radius: 2px; background: var(--mg); margin-bottom: 2px; }
-
-    /* ── Responsive ── */
     @media (max-width: 700px) {
       main { flex-direction: column; }
       #sidebar { width: 100%; border-left: none; border-top: 1px solid var(--mg); }
@@ -155,7 +100,6 @@
   </style>
 </head>
 <body>
-
 <header>
   <div><span class="ph">ph</span><span class="gr">GR</span></div>
   <div class="sep"></div>
@@ -163,47 +107,34 @@
   <a class="back-link" href="../index.html">← tool-box</a>
 </header>
 
-<!-- Flash overlay -->
 <div id="flash"></div>
 
-<!-- Floating mini-timer -->
-<div id="flyover">
-  <div id="fly-handle"></div>
-  <canvas id="fly-canvas" width="90" height="90"></canvas>
-  <div id="fly-time">00:00</div>
-  <div class="fly-controls">
-    <button class="fly-btn fly-start" id="fly-startstop" onclick="toggleTimer()">▶</button>
-    <button class="fly-btn fly-close" onclick="closeFlyover()">✕</button>
-  </div>
-</div>
-
 <main>
-  <!-- Clock panel -->
   <div id="clock-panel">
     <div id="canvas-wrap">
-      <canvas id="timer-canvas" width="340" height="340" onclick="toggleTimer()"></canvas>
+      <canvas id="timer-canvas" onclick="firstInteract(); toggleTimer()"></canvas>
       <div id="digital-display" class="hidden">00:00</div>
     </div>
     <div id="pure-digital" class="hidden">00:00</div>
     <div id="color-bar" class="hidden"><div id="color-bar-fill"></div></div>
     <div id="overtime-label">⚠ Überzeit</div>
-
     <div class="controls">
-      <button class="btn btn-start" id="main-btn" onclick="toggleTimer()">▶ Start</button>
+      <button class="btn btn-start" id="main-btn" onclick="firstInteract(); toggleTimer()">▶ Start</button>
       <button class="btn btn-reset" onclick="resetTimer()">↺ Reset</button>
-      <button class="btn btn-add" onclick="addTime(60)">+1 min</button>
-      <button class="btn btn-add" onclick="addTime(300)">+5 min</button>
-      <button class="btn btn-fs"  onclick="goFullscreen()" title="Vollbild">⛶</button>
-      <button class="btn btn-fly" onclick="openFlyover()" title="Flyover">⧉</button>
+      <button class="btn btn-add"   onclick="addTime(60)">+1 min</button>
+      <button class="btn btn-add"   onclick="addTime(300)">+5 min</button>
+      <button class="btn btn-fs"    onclick="goFullscreen()" title="Vollbild">⛶</button>
+      <button class="btn btn-fly"   onclick="openFlyover()" title="Flyover-Fenster">⧉</button>
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div id="sidebar">
-
     <div class="s-group">
       <div class="s-label">Schnellwahl</div>
       <div class="presets">
+        <button class="preset-btn" data-s="60"   onclick="setPreset(60)">1 min</button>
+        <button class="preset-btn" data-s="120"  onclick="setPreset(120)">2 min</button>
+        <button class="preset-btn" data-s="180"  onclick="setPreset(180)">3 min</button>
         <button class="preset-btn" data-s="300"  onclick="setPreset(300)">5 min</button>
         <button class="preset-btn" data-s="600"  onclick="setPreset(600)">10 min</button>
         <button class="preset-btn" data-s="900"  onclick="setPreset(900)">15 min</button>
@@ -212,6 +143,7 @@
         <button class="preset-btn" data-s="1800" onclick="setPreset(1800)">30 min</button>
         <button class="preset-btn" data-s="2700" onclick="setPreset(2700)">45 min</button>
         <button class="preset-btn" data-s="3600" onclick="setPreset(3600)">60 min</button>
+        <button class="preset-btn" data-s="5400" onclick="setPreset(5400)">90 min</button>
       </div>
     </div>
 
@@ -254,162 +186,168 @@
       </div>
     </div>
 
+    <div class="s-group" style="border-top:1px solid var(--mg);padding-top:16px">
+      <div class="s-label">Flyover-Fenster</div>
+      <div style="font-size:12px;color:var(--dg);line-height:1.5">Öffnet einen kleinen schwebenden Timer als eigenes Browser-Fenster – bleibt beim Tab-Wechsel sichtbar.</div>
+      <button class="set-btn" style="margin-top:8px" onclick="openFlyover()">⧉ Flyover öffnen</button>
+    </div>
   </div>
 </main>
 
 <script>
-// ── State ─────────────────────────────────────────────────
-let totalSecs  = 600;   // configured time
-let remaining  = 600;   // remaining seconds (can go negative = overtime)
-let running    = false;
-let interval   = null;
-let mode       = 'analog-rel';  // analog-rel | analog-abs | digital
-let alertSound = true;
-let alertFlash = true;
-let alerted    = false;
-let audioCtx   = null;
+// ── State ──────────────────────────────────────────────────
+let totalSecs = 600, remaining = 600, running = false;
+let interval  = null, alerted = false;
+let mode      = 'analog-rel';
+let alertSound = true, alertFlash = true;
+let audioCtx  = null;
+let interacted = false;
+let flyWin    = null;
+let bc        = null; // BroadcastChannel
 
-// ── AudioContext (lazy) ───────────────────────────────────
-function getAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
+// BroadcastChannel for flyover sync
+try { bc = new BroadcastChannel('phgr-timer'); } catch(e) {}
+
+function broadcastState() {
+  if (!bc) return;
+  try {
+    bc.postMessage({ remaining, totalSecs, running, mode, alerted });
+  } catch(e) {}
 }
 
-function playChime(type) {
-  if (!alertSound) return;
-  const ctx = getAudio();
-  const freqs = type === 'end' ? [880, 660, 440] : [660, 880];
+// ── Audio ──────────────────────────────────────────────────
+function firstInteract() {
+  if (interacted) return;
+  interacted = true;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playChime() {
+  if (!alertSound || !audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const freqs = [880, 660, 440];
   freqs.forEach((f, i) => {
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
     osc.type = 'sine';
     osc.frequency.value = f;
-    const t = ctx.currentTime + i * 0.28;
+    const t = audioCtx.currentTime + i * 0.32;
     gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-    osc.start(t); osc.stop(t + 0.55);
+    gain.gain.linearRampToValueAtTime(0.45, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    osc.start(t);
+    osc.stop(t + 0.75);
   });
 }
 
 function doFlash() {
   if (!alertFlash) return;
   const el = document.getElementById('flash');
-  let count = 0;
+  let n = 0;
   const blink = () => {
-    el.style.opacity = count % 2 === 0 ? '0.55' : '0';
-    count++;
-    if (count < 6) setTimeout(blink, 200);
-    else el.style.opacity = '0';
+    el.style.opacity = n % 2 === 0 ? '0.55' : '0';
+    n++;
+    if (n < 6) setTimeout(blink, 200); else el.style.opacity = '0';
   };
   blink();
 }
 
-// ── Timer logic ───────────────────────────────────────────
+// ── Timer ──────────────────────────────────────────────────
 function toggleTimer() {
-  if (running) pause(); else start();
+  running ? pause() : start();
 }
 
 function start() {
-  if (remaining <= -3599) return; // safety
-  running = true;
-  alerted = false;
+  running = true; alerted = false;
   interval = setInterval(tick, 1000);
-  updateMainBtn();
-  updateFlyBtn();
+  updateMainBtn(); broadcastState();
 }
 
 function pause() {
   running = false;
   clearInterval(interval);
-  updateMainBtn();
-  updateFlyBtn();
+  updateMainBtn(); broadcastState();
 }
 
 function resetTimer() {
   pause();
-  remaining = totalSecs;
-  alerted = false;
-  draw();
-  updateTimeLabel();
+  remaining = totalSecs; alerted = false;
   document.getElementById('overtime-label').style.display = 'none';
+  draw(); updateTimeLabel(); broadcastState();
 }
 
 function tick() {
   remaining--;
   if (remaining === 0 && !alerted) {
     alerted = true;
-    playChime('end');
+    playChime();
     doFlash();
   }
-  draw();
-  updateTimeLabel();
-  if (remaining < 0) {
-    document.getElementById('overtime-label').style.display = 'block';
-  }
+  draw(); updateTimeLabel(); broadcastState();
+  if (remaining < 0) document.getElementById('overtime-label').style.display = 'block';
 }
 
-function addTime(secs) {
-  totalSecs  += secs;
-  remaining  += secs;
-  if (remaining < 0) remaining = secs; // recovery from deep overtime
+function addTime(s) {
+  totalSecs += s; remaining += s;
+  if (remaining < 0) remaining = s;
   alerted = false;
   document.getElementById('overtime-label').style.display = 'none';
-  draw();
-  updateTimeLabel();
+  draw(); updateTimeLabel(); broadcastState();
 }
 
-// ── Time setting ──────────────────────────────────────────
-function setPreset(secs) {
+// ── Time setting ───────────────────────────────────────────
+function setPreset(s) {
   pause();
-  totalSecs = secs; remaining = secs; alerted = false;
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.s) === secs));
+  totalSecs = s; remaining = s; alerted = false;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.s) === s));
   document.getElementById('overtime-label').style.display = 'none';
-  draw(); updateTimeLabel();
+  draw(); updateTimeLabel(); broadcastState();
 }
 
 function setCustomTime() {
   const m = parseInt(document.getElementById('inp-min').value) || 0;
   const s = parseInt(document.getElementById('inp-sec').value) || 0;
-  const total = m * 60 + s;
-  if (total <= 0) return;
+  const t = m * 60 + s;
+  if (t <= 0) return;
   pause();
-  totalSecs = total; remaining = total; alerted = false;
+  totalSecs = t; remaining = t; alerted = false;
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('overtime-label').style.display = 'none';
-  draw(); updateTimeLabel();
+  draw(); updateTimeLabel(); broadcastState();
 }
 
-// ── Mode & settings ───────────────────────────────────────
+// ── Mode & settings ────────────────────────────────────────
 function setMode(m) {
   mode = m;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-  applySettings();
-  draw();
+  applySettings(); draw();
 }
 
 function applySettings() {
   const digInCircle = document.getElementById('tog-digincircle').checked;
   const colorProg   = document.getElementById('tog-colorprog').checked;
   const canvas      = document.getElementById('timer-canvas');
-  const pureDigital = document.getElementById('pure-digital');
-  const digDisplay  = document.getElementById('digital-display');
-  const colorBar    = document.getElementById('color-bar');
+  const pd          = document.getElementById('pure-digital');
+  const dd          = document.getElementById('digital-display');
+  const cb          = document.getElementById('color-bar');
 
   if (mode === 'digital') {
-    canvas.style.display      = 'none';
-    digDisplay.classList.add('hidden');
-    pureDigital.classList.remove('hidden');
-    colorBar.classList.toggle('hidden', !colorProg);
+    canvas.style.display = 'none';
+    dd.classList.add('hidden');
+    pd.classList.remove('hidden');
+    cb.classList.toggle('hidden', !colorProg);
   } else {
-    canvas.style.display      = 'block';
-    pureDigital.classList.add('hidden');
-    colorBar.classList.add('hidden');
-    if (digInCircle) digDisplay.classList.remove('hidden');
-    else digDisplay.classList.add('hidden');
+    canvas.style.display = 'block';
+    pd.classList.add('hidden');
+    cb.classList.add('hidden');
+    digInCircle ? dd.classList.remove('hidden') : dd.classList.add('hidden');
   }
-  draw();
+  resizeCanvas(); draw();
 }
 
 function toggleAlert(type) {
@@ -418,143 +356,126 @@ function toggleAlert(type) {
   if (type === 'flash') { alertFlash = !alertFlash; btn.classList.toggle('on', alertFlash); }
 }
 
-// ── Color progression ─────────────────────────────────────
-function getColor(frac) {
-  // frac 1 = full time remaining, 0 = zero, <0 = overtime
-  if (frac <= 0) return '#ed6a69';   // red
-  if (frac > 0.5) return '#5aab6e';  // green
-  if (frac > 0.2) {
-    // green → orange interpolation
-    const t = (0.5 - frac) / 0.3;
-    return lerpColor('#5aab6e', '#fbb900', t);
+// ── Canvas sizing ──────────────────────────────────────────
+function resizeCanvas() {
+  const canvas = document.getElementById('timer-canvas');
+  const dd     = document.getElementById('digital-display');
+  const pd     = document.getElementById('pure-digital');
+  const isFS   = !!document.fullscreenElement;
+
+  let size;
+  if (isFS) {
+    size = Math.round(Math.min(window.screen.width, window.screen.height) * 0.70);
+  } else {
+    const panel = document.getElementById('clock-panel');
+    const avail = Math.min(panel.clientWidth - 48, panel.clientHeight - 160);
+    size = Math.max(220, Math.min(avail, 420));
   }
-  // orange → red
-  const t = (0.2 - frac) / 0.2;
-  return lerpColor('#fbb900', '#ed6a69', t);
+
+  canvas.width  = size;
+  canvas.height = size;
+
+  // Digital font size
+  const fs = Math.round(size * 0.28);
+  dd.style.fontSize = fs + 'px';
+
+  // Pure digital
+  const pfs = isFS ? Math.round(size * 0.36) : Math.round(size * 0.30);
+  pd.style.fontSize = pfs + 'px';
+}
+
+// ── Color ──────────────────────────────────────────────────
+function getColor(frac) {
+  if (frac <= 0) return '#ed6a69';
+  if (frac > 0.5) return '#5aab6e';
+  if (frac > 0.2) return lerpColor('#5aab6e', '#fbb900', (0.5 - frac) / 0.3);
+  return lerpColor('#fbb900', '#ed6a69', (0.2 - frac) / 0.2);
 }
 
 function lerpColor(a, b, t) {
   const ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
-  const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
-  const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
-  const rr = Math.round(ar + (br - ar) * t);
-  const rg = Math.round(ag + (bg - ag) * t);
-  const rb = Math.round(ab + (bb - ab) * t);
-  return `rgb(${rr},${rg},${rb})`;
+  const ar = (ah>>16)&0xff, ag = (ah>>8)&0xff, ab = ah&0xff;
+  const br = (bh>>16)&0xff, bg = (bh>>8)&0xff, bb = bh&0xff;
+  return `rgb(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)})`;
 }
 
-// ── Draw ──────────────────────────────────────────────────
+// ── Draw ───────────────────────────────────────────────────
 function draw() {
   const colorProg = document.getElementById('tog-colorprog').checked;
-  const frac = totalSecs > 0 ? Math.max(0, remaining) / totalSecs : 0;
+  const frac  = totalSecs > 0 ? Math.max(0, remaining) / totalSecs : 0;
   const color = colorProg ? getColor(frac) : '#23b2c6';
   const isOT  = remaining < 0;
 
-  // ── Analog ──
   if (mode !== 'digital') {
     const canvas = document.getElementById('timer-canvas');
-    const ctx    = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
-    const cx = W / 2, cy = H / 2;
-    const R  = Math.min(W, H) / 2 - 16;
+    const cx = W/2, cy = H/2;
+    const lw = Math.max(14, Math.round(W * 0.065));
+    const R  = Math.min(W, H)/2 - lw - 4;
+
     ctx.clearRect(0, 0, W, H);
 
-    // Background ring
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ececec';
-    ctx.lineWidth   = 22;
-    ctx.stroke();
+    // Track
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+    ctx.strokeStyle = '#ececec'; ctx.lineWidth = lw; ctx.stroke();
 
     // Arc
-    const startAngle = -Math.PI / 2;
-    let sweepFrac;
-    if (mode === 'analog-rel') {
-      sweepFrac = isOT ? 0 : frac;
-    } else {
-      // absolute: full circle = 60 min; position of start = elapsed from 12 o'clock
-      const elapsed60 = Math.max(0, totalSecs - Math.max(0, remaining));
-      const totalIn60 = Math.min(totalSecs, 3600);
-      sweepFrac = isOT ? 0 : Math.max(0, (totalIn60 - elapsed60) / 3600);
+    const start = -Math.PI/2;
+    let sf = mode === 'analog-rel'
+      ? (isOT ? 0 : frac)
+      : (isOT ? 0 : Math.max(0, (Math.min(totalSecs,3600) - (totalSecs - Math.max(0,remaining))) / 3600));
+
+    if (sf > 0) {
+      ctx.beginPath(); ctx.arc(cx, cy, R, start, start + sf*Math.PI*2);
+      ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
     }
 
-    if (sweepFrac > 0) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, startAngle, startAngle + sweepFrac * Math.PI * 2);
-      ctx.strokeStyle = color;
-      ctx.lineWidth   = 22;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-    }
-
-    // Overtime arc (red, grows from 12 o'clock)
+    // Overtime arc
     if (isOT) {
-      const otFrac = Math.min(1, Math.abs(remaining) / totalSecs);
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, startAngle, startAngle + otFrac * Math.PI * 2);
-      ctx.strokeStyle = '#ed6a69';
-      ctx.lineWidth   = 22;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
+      const of = Math.min(1, Math.abs(remaining)/totalSecs);
+      ctx.beginPath(); ctx.arc(cx, cy, R, start, start + of*Math.PI*2);
+      ctx.strokeStyle = '#ed6a69'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
     }
 
-    // Tick marks (analog-abs)
+    // Tick marks (abs)
     if (mode === 'analog-abs') {
       for (let i = 0; i < 12; i++) {
-        const a  = (i / 12) * Math.PI * 2 - Math.PI / 2;
-        const r1 = R + 8, r2 = R + 14;
+        const a = (i/12)*Math.PI*2 - Math.PI/2;
         ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
-        ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
-        ctx.strokeStyle = '#c6c6c6';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx.moveTo(cx + Math.cos(a)*(R+lw*.4), cy + Math.sin(a)*(R+lw*.4));
+        ctx.lineTo(cx + Math.cos(a)*(R+lw*.9), cy + Math.sin(a)*(R+lw*.9));
+        ctx.strokeStyle = '#c6c6c6'; ctx.lineWidth = 2; ctx.lineCap = 'butt'; ctx.stroke();
       }
     }
 
     // Centre dot
-    ctx.beginPath();
-    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-    ctx.fillStyle = isOT ? '#ed6a69' : color;
-    ctx.fill();
-
-    // Digital overlay in circle
-    const dig = document.getElementById('digital-display');
-    dig.textContent = formatTime(remaining);
-    dig.style.color = isOT ? '#ed6a69' : (colorProg ? color : '#1a1a1a');
-    dig.classList.toggle('overtime', isOT);
+    ctx.beginPath(); ctx.arc(cx, cy, Math.max(6, lw*.35), 0, Math.PI*2);
+    ctx.fillStyle = isOT ? '#ed6a69' : color; ctx.fill();
   }
 
-  // ── Pure digital ──
   if (mode === 'digital') {
-    const pd = document.getElementById('pure-digital');
-    pd.textContent  = formatTime(remaining);
-    pd.style.color  = isOT ? '#ed6a69' : (colorProg ? color : '#1a1a1a');
-    pd.classList.toggle('overtime', isOT);
-
-    // color bar
+    const pd   = document.getElementById('pure-digital');
+    pd.style.color = isOT ? '#ed6a69' : (colorProg ? color : '#1a1a1a');
     const fill = document.getElementById('color-bar-fill');
-    fill.style.width      = `${Math.max(0, frac * 100)}%`;
+    fill.style.width      = `${Math.max(0, frac*100)}%`;
     fill.style.background = color;
   }
 
-  // Flyover sync
-  drawFly(color, frac, isOT);
+  // Digital overlay text (color follows arc color)
+  const dd = document.getElementById('digital-display');
+  dd.style.color = isOT ? '#ed6a69' : (colorProg ? color : '#1a1a1a');
 }
 
 function formatTime(s) {
-  const neg  = s < 0;
-  const abs  = Math.abs(s);
-  const m    = Math.floor(abs / 60);
-  const sec  = abs % 60;
-  return (neg ? '−' : '') + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  const neg = s < 0, abs = Math.abs(s);
+  return (neg ? '−' : '') + String(Math.floor(abs/60)).padStart(2,'0') + ':' + String(abs%60).padStart(2,'0');
 }
 
 function updateTimeLabel() {
   const t = formatTime(remaining);
-  document.getElementById('digital-display').textContent  = t;
-  document.getElementById('pure-digital').textContent     = t;
-  document.getElementById('fly-time').textContent         = t;
+  document.getElementById('digital-display').textContent = t;
+  document.getElementById('pure-digital').textContent    = t;
   document.title = t + ' – PHGR Timer';
 }
 
@@ -563,104 +484,102 @@ function updateMainBtn() {
   btn.textContent = running ? '⏸ Pause' : '▶ Start';
   btn.className   = 'btn ' + (running ? 'btn-stop' : 'btn-start');
 }
-function updateFlyBtn() {
-  const btn = document.getElementById('fly-startstop');
-  btn.textContent = running ? '⏸' : '▶';
-  btn.className   = 'fly-btn ' + (running ? 'fly-stop' : 'fly-start');
-}
 
-// ── Flyover canvas ────────────────────────────────────────
-function drawFly(color, frac, isOT) {
-  const canvas = document.getElementById('fly-canvas');
-  const ctx    = canvas.getContext('2d');
-  const W = 90, H = 90, cx = 45, cy = 45, R = 34;
-  ctx.clearRect(0, 0, W, H);
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
-  ctx.strokeStyle = '#ececec'; ctx.lineWidth = 10; ctx.stroke();
-  const sf = mode === 'analog-abs'
-    ? Math.max(0, (Math.min(totalSecs,3600) - Math.max(0, totalSecs - Math.max(0,remaining))) / 3600)
-    : (isOT ? 0 : frac);
-  if (sf > 0) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, -Math.PI/2, -Math.PI/2 + sf*Math.PI*2);
-    ctx.strokeStyle = color; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
-  }
-  if (isOT) {
-    const of = Math.min(1, Math.abs(remaining)/totalSecs);
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, -Math.PI/2, -Math.PI/2 + of*Math.PI*2);
-    ctx.strokeStyle = '#ed6a69'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
-  }
-  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
-  ctx.fillStyle = isOT ? '#ed6a69' : color; ctx.fill();
-  document.getElementById('fly-time').textContent = formatTime(remaining);
-  document.getElementById('fly-time').classList.toggle('overtime', isOT);
-}
-
-// ── Fullscreen ────────────────────────────────────────────
+// ── Fullscreen ─────────────────────────────────────────────
 function goFullscreen() {
   const panel = document.getElementById('clock-panel');
-  if (!document.fullscreenElement) panel.requestFullscreen().catch(() => document.documentElement.requestFullscreen());
-  else document.exitFullscreen();
+  if (!document.fullscreenElement) {
+    (panel.requestFullscreen || panel.webkitRequestFullscreen).call(panel);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  }
 }
 
-// ── Flyover ───────────────────────────────────────────────
+document.addEventListener('fullscreenchange', () => { resizeCanvas(); draw(); });
+document.addEventListener('webkitfullscreenchange', () => { resizeCanvas(); draw(); });
+
+// ── Flyover popup ──────────────────────────────────────────
 function openFlyover() {
-  const fly = document.getElementById('flyover');
-  fly.classList.add('open');
-  fly.style.right  = '24px';
-  fly.style.bottom = '24px';
-  fly.style.left   = '';
-  fly.style.top    = '';
+  if (flyWin && !flyWin.closed) { flyWin.focus(); return; }
+  const sw = screen.width, sh = screen.height;
+  const w = 200, h = 260;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Timer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:10px;padding:12px}
+canvas{display:block}
+#t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:#1a1a1a;letter-spacing:-.02em}
+#t.ot{color:#ed6a69}
+.row{display:flex;gap:8px}
+button{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:Arial}
+.g{background:#5aab6e;color:white}.r{background:#ed6a69;color:white}.x{background:#ececec;color:#555}
+</style></head><body>
+<canvas id="c" width="130" height="130"></canvas>
+<div id="t">--:--</div>
+<div class="row">
+  <button id="ss" class="g" onclick="ss()">▶</button>
+  <button class="x" onclick="window.close()">✕</button>
+</div>
+<script>
+let rem=600,tot=600,run=false,mode='analog-rel';
+const bc=new BroadcastChannel('phgr-timer');
+bc.onmessage=e=>{
+  const d=e.data;
+  rem=d.remaining;tot=d.totalSecs;run=d.running;mode=d.mode||'analog-rel';
+  draw();updateBtn();
+};
+function ss(){bc.postMessage({cmd:run?'pause':'start'});}
+function draw(){
+  const c=document.getElementById('c'),ctx=c.getContext('2d');
+  const W=130,cx=65,cy=65,R=52,lw=12;
+  const frac=tot>0?Math.max(0,rem)/tot:0;
+  const isOT=rem<0;
+  const color=frac>0.5?'#5aab6e':frac>0.2?'#fbb900':'#ed6a69';
+  ctx.clearRect(0,0,W,W);
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.strokeStyle='#ececec';ctx.lineWidth=lw;ctx.stroke();
+  let sf=isOT?0:(mode==='analog-abs'?Math.max(0,(Math.min(tot,3600)-(tot-Math.max(0,rem)))/3600):frac);
+  if(sf>0){ctx.beginPath();ctx.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+sf*Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();}
+  if(isOT){const of=Math.min(1,Math.abs(rem)/tot);ctx.beginPath();ctx.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+of*Math.PI*2);ctx.strokeStyle='#ed6a69';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();}
+  ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fillStyle=isOT?'#ed6a69':color;ctx.fill();
+  const neg=rem<0,abs=Math.abs(rem);
+  const txt=(neg?'−':'')+String(Math.floor(abs/60)).padStart(2,'0')+':'+String(abs%60).padStart(2,'0');
+  document.getElementById('t').textContent=txt;
+  document.getElementById('t').className=isOT?'ot':'';
+  document.title=txt+' – Timer';
 }
-function closeFlyover() {
-  document.getElementById('flyover').classList.remove('open');
+function updateBtn(){const b=document.getElementById('ss');b.textContent=run?'⏸':'▶';b.className=run?'r':'g';}
+draw();
+<\/script></body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const url  = URL.createObjectURL(blob);
+  flyWin = window.open(url, 'phgr-timer-fly',
+    `width=${w},height=${h},top=${sh-h-40},left=${sw-w-20},menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes`
+  );
+  if (!flyWin) alert('Popup wurde blockiert. Bitte Popups für diese Seite in den Browser-Einstellungen erlauben.');
 }
 
-// Dragging
-(function() {
-  const fly = document.getElementById('flyover');
-  let dragging = false, ox = 0, oy = 0;
-  fly.addEventListener('mousedown', e => {
-    if (e.target.tagName === 'BUTTON') return;
-    dragging = true;
-    ox = e.clientX - fly.getBoundingClientRect().left;
-    oy = e.clientY - fly.getBoundingClientRect().top;
-    fly.style.right = ''; fly.style.bottom = '';
-  });
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    fly.style.left = (e.clientX - ox) + 'px';
-    fly.style.top  = (e.clientY - oy) + 'px';
-  });
-  document.addEventListener('mouseup', () => { dragging = false; });
+// Handle commands from flyover
+if (bc) {
+  bc.onmessage = e => {
+    if (e.data.cmd === 'start') { firstInteract(); start(); }
+    if (e.data.cmd === 'pause') pause();
+  };
+}
 
-  // Touch support
-  fly.addEventListener('touchstart', e => {
-    if (e.target.tagName === 'BUTTON') return;
-    const t = e.touches[0];
-    dragging = true;
-    ox = t.clientX - fly.getBoundingClientRect().left;
-    oy = t.clientY - fly.getBoundingClientRect().top;
-    fly.style.right = ''; fly.style.bottom = '';
-  }, { passive: true });
-  document.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    const t = e.touches[0];
-    fly.style.left = (t.clientX - ox) + 'px';
-    fly.style.top  = (t.clientY - oy) + 'px';
-  }, { passive: true });
-  document.addEventListener('touchend', () => { dragging = false; });
-})();
-
-// ── Keyboard ──────────────────────────────────────────────
+// ── Keyboard ───────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key === ' ' && e.target.tagName !== 'INPUT') { e.preventDefault(); toggleTimer(); }
-  if (e.key === 'r' || e.key === 'R') resetTimer();
+  if (e.key === ' ' && e.target.tagName !== 'INPUT') { e.preventDefault(); firstInteract(); toggleTimer(); }
+  if ((e.key === 'r' || e.key === 'R') && e.target.tagName !== 'INPUT') resetTimer();
   if (e.key === 'F11') { e.preventDefault(); goFullscreen(); }
 });
 
-// ── Init ─────────────────────────────────────────────────
+// ── Resize observer ────────────────────────────────────────
+const ro = new ResizeObserver(() => { resizeCanvas(); draw(); });
+ro.observe(document.getElementById('clock-panel'));
+
+// ── Init ───────────────────────────────────────────────────
+resizeCanvas();
 draw();
 updateTimeLabel();
 applySettings();
