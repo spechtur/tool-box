@@ -224,6 +224,29 @@
       <div class="s-hint" style="margin-top:4px;word-break:break-all" id="join-url-text"></div>
     </div>
 
+    <!-- Name-Einstellung -->
+    <div class="s-sec">
+      <span class="s-label">Name der Teilnehmenden</span>
+      <div class="mode-row" id="name-mode-row">
+        <button class="mode-btn" data-n="none"     onclick="setNameMode('none')">Kein</button>
+        <button class="mode-btn on" data-n="optional" onclick="setNameMode('optional')">Fakultativ</button>
+        <button class="mode-btn" data-n="required" onclick="setNameMode('required')">Obligatorisch</button>
+      </div>
+      <div class="s-hint" style="margin-top:8px" id="name-hint">Teilnehmende können einen Namen eingeben, müssen aber nicht.</div>
+    </div>
+
+    <!-- Zeichenlimit -->
+    <div class="s-sec">
+      <span class="s-label">Zeichenlimit</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="range" id="chars-slider" min="100" max="500" step="50" value="400"
+          oninput="updateCharsDisplay()"
+          style="flex:1;accent-color:var(--tuerkis);cursor:pointer">
+        <span id="chars-display" style="font-size:18px;font-weight:800;color:var(--tuerkis);min-width:42px;text-align:right">400</span>
+      </div>
+      <div class="s-hint" style="margin-top:6px">Maximale Anzahl Zeichen pro Rückmeldung (100–500).</div>
+    </div>
+
     <!-- Ansicht -->
     <div class="s-sec">
       <span class="s-label">Ansicht</span>
@@ -369,7 +392,9 @@ function refreshQR() {
       return;
     }
     const q   = document.getElementById('question-input').value.trim();
-    const url = `${BASE_URL}/join.html?session=${encodeURIComponent(sessionId)}${q?'&question='+encodeURIComponent(q):''}`;
+    const nameMode = document.querySelector('#name-mode-row .mode-btn.on')?.dataset.n || 'optional';
+    const maxChars = document.getElementById('chars-slider')?.value || '400';
+    const url = `${BASE_URL}/join.html?session=${encodeURIComponent(sessionId)}${q?'&question='+encodeURIComponent(q):''}&name=${nameMode}&maxchars=${maxChars}`;
     document.getElementById('join-url-text').textContent = url;
     const api = `https://api.qrserver.com/v1/create-qr-code/?size=148x148&qzone=2&data=${encodeURIComponent(url)}`;
     container.innerHTML = `<img src="${api}" width="148" height="148" alt="QR-Code" style="display:block;border-radius:4px">`;
@@ -448,6 +473,27 @@ function toggleHideGs(e, id, btn) {
 }
 
 function closeGesamtschau() { document.getElementById('gesamtschau').classList.remove('open'); }
+
+// ── Name mode & chars ─────────────────────────────────────────────────────
+const NAME_HINTS = {
+  none:     'Das Namensfeld ist ausgeblendet – Rückmeldungen sind anonym.',
+  optional: 'Teilnehmende können einen Namen eingeben, müssen aber nicht.',
+  required: 'Ein Name ist Pflicht – ohne Namen kann nicht abgeschickt werden.'
+};
+
+function setNameMode(mode) {
+  document.querySelectorAll('#name-mode-row .mode-btn').forEach(b =>
+    b.classList.toggle('on', b.dataset.n === mode)
+  );
+  document.getElementById('name-hint').textContent = NAME_HINTS[mode];
+  refreshQR();
+}
+
+function updateCharsDisplay() {
+  const val = document.getElementById('chars-slider').value;
+  document.getElementById('chars-display').textContent = val;
+  refreshQR();
+}
 
 // ── Download CSV ──────────────────────────────────────────────────────────
 function downloadCSV() {

@@ -79,6 +79,8 @@
     const params    = new URLSearchParams(window.location.search);
     const sessionId = params.get('session') || 'default';
     const question  = params.get('question') || '';
+    const nameMode  = params.get('name') || 'optional';  // none | optional | required
+    const maxChars  = parseInt(params.get('maxchars') || '400', 10);
 
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -88,20 +90,44 @@
       document.getElementById('question-box').style.display = 'block';
     }
 
+    // Name field visibility
+    const nameWrap = document.getElementById('name-wrap');
+    const nameInput = document.getElementById('name-input');
+    const nameLabel = nameWrap.querySelector('.field-label');
+    if (nameMode === 'none') {
+      nameWrap.style.display = 'none';
+    } else if (nameMode === 'required') {
+      nameLabel.innerHTML = 'Name <span style="color:var(--rot)">*</span>';
+      nameInput.required = true;
+      nameInput.placeholder = 'Dein Name (erforderlich)…';
+    }
+
+    // Apply char limit
+    const msgInput = document.getElementById('msg-input');
+    msgInput.maxLength = maxChars;
+    document.getElementById('char-count').textContent = `0 / ${maxChars}`;
+
     function updateCount() {
-      const len = document.getElementById('msg-input').value.length;
-      const el  = document.getElementById('char-count');
-      el.textContent = `${len} / 400`;
-      el.className   = 'char-count' + (len > 340 ? ' warn' : '');
+      const len   = document.getElementById('msg-input').value.length;
+      const limit = parseInt(document.getElementById('msg-input').maxLength) || maxChars;
+      const el    = document.getElementById('char-count');
+      el.textContent = `${len} / ${limit}`;
+      el.className   = 'char-count' + (len > limit * 0.85 ? ' warn' : '');
     }
 
     async function doSubmit() {
       const btn  = document.getElementById('submit-btn');
       const errEl = document.getElementById('err');
       const msg  = document.getElementById('msg-input').value.trim();
-      const name = document.getElementById('name-input').value.trim() || null;
+      const name = document.getElementById('name-input')?.value.trim() || null;
       errEl.style.display = 'none';
       if (!msg) return;
+      if (nameMode === 'required' && !name) {
+        errEl.textContent   = 'Bitte einen Namen eingeben.';
+        errEl.style.display = 'block';
+        document.getElementById('name-input').focus();
+        return;
+      }
 
       btn.disabled   = true;
       btn.textContent = 'Wird gespeichert…';
