@@ -17,25 +17,17 @@
       --hg:      #ececec;
     }
     body { font-family: Arial, Helvetica, sans-serif; background: var(--hg); color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; }
-
-    /* Header */
     header { background: var(--gelb); padding: 18px 40px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
     .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 24px; color: #111; }
     .gr { font-variant: small-caps; font-weight: 300; font-size: 24px; color: #111; letter-spacing: .04em; }
     .header-sep   { width: 2px; height: 28px; background: rgba(0,0,0,.15); }
     .header-title { font-size: 20px; font-weight: 700; color: #111; }
-
-    /* Hero */
     .hero { background: white; border-bottom: 3px solid var(--gelb); padding: 48px 40px 40px; }
     .hero h1 { font-size: 32px; font-weight: 800; color: #1a1a1a; margin-bottom: 12px; line-height: 1.2; }
     .hero p  { font-size: 17px; color: var(--dg); max-width: 620px; line-height: 1.6; }
-
-    /* Main grid */
     main { flex: 1; padding: 40px; max-width: 1100px; width: 100%; margin: 0 auto; }
     .section-label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--dg); margin-bottom: 20px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 48px; }
-
-    /* Cards */
     .card {
       background: white; border-radius: 16px; padding: 28px;
       border-top: 5px solid var(--tuerkis);
@@ -53,23 +45,16 @@
     .card-link:hover { opacity: .8; }
     .cl-primary { background: var(--gelb); color: #111; }
     .cl-sec     { background: var(--hg); color: #555; border: 1px solid var(--mg); }
-
-    /* Per-tool accent */
     .t-wordcloud { border-top-color: var(--tuerkis); }
     .t-feedback  { border-top-color: var(--violett); }
     .t-gruppen   { border-top-color: var(--orange); }
     .t-h5p       { border-top-color: var(--rot); }
-    .t-sokrates  { border-top-color: var(--gelb); }
-
-    /* Divider between sections */
-    .section-divider { border: none; border-top: 1px solid var(--mg); margin: 8px 0 32px; }
-
-    /* Footer */
+    .t-sokrates  { border-top-color: #23b2c6; }
+    .t-methoden  { border-top-color: var(--gelb); border-top-width: 5px; }
     footer { background: white; border-top: 1px solid var(--mg); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     footer p { font-size: 12px; color: var(--mg); }
     footer a { color: var(--tuerkis); text-decoration: none; font-size: 12px; }
     footer a:hover { text-decoration: underline; }
-
     @media (max-width: 600px) {
       header, .hero, main, footer { padding-left: 20px; padding-right: 20px; }
       .hero h1 { font-size: 24px; }
@@ -91,8 +76,6 @@
 </div>
 
 <main>
-
-  <!-- Interaktion & Rückmeldung -->
   <div class="section-label">Interaktion &amp; Rückmeldung</div>
   <div class="grid">
 
@@ -127,7 +110,6 @@
 
   </div>
 
-  <!-- KI-gestützte Tools -->
   <div class="section-label">KI-gestützte Tools</div>
   <div class="grid">
 
@@ -151,6 +133,19 @@
 
   </div>
 
+  <div class="section-label">Nachschlagewerke</div>
+  <div class="grid">
+
+    <div class="card t-methoden">
+      <div class="card-icon">📚</div>
+      <div class="card-title">Methodensammlung</div>
+      <div class="card-desc">Wachsende Sammlung hochschuldidaktischer Methoden – mit Kurzinfo für Dozierende und direkter Vollbild-Anleitung für Teilnehmende. Fishbowl, Kugellager, 3×3×3 und mehr.</div>
+      <div class="card-links">
+        <a class="card-link cl-primary" href="methoden/index.html">▶ Sammlung öffnen</a>
+      </div>
+    </div>
+
+  </div>
 </main>
 
 <footer>
