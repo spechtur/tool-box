@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KI-Lernbegleiter</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EF;
+    --card: #FFFFFF;
+    --accent: #2D6A8F;
+    --accent-light: #E8F2F8;
+    --text: #1C1C1A;
+    --text-muted: #7A7A72;
+    --border: #E2DAD0;
+    --user-bg: #EEF6FB;
+    --ai-bg: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 16px 40px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(20px, 4vw, 26px);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .context-box {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--accent);
+    line-height: 1.6;
+    border-left: 3px solid var(--accent);
+  }
+  .context-box strong { font-weight: 500; }
+
+  .chat-window {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    min-height: 280px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 20px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-window:empty::before {
+    content: 'Das Gespräch beginnt, sobald du deine erste Eingabe sendest...';
+    color: var(--text-muted);
+    font-size: 13px;
+    font-style: italic;
+    text-align: center;
+    margin: auto;
+    display: block;
+    padding: 40px 0;
+  }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .msg-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .msg.user .msg-label { text-align: right; color: var(--accent); }
+
+  .msg-bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 88%;
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--user-bg);
+    color: var(--text);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg.ai .msg-bubble {
+    background: var(--ai-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.ai .msg-bubble em {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--accent);
+  }
+
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 16px;
+    background: var(--ai-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+    width: fit-content;
+  }
+  .typing span {
+    width: 7px; height: 7px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  .input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--card);
+    resize: none;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text-muted); }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .send-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0 22px;
+    height: 44px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .send-btn:hover { background: #245a7a; }
+  .send-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+  .send-btn:active { transform: scale(0.97); }
+
+  .reset-btn {
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0 14px;
+    height: 44px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+  footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="eyebrow">KI-Lernbegleiter</div>
+  <h1>Denken durch Gespräch</h1>
+  <p>Schreib, was du verstanden hast – die KI stellt Rückfragen, gibt keine Antworten, sondern hilft dir, tiefer zu denken.</p>
+</div>
+
+<div class="context-box">
+  <strong>Thema dieser Einheit:</strong> Lernen in einer Kultur der Digitalität – was verändert sich, wenn KI jederzeit verfügbar ist?
+</div>
+
+<div class="chat-window" id="chat"></div>
+
+<div class="input-area">
+  <textarea id="input" placeholder="Was hast du bisher verstanden? Was beschäftigt dich? Wo bist du unsicher?" rows="3"></textarea>
+  <div class="input-row">
+    <button class="reset-btn" onclick="resetChat()">↺ Neu starten</button>
+    <span class="hint" id="hint"></span>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">Senden →</button>
+  </div>
+</div>
+
+<div style="background:white;border:1px solid var(--border);border-radius:14px;padding:18px;margin-top:14px">
+  <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px">⚙ Verbindung</div>
+  <label style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:5px">Worker-URL</label>
+  <input type="text" id="worker-url" placeholder="https://h5p-generator-proxy.david-halser.workers.dev" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;background:#f9f9f9">
+  <label style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:5px">Passwort</label>
+  <input type="password" id="access-token" placeholder="Zugangspasswort" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;outline:none;background:#f9f9f9">
+</div>
+
+<footer>KI-Lernbegleiter · PHGR · Powered by Claude</footer>
+
+<script>
+const SYSTEM_PROMPT = `Du bist ein soktatischer Lernbegleiter für Lehrpersonen in einer Weiterbildung zum Thema "Lernen in einer Kultur der Digitalität". 
+
+Deine Aufgabe: Du stellst vertiefende Rückfragen, gibst KEINE direkten Antworten oder Erklärungen. Du hilfst der Person, ihr eigenes Denken zu schärfen.
+
+Regeln:
+- Stelle maximal 2 Rückfragen pro Antwort
+- Fragen sind offen, nicht suggestiv
+- Du kannst kurz spiegeln, was du gehört hast (1 Satz)
+- Gelegentlich kannst du eine Spannung oder einen Widerspruch benennen, den du im Gesagten siehst
+- Ton: kollegial, neugierig, respektvoll – auf Augenhöhe mit erfahrenen Lehrpersonen
+- Antworte auf Deutsch
+- Halte dich kurz: maximal 4-5 Sätze total
+- Beginne nie mit "Das ist eine gute Frage" oder ähnlichem Lob`;
+
+let history = [];
+
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage('user', text);
+  history.push({ role: 'user', content: text });
+  input.value = '';
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+
+  const typing = showTyping();
+
+  try {
+    const workerUrl = document.getElementById('worker-url').value.trim();
+    const accessToken = document.getElementById('access-token').value.trim();
+    if (!workerUrl || !accessToken) {
+      addMessage('ai', 'Bitte Worker-URL und Passwort im Verbindungsfeld unten eingeben.');
+      document.getElementById('send-btn').disabled = false;
+      return;
+    }
+    const response = await fetch(workerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Access-Token': accessToken },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: history
+      })
+    });
+
+    const data = await response.json();
+    const aiText = data.content?.[0]?.text || 'Es ist ein Fehler aufgetreten.';
+
+    typing.remove();
+    addMessage('ai', aiText);
+    history.push({ role: 'assistant', content: aiText });
+
+  } catch (e) {
+    typing.remove();
+    addMessage('ai', 'Verbindungsfehler – bitte versuche es nochmals.');
+  }
+
+  btn.disabled = false;
+  input.focus();
+}
+
+function addMessage(role, text) {
+  const chat = document.getElementById('chat');
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+  const label = role === 'user' ? 'Du' : 'Lernbegleiter';
+  msg.innerHTML = `
+    <div class="msg-label">${label}</div>
+    <div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>
+  `;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const t = document.createElement('div');
+  t.className = 'msg ai';
+  t.innerHTML = `<div class="msg-label">Lernbegleiter</div><div class="typing"><span></span><span></span><span></span></div>`;
+  chat.appendChild(t);
+  chat.scrollTop = chat.scrollHeight;
+  return t;
+}
+
+function resetChat() {
+  history = [];
+  document.getElementById('chat').innerHTML = '';
+  document.getElementById('input').value = '';
+  document.getElementById('input').focus();
+}
+
+document.getElementById('input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+</body>
+</html>

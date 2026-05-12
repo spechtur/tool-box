@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H5P KI-Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --bg: #F7F4EF; --card: #FFFFFF; --accent: #D4501A; --accent-light: #F5E6DF;
+    --text: #1C1C1A; --text-muted: #7A7A72; --border: #E2DAD0;
+    --green: #3A7D44; --green-light: #EAF4EC; --blue: #2D6A8F; --blue-light: #E8F2F8;
+    --purple: #6040A0; --purple-light: #EEEBF8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 28px 16px 48px; max-width: 680px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 28px; }
+  .header .eyebrow { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .header h1 { font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(22px,4vw,28px); margin-bottom: 8px; }
+  .header p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  .type-selector { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+  .type-btn { flex: 1; min-width: 85px; padding: 10px 10px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--card); cursor: pointer; text-align: center; transition: all .18s; font-family: 'DM Sans', sans-serif; }
+  .type-btn .type-icon { font-size: 18px; margin-bottom: 3px; }
+  .type-btn .type-name { font-size: 11px; font-weight: 500; color: var(--text); line-height: 1.3; }
+  .type-btn:hover { border-color: var(--accent); }
+  .type-btn.active { border-color: var(--accent); background: var(--accent-light); }
+  .type-btn.ivideo-btn:hover { border-color: var(--purple); }
+  .type-btn.ivideo-btn.active { border-color: var(--purple); background: var(--purple-light); }
+
+  .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+
+  label { display: block; font-size: 12px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+
+  input[type=text], input[type=password], textarea {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--bg);
+    outline: none; transition: border-color .2s; margin-bottom: 14px;
+  }
+  input[type=text]:focus, input[type=password]:focus, textarea:focus { border-color: var(--accent); background: white; }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+  .hint-box { border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.6; margin-bottom: 14px; border-left: 3px solid; }
+  .hint-box { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+  .hint-box.purple { background: var(--purple-light); color: var(--purple); border-color: var(--purple); }
+  .hint-box strong { font-weight: 500; }
+
+  .example-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip { padding: 5px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--text-muted); cursor: pointer; transition: all .15s; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ivideo-specific fields */
+  .ivideo-fields { display: none; }
+  .ivideo-fields.visible { display: block; }
+  .url-row { position: relative; }
+  .url-row input[type=text] { padding-left: 40px; }
+  .url-row .url-icon { position: absolute; left: 13px; top: 13px; font-size: 15px; color: var(--text-muted); pointer-events: none; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2px 0 14px; }
+
+  .generate-btn { width: 100%; height: 52px; background: var(--accent); color: white; border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .generate-btn:hover { background: #b8401a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212,80,26,.3); }
+  .generate-btn.ivideo-mode { background: var(--purple); }
+  .generate-btn.ivideo-mode:hover { background: #4d3290; box-shadow: 0 4px 16px rgba(96,64,160,.3); }
+  .generate-btn:disabled { background: var(--border); color: var(--text-muted); transform: none; box-shadow: none; cursor: not-allowed; }
+
+  .status-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 16px; display: none; }
+  .status-box.visible { display: block; }
+  .status-steps { display: flex; flex-direction: column; gap: 10px; }
+  .step { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-muted); }
+  .step .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; transition: all .3s; }
+  .step.active .dot { background: var(--accent); color: white; animation: pulse 1s infinite; }
+  .step.active.ivideo .dot { background: var(--purple); }
+  .step.done .dot { background: var(--green); color: white; }
+  .step.active { color: var(--text); font-weight: 500; }
+  .step.done { color: var(--green); }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+  .success-box { background: var(--green-light); border: 1px solid var(--green); border-radius: 12px; padding: 16px 20px; margin-top: 14px; font-size: 14px; color: var(--green); line-height: 1.6; display: none; }
+  .error-box { background: #FDEDEC; border: 1px solid #C0392B; border-radius: 12px; padding: 16px 20px; margin-top: 14px; font-size: 14px; color: #C0392B; line-height: 1.6; display: none; }
+
+  .connection-card { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  .connection-card .card-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
+  .connection-card label { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 5px; }
+  .connection-card input { padding: 10px 12px; font-size: 13px; margin-bottom: 10px; }
+  .connection-card input:last-child { margin-bottom: 0; }
+
+  footer { text-align: center; margin-top: 32px; font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="eyebrow">H5P KI-Generator</div>
+  <h1>Beschreiben. Generieren. Fertig.</h1>
+  <p>Sag Claude, was du brauchst – er baut das H5P-File, du lädst es hoch.</p>
+</div>
+
+<div class="type-selector">
+  <button class="type-btn active" onclick="setType('blanks')">
+    <div class="type-icon">✎</div><div class="type-name">Lückentext</div>
+  </button>
+  <button class="type-btn" onclick="setType('multichoice')">
+    <div class="type-icon">◉</div><div class="type-name">Multiple Choice</div>
+  </button>
+  <button class="type-btn" onclick="setType('accordion')">
+    <div class="type-icon">☰</div><div class="type-name">Accordion</div>
+  </button>
+  <button class="type-btn" onclick="setType('truefalse')">
+    <div class="type-icon">⊙</div><div class="type-name">True / False</div>
+  </button>
+  <button class="type-btn ivideo-btn" onclick="setType('ivideo')">
+    <div class="type-icon">▶</div><div class="type-name">Interakt. Video</div>
+  </button>
+</div>
+
+<div class="form-card">
+  <div id="hint-blanks" class="hint-box">
+    <strong>Lückentext:</strong> Beschreibe Thema, Niveau und welche Wörter als Lücken erscheinen sollen. Claude schreibt den Text und markiert die Lücken automatisch.
+  </div>
+  <div id="hint-multichoice" class="hint-box" style="display:none">
+    <strong>Multiple Choice:</strong> Beschreibe das Thema und die gewünschte Schwierigkeit. Claude generiert Frage, richtige Antwort und plausible Distraktoren.
+  </div>
+  <div id="hint-accordion" class="hint-box" style="display:none">
+    <strong>Accordion:</strong> Beschreibe das Thema und wie viele Panels du möchtest. Claude erstellt Titel und Inhalte für jedes Panel.
+  </div>
+  <div id="hint-truefalse" class="hint-box" style="display:none">
+    <strong>True / False:</strong> Beschreibe das Thema. Claude formuliert eine klare Aussage und bestimmt, ob sie richtig oder falsch ist.
+  </div>
+  <div id="hint-ivideo" class="hint-box purple" style="display:none">
+    <strong>Interaktives Video:</strong> YouTube-URL einfügen, Einsatzzweck beschreiben – Claude analysiert das Video und setzt automatisch 3–5 Verständnisfragen an didaktisch sinnvollen Stellen. Tipp: Zeitstempel in der Beschreibung erhöhen die Präzision.
+  </div>
+
+  <!-- ivideo-specific fields (hidden for other types) -->
+  <div class="ivideo-fields" id="ivideo-fields">
+    <label>YouTube-URL</label>
+    <div class="url-row">
+      <span class="url-icon">▶</span>
+      <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." oninput="validateYtUrl(this)">
+    </div>
+    <div id="yt-url-feedback" style="font-size:12px;margin-top:-10px;margin-bottom:10px;display:none"></div>
+    <label>Videobeschreibung mit Zeitstempeln <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--text-muted)">– optional, aber empfohlen</span></label>
+    <textarea id="video-desc" style="min-height:72px" placeholder="z.B.: 8-minütiges Erklärvideo zum SAMR-Modell. 0:00 Einleitung, 1:20 Substitution (analoge Werkzeuge ersetzen), 2:50 Augmentation, 4:30 Modification, 6:10 Redefinition, 7:30 Fazit."></textarea>
+    <hr class="divider">
+  </div>
+
+  <label id="prompt-label">Dein Auftrag an Claude</label>
+  <textarea id="prompt" placeholder="z.B.: Erstelle einen Lückentext über das Schweizer Schulsystem für Lehrpersonen. Mache alle Kantone und Schulstufen als Lücken."></textarea>
+
+  <label>Beispiele (anklicken zum Übernehmen)</label>
+  <div class="example-chips" id="example-chips"></div>
+
+  <label>Titel (für Moodle)</label>
+  <input type="text" id="h5p-title" placeholder="z.B. Lückentext: Schweizer Schulsystem">
+</div>
+
+<button class="generate-btn" id="gen-btn" onclick="generate()">
+  <span id="gen-icon">✦</span> <span id="gen-label">Mit Claude generieren &amp; herunterladen</span>
+</button>
+
+<div class="status-box" id="status-box">
+  <div class="status-steps">
+    <div class="step" id="step-1"><div class="dot">1</div><span id="step-1-text">Claude generiert den Inhalt...</span></div>
+    <div class="step" id="step-2"><div class="dot">2</div><span id="step-2-text">H5P-Struktur wird aufgebaut...</span></div>
+    <div class="step" id="step-3"><div class="dot">3</div><span id="step-3-text">ZIP-Datei wird erstellt...</span></div>
+  </div>
+</div>
+
+<div class="success-box" id="success-box">
+  ✓ &nbsp;Datei heruntergeladen. In Moodle unter <strong>Material anlegen → H5P → Datei hochladen</strong> einfügen.
+</div>
+<div class="error-box" id="error-box"></div>
+
+<div class="connection-card">
+  <div class="card-title">⚙ Verbindung</div>
+  <label>Worker-URL</label>
+  <input type="text" id="worker-url" placeholder="https://h5p-generator-proxy.david-halser.workers.dev">
+  <label>Passwort</label>
+  <input type="password" id="access-token" placeholder="Zugangspasswort">
+</div>
+
+<footer>H5P KI-Generator · PHGR · David Halser · Powered by Claude</footer>
+
+<script>
+/* ─── State ─────────────────────────────────────── */
+let currentType = 'blanks';
+const TYPES = ['blanks','multichoice','accordion','truefalse','ivideo'];
+
+/* ─── Examples ──────────────────────────────────── */
+const EXAMPLES = {
+  blanks: [
+    'Lückentext über Fotosynthese für die Mittelstufe, alle Fachbegriffe als Lücken',
+    'Text über die Schweizer Demokratie, politische Begriffe als Lücken',
+    'Lückentext: Pädagogische Grundbegriffe für Lehrpersonen in Ausbildung',
+    'Text über KI im Alltag, technische Begriffe als Lücken'
+  ],
+  multichoice: [
+    'Frage über Urheberrecht im Bildungsbereich, mittelschwer',
+    'Multiple Choice: Was ist Kultur der Digitalität? 4 Antworten',
+    'Quizfrage über Lerntheorien für Lehrpersonen, 3 Distraktoren',
+    'Frage über Datenschutz in der Schule'
+  ],
+  accordion: [
+    '5 Panels über die Merkmale guten Unterrichts',
+    'Accordion: 4 Phasen des Design Thinking erklärt',
+    '6 Strukturprinzipien der Didaktik im Zeitalter von KI',
+    'FAQ: Häufige Fragen von Lehrpersonen zu KI im Unterricht'
+  ],
+  truefalse: [
+    'Aussage über die Wirkung von Hausaufgaben, überraschend falsch',
+    'True/False: KI kann kreatives Denken vollständig ersetzen',
+    'Aussage über Lernstile – die Forschung widerspricht dem Mythos',
+    'Frage über Bildschirmzeit und Lernleistung'
+  ],
+  ivideo: [
+    'Lehrpersonen sollen das SAMR-Modell kennenlernen und auf eigene Beispiele übertragen können',
+    'Einführung in KI: Wie funktioniert ChatGPT? Chancen und Risiken bewusstmachen',
+    'Datenschutz im Schulalltag – wichtigste Konzepte und Beispiele merken',
+    'Flipped Classroom: Schüler/innen sollen Grundprinzipien vor der Lektion verstanden haben'
+  ]
+};
+
+/* ─── System Prompts ────────────────────────────── */
+const SYSTEM_PROMPTS = {
+  blanks: `Du bist ein H5P-Content-Generator. Erstelle einen H5P.Blanks Lückentext.
+Gib NUR ein valides JSON-Objekt zurück – kein Markdown, keine Erklärung, kein Code-Block.
+
+Format:
+{
+  "media": {"type": {"params": {}}},
+  "questions": [
+    "<p>Satz mit *Lücke1* und weiterem Text mit *Lücke2*.</p>",
+    "<p>Zweiter Satz mit *Lücke3*.</p>"
+  ],
+  "overallFeedback": [{"from": 0, "to": 100, "feedback": ""}],
+  "showSolutions": "Lösung anzeigen",
+  "tryAgain": "Nochmal versuchen",
+  "checkAnswer": "Überprüfen",
+  "notFilledOut": "Bitte alle Lücken ausfüllen",
+  "answerIsCorrect": "':ans' ist korrekt",
+  "answerIsWrong": "':ans' ist falsch",
+  "answeredCorrectly": "Richtig beantwortet",
+  "answeredIncorrectly": "Falsch beantwortet",
+  "solutionLabel": "Richtige Antwort:",
+  "inputLabel": "Lücke @num von @total",
+  "inputHasTipLabel": "Tipp verfügbar",
+  "tipLabel": "Tipp",
+  "behaviour": {
+    "enableRetry": true, "enableSolutionsButton": true, "autoCheck": false,
+    "caseSensitive": false, "showSolutionsRequiresInput": true, "separateLines": false,
+    "confirmCheckDialog": false, "confirmRetryDialog": false, "acceptSpellingErrors": false
+  }
+}
+
+Regeln: Lücken mit *Sternchen* markieren. 4-8 Sätze, je 1-3 Lücken. Auf Deutsch.`,
+
+  multichoice: `Du bist ein H5P-Content-Generator. Erstelle eine H5P.MultiChoice Frage.
+Gib NUR ein valides JSON-Objekt zurück – kein Markdown, keine Erklärung.
+
+Format:
+{
+  "media": {"type": {"params": {}}, "disableImageZooming": false},
+  "answers": [
+    {"correct": true, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}, "params": {"correct": true, "text": "Richtige Antwort"}},
+    {"correct": false, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}, "params": {"correct": false, "text": "Falsche Antwort 1"}},
+    {"correct": false, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}, "params": {"correct": false, "text": "Falsche Antwort 2"}},
+    {"correct": false, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}, "params": {"correct": false, "text": "Falsche Antwort 3"}}
+  ],
+  "question": "<p>Fragetext hier?</p>",
+  "behaviour": {"enableRetry": true, "enableSolutionsButton": true, "enableCheckButton": true, "type": "auto", "singlePoint": false, "randomAnswers": true, "showSolutionsRequiresInput": true, "confirmCheckDialog": false, "confirmRetryDialog": false, "autoCheck": false, "passPercentage": 100, "showScorePoints": true},
+  "UI": {"checkAnswerButton": "Überprüfen", "showSolutionButton": "Lösung anzeigen", "tryAgainButton": "Nochmal", "scoreBarLabel": "Du hast :num von :total Punkten."},
+  "confirmCheck": {"header": "Bist du sicher?", "body": "Antwort abschicken?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"},
+  "confirmRetry": {"header": "Bist du sicher?", "body": "Nochmal versuchen?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"},
+  "overallFeedback": [{"from": 0, "to": 100, "feedback": ""}]
+}
+Genau 1 richtige und 3 falsche Antworten. Auf Deutsch.`,
+
+  accordion: `Du bist ein H5P-Content-Generator. Erstelle ein H5P.Accordion.
+Gib NUR ein valides JSON-Objekt zurück – kein Markdown, keine Erklärung.
+
+Format:
+{
+  "panels": [
+    {"title": "Panel-Titel 1", "content": {"library": "H5P.AdvancedText 1.1", "params": {"text": "<p>Inhalt des ersten Panels.</p>"}, "subContentId": "PLACEHOLDER_1"}},
+    {"title": "Panel-Titel 2", "content": {"library": "H5P.AdvancedText 1.1", "params": {"text": "<p>Inhalt des zweiten Panels.</p>"}, "subContentId": "PLACEHOLDER_2"}}
+  ]
+}
+
+Erstelle so viele Panels wie gewünscht. Inhalte können HTML enthalten. Auf Deutsch.`,
+
+  truefalse: `Du bist ein H5P-Content-Generator. Erstelle eine H5P.TrueFalse Aufgabe.
+Gib NUR ein valides JSON-Objekt zurück – kein Markdown, keine Erklärung.
+
+Format:
+{
+  "media": {"type": {"params": {}}, "disableImageZooming": false},
+  "correct": "true",
+  "question": "Die Aussage hier.",
+  "l10n": {"trueText": "Richtig", "falseText": "Falsch", "score": "Du hast @score von @total Punkten.", "checkAnswer": "Überprüfen", "showSolutionButton": "Lösung anzeigen", "tryAgain": "Nochmal", "wrongAnswerMessage": "Leider falsch.", "correctAnswerMessage": "Richtig!", "trueAnswerText": "Die korrekte Antwort ist 'Richtig'", "falseAnswerText": "Die korrekte Antwort ist 'Falsch'"},
+  "behaviour": {"enableRetry": true, "enableSolutionsButton": true, "confirmCheckDialog": false, "confirmRetryDialog": false, "autoCheck": false},
+  "confirmCheck": {"header": "Bist du sicher?", "body": "Antwort abschicken?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"},
+  "confirmRetry": {"header": "Bist du sicher?", "body": "Nochmal versuchen?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"}
+}
+
+"correct" ist entweder "true" oder "false". Auf Deutsch.`,
+
+  ivideo: `Du bist ein H5P Interactive Video Generator für Schweizer Volksschulen.
+
+Der Benutzer gibt dir eine YouTube-URL, einen didaktischen Einsatzzweck und optional eine Videobeschreibung mit Zeitstempeln.
+
+DEINE AUFGABE:
+1. Analysiere das Video anhand deines Wissens oder der gegebenen Beschreibung
+2. Wähle 3–5 Zeitpunkte, an denen Verständnisfragen didaktisch sinnvoll sind
+3. Erstelle für jeden Zeitpunkt eine passende Frage (Multiple Choice ODER True/False)
+4. Gib NUR ein JSON-Objekt zurück – kein Markdown, kein Code-Block, keine Erklärung
+
+ZEITSTEMPEL: Immer in Sekunden (45 = 0:45, 150 = 2:30, 310 = 5:10)
+FRAGEN: Echtes Verständnis prüfen, nicht nur Faktenwiedergabe
+SPRACHE: Deutsch
+
+RÜCKGABE-FORMAT (NUR dieses JSON, nichts davor oder danach):
+{
+  "videoTitle": "Titel des Videos",
+  "interactions": [
+    {
+      "seconds": 90,
+      "type": "multichoice",
+      "question": "Was beschreibt die Substitution-Stufe im SAMR-Modell?",
+      "answers": [
+        {"text": "Digitale Werkzeuge ersetzen analoge ohne zusätzlichen Mehrwert", "correct": true},
+        {"text": "Digitale Medien ermöglichen völlig neue Lernformen", "correct": false},
+        {"text": "Schüler/innen entwickeln eigene digitale Produkte", "correct": false},
+        {"text": "Der Unterricht wird grundlegend neu strukturiert", "correct": false}
+      ]
+    },
+    {
+      "seconds": 210,
+      "type": "truefalse",
+      "question": "Beim SAMR-Modell sind alle vier Stufen gleichwertig – keine ist didaktisch wertvoller als eine andere.",
+      "correct": "false"
+    }
+  ]
+}
+
+REGELN:
+- 3–5 Interaktionen, gut über das Video verteilt
+- Erster Zeitstempel frühestens nach 30 Sekunden
+- Multiple Choice: genau 1 richtige Antwort, 3–4 Optionen total
+- True/False "correct"-Wert ist immer der String "true" oder "false"
+- Falls das Video unbekannt: thematisch passende Fragen auf Basis des Einsatzzwecks erstellen`
+};
+
+/* ─── Dependencies ──────────────────────────────── */
+const DEPS = {
+  blanks:     [{machineName:'H5P.Blanks', majorVersion:'1', minorVersion:'14'}],
+  multichoice:[{machineName:'H5P.MultiChoice', majorVersion:'1', minorVersion:'16'}],
+  accordion:  [
+    {machineName:'H5P.Accordion', majorVersion:'1', minorVersion:'0'},
+    {machineName:'H5P.AdvancedText', majorVersion:'1', minorVersion:'1'}
+  ],
+  truefalse:  [{machineName:'H5P.TrueFalse', majorVersion:'1', minorVersion:'8'}],
+  ivideo: [
+    {machineName:'H5P.InteractiveVideo', majorVersion:'1', minorVersion:'26'},
+    {machineName:'H5P.Video',            majorVersion:'1', minorVersion:'6'},
+    {machineName:'H5P.MultiChoice',      majorVersion:'1', minorVersion:'16'},
+    {machineName:'H5P.TrueFalse',        majorVersion:'1', minorVersion:'8'},
+    {machineName:'H5P.Summary',          majorVersion:'1', minorVersion:'10'},
+    {machineName:'H5P.AdvancedText',     majorVersion:'1', minorVersion:'1'}
+  ]
+};
+
+/* ─── Helpers ───────────────────────────────────── */
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0;
+    return (c==='x' ? r : (r&0x3|0x8)).toString(16);
+  });
+}
+
+function validateYtUrl(input) {
+  const fb = document.getElementById('yt-url-feedback');
+  if (!input.value.trim()) { fb.style.display = 'none'; return; }
+  const id = extractYouTubeId(input.value.trim());
+  if (id) {
+    fb.style.display = 'block';
+    fb.style.color = 'var(--green)';
+    fb.textContent = `✓ Video-ID erkannt: ${id}`;
+  } else {
+    fb.style.display = 'block';
+    fb.style.color = '#C0392B';
+    fb.textContent = '✗ Keine gültige YouTube-URL – watch?v=, youtu.be/ und Shorts werden unterstützt';
+  }
+}
+
+function setType(type) {
+  currentType = type;
+  TYPES.forEach((t, i) => {
+    document.querySelectorAll('.type-btn')[i].classList.toggle('active', t === type);
+  });
+  TYPES.forEach(t => {
+    document.getElementById(`hint-${t}`).style.display = t === type ? 'block' : 'none';
+  });
+  document.getElementById('ivideo-fields').classList.toggle('visible', type === 'ivideo');
+  document.getElementById('prompt-label').textContent =
+    type === 'ivideo' ? 'Didaktischer Einsatzzweck' : 'Dein Auftrag an Claude';
+  document.getElementById('gen-btn').classList.toggle('ivideo-mode', type === 'ivideo');
+  document.getElementById('gen-icon').textContent  = type === 'ivideo' ? '▶' : '✦';
+  document.getElementById('gen-label').textContent = type === 'ivideo'
+    ? 'Video analysieren & H5P erstellen'
+    : 'Mit Claude generieren & herunterladen';
+  renderChips();
+  document.getElementById('prompt').value = '';
+  document.getElementById('prompt').placeholder = type === 'ivideo'
+    ? 'z.B.: Lehrpersonen sollen das SAMR-Modell verstehen und auf eigene Situationen übertragen können'
+    : EXAMPLES[type][0];
+}
+
+function renderChips() {
+  const container = document.getElementById('example-chips');
+  container.innerHTML = '';
+  EXAMPLES[currentType].forEach(ex => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = ex;
+    chip.onclick = () => { document.getElementById('prompt').value = ex; };
+    container.appendChild(chip);
+  });
+}
+
+function setStep(n, state) {
+  const isIvideo = currentType === 'ivideo';
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.className = 'step'
+      + (i === n ? ` ${state}${isIvideo ? ' ivideo' : ''}` : '')
+      + (i < n  ? ' done' : '');
+    el.querySelector('.dot').textContent = i < n ? '✓' : i;
+  }
+}
+
+/* ─── YouTube URL Utilities ─────────────────────── */
+function extractYouTubeId(url) {
+  // Handles: watch?v=, youtu.be/, embed/, shorts/
+  const patterns = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function cleanYouTubeUrl(url) {
+  const id = extractYouTubeId(url);
+  return id ? `https://www.youtube.com/watch?v=${id}` : url;
+}
+
+/* ─── Build H5P.InteractiveVideo content.json ───── */
+function buildInteractiveVideoContent(data, youtubeUrl) {
+  // Always store a clean URL – extra params (si=, ab_channel=, etc.)
+  // can break H5P's YouTube IFrame API initialisation
+  const cleanUrl = cleanYouTubeUrl(youtubeUrl);
+
+  const interactions = (data.interactions || []).map(ix => {
+    const subId   = uuid();
+    const seconds = parseInt(ix.seconds) || 60;
+    let action;
+
+    if (ix.type === 'truefalse') {
+      action = {
+        library: 'H5P.TrueFalse 1.8',
+        params: {
+          media: { type: { params: {} }, disableImageZooming: false },
+          correct: ix.correct || 'true',
+          question: ix.question || '',
+          l10n: {
+            trueText:'Richtig', falseText:'Falsch',
+            score:'Du hast @score von @total Punkten.',
+            checkAnswer:'Überprüfen', showSolutionButton:'Lösung anzeigen', tryAgain:'Nochmal',
+            wrongAnswerMessage:'Leider falsch.', correctAnswerMessage:'Richtig!',
+            trueAnswerText:"Die korrekte Antwort ist 'Richtig'",
+            falseAnswerText:"Die korrekte Antwort ist 'Falsch'"
+          },
+          behaviour: { enableRetry:true, enableSolutionsButton:true, confirmCheckDialog:false, confirmRetryDialog:false, autoCheck:false },
+          confirmCheck: { header:'Bist du sicher?', body:'Antwort abschicken?', cancelLabel:'Abbrechen', confirmLabel:'Ja' },
+          confirmRetry: { header:'Bist du sicher?', body:'Nochmal versuchen?', cancelLabel:'Abbrechen', confirmLabel:'Ja' }
+        },
+        subContentId: subId,
+        metadata: { contentType:'True/False Question', license:'U', title: ix.question || 'Frage' }
+      };
+    } else {
+      const answers = (ix.answers || []).map(a => ({
+        correct: !!a.correct,
+        tipsAndFeedback: { tip:'', chosenFeedback:'', notChosenFeedback:'' },
+        params: { correct: !!a.correct, text: a.text || '' }
+      }));
+      action = {
+        library: 'H5P.MultiChoice 1.16',
+        params: {
+          media: { type: { params:{} }, disableImageZooming:false },
+          answers,
+          question: `<p>${ix.question || ''}</p>`,
+          behaviour: {
+            enableRetry:true, enableSolutionsButton:true, enableCheckButton:true,
+            type:'auto', singlePoint:false, randomAnswers:true,
+            showSolutionsRequiresInput:true, confirmCheckDialog:false,
+            confirmRetryDialog:false, autoCheck:false, passPercentage:100, showScorePoints:true
+          },
+          UI: {
+            checkAnswerButton:'Überprüfen', showSolutionButton:'Lösung anzeigen',
+            tryAgainButton:'Nochmal', scoreBarLabel:'Du hast :num von :total Punkten.'
+          },
+          confirmCheck: { header:'Bist du sicher?', body:'Antwort abschicken?', cancelLabel:'Abbrechen', confirmLabel:'Ja' },
+          confirmRetry: { header:'Bist du sicher?', body:'Nochmal versuchen?', cancelLabel:'Abbrechen', confirmLabel:'Ja' },
+          overallFeedback: [{ from:0, to:100, feedback:'' }]
+        },
+        subContentId: subId,
+        metadata: { contentType:'Multiple Choice', license:'U', title: ix.question || 'Frage' }
+      };
+    }
+
+    return {
+      x:25, y:25, width:50, height:50,
+      duration: { from: seconds, to: seconds },
+      libraryTitle: ix.type === 'truefalse' ? 'True/False Question' : 'Multiple Choice',
+      action,
+      pause: true,
+      displayType: 'button',
+      buttonOnMobile: false,
+      label: '',
+      goto: { type:'timecode', value:'' },
+      adaptivity: {
+        correct:  { allowOptionalFullScore:false, message:'' },
+        wrong:    { allowOptionalFullScore:false, message:'' },
+        requireCompletion: false
+      }
+    };
+  });
+
+  return {
+    interactiveVideo: {
+      video: {
+        startScreenOptions: { title: data.videoTitle || 'Interaktives Video', hideStartTitle:false },
+        textTracks: { videoTrack:[] },
+        // No aspectRatio here – it's not part of the H5P.Video files spec
+        // and breaks the YouTube IFrame API handler in some H5P versions
+        files: [{ path: cleanUrl, mime:'video/YouTube', copyright:{ license:'U' } }]
+      },
+      assets: { interactions, bookmarks:[], endscreens:[] },
+      summary: {
+        task: {
+          library: 'H5P.Summary 1.10',
+          params: {
+            intro: 'Wähle alle korrekten Aussagen aus:',
+            summaries: [{ summary:[], subContentId: uuid() }],
+            overallFeedback: [{ from:0, to:100 }],
+            solvedLabel:'Fortschritt:', scoreLabel:'Falsche Antworten:',
+            resultLabel:'Dein Ergebnis', labelCorrect:'Richtig.',
+            labelIncorrect:'Falsch! Bitte nochmals versuchen.',
+            alternativeIncorrectLabel:'Falsch', labelCorrectAnswers:'Richtige Antworten.',
+            tipButtonLabel:'Tipp anzeigen',
+            scoreBarLabel:'Du hast :num von :total Punkten',
+            progressText:'Fortschritt :num von :total'
+          },
+          subContentId: uuid()
+        },
+        displayAt: 3
+      }
+    },
+    override: { autoplay:false, loop:false, showBookmarksmenuOnLoad:false, showRewind10:false, preventSkipping:false, deactivateSound:false },
+    l10n: {
+      interaction:'Interaktion', play:'Abspielen', pause:'Pause',
+      mute:'Stummschalten', unmute:'Ton einschalten', quality:'Videoqualität',
+      captions:'Untertitel', close:'Schliessen', fullscreen:'Vollbild',
+      exitFullscreen:'Vollbild beenden', summary:'Zusammenfassung öffnen',
+      bookmarks:'Lesezeichen', endscreen:'Abschlussseite',
+      defaultAdaptivitySeekLabel:'Weiter zu', continueWithVideo:'Weiter mit dem Video',
+      playbackRate:'Abspielgeschwindigkeit', rewind10:'10 Sekunden zurück',
+      navDisabled:'Navigation ist deaktiviert',
+      navForwardDisabled:'Vorwärts-Navigation ist deaktiviert',
+      sndDisabled:'Ton ist deaktiviert',
+      requiresCompletionWarning:'Du musst alle Fragen beantworten, bevor du weitermachst.',
+      back:'Zurück', hours:'Stunden', minutes:'Minuten', seconds:'Sekunden',
+      currentTime:'Aktuelle Zeit:', totalTime:'Gesamtzeit:',
+      singleInteractionAnnouncement:'Interaktion erschien:',
+      multipleInteractionsAnnouncement:'Mehrere Interaktionen erschienen.',
+      videoPausedAnnouncement:'Video pausiert', content:'Inhalt',
+      answered:':num beantwortet', endcardButtonLabel:'Nochmals abspielen',
+      endcardTitle:'@answered Frage(n) beantwortet',
+      endcardInformation:'Du hast @answered von @total Fragen beantwortet.',
+      endcardInformationNoAnswers:'Du hast keine Fragen beantwortet.',
+      endcardInformationMustHaveAnswer:'Du musst mindestens eine Frage beantworten.',
+      endcardSubmitButton:'Absenden', endcardSubmitMessage:'Deine Antworten wurden eingereicht!',
+      endcardTableRowAnswered:'Beantwortet', endcardTableRowScore:'Bewertung',
+      endcardAnsweredScore:'beantwortet',
+      tableRowAnsweredWithScore:'@answered beantwortet mit @score Punkten.',
+      touchInputLabel:'Tippe zweimal auf Enter für die Eingabe'
+    }
+  };
+}
+
+/* ─── Main Generate Function ────────────────────── */
+async function generate() {
+  const prompt = document.getElementById('prompt').value.trim();
+  const title  = document.getElementById('h5p-title').value.trim() || 'H5P Inhalt';
+  if (!prompt) { alert('Bitte beschreibe, was du möchtest.'); return; }
+
+  const workerUrl   = document.getElementById('worker-url').value.trim();
+  const accessToken = document.getElementById('access-token').value.trim();
+  if (!workerUrl || !accessToken) {
+    alert('Bitte Worker-URL und Passwort im Verbindungsbereich eingeben.');
+    return;
+  }
+
+  if (currentType === 'ivideo') {
+    const ytUrl = document.getElementById('youtube-url').value.trim();
+    if (!ytUrl || !(ytUrl.includes('youtube.com') || ytUrl.includes('youtu.be'))) {
+      alert('Bitte eine gültige YouTube-URL eingeben.');
+      return;
+    }
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+
+  const statusBox = document.getElementById('status-box');
+  statusBox.className = 'status-box visible';
+  document.getElementById('success-box').style.display = 'none';
+  document.getElementById('error-box').style.display  = 'none';
+
+  if (currentType === 'ivideo') {
+    document.getElementById('step-1-text').textContent = 'Claude analysiert das Video und erstellt Fragen...';
+    document.getElementById('step-2-text').textContent = 'Interactive Video Struktur wird aufgebaut...';
+    document.getElementById('step-3-text').textContent = 'ZIP-Datei wird erstellt...';
+  } else {
+    document.getElementById('step-1-text').textContent = 'Claude generiert den Inhalt...';
+    document.getElementById('step-2-text').textContent = 'H5P-Struktur wird aufgebaut...';
+    document.getElementById('step-3-text').textContent = 'ZIP-Datei wird erstellt...';
+  }
+
+  setStep(1, 'active');
+
+  try {
+    let contentJson;
+
+    /* ── Interactive Video Path ── */
+    if (currentType === 'ivideo') {
+      const ytUrl     = document.getElementById('youtube-url').value.trim();
+      const videoDesc = document.getElementById('video-desc').value.trim();
+
+      const userMessage = [
+        `YouTube-URL: ${ytUrl}`,
+        `Didaktischer Einsatzzweck: ${prompt}`,
+        videoDesc ? `\nVideobeschreibung mit Zeitstempeln:\n${videoDesc}` : ''
+      ].join('\n');
+
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Access-Token': accessToken },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          system: SYSTEM_PROMPTS.ivideo,
+          messages: [{ role: 'user', content: userMessage }]
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || `HTTP ${response.status}`);
+
+      const rawText = (data.content || [])
+        .filter(b => b.type === 'text').map(b => b.text).join('');
+
+      setStep(2, 'active');
+
+      const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      let claudeData;
+      try {
+        claudeData = JSON.parse(cleaned);
+      } catch(e) {
+        throw new Error('Claude hat kein valides JSON zurückgegeben. Füge eine Videobeschreibung hinzu und versuche es nochmals.');
+      }
+      if (!claudeData.interactions || claudeData.interactions.length === 0) {
+        throw new Error('Keine Interaktionen generiert. Bitte Videobeschreibung ergänzen.');
+      }
+
+      contentJson = buildInteractiveVideoContent(claudeData, ytUrl);
+
+    /* ── Standard H5P Types Path ── */
+    } else {
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Access-Token': accessToken },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM_PROMPTS[currentType],
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || `HTTP ${response.status}`);
+
+      const rawText = data.content?.[0]?.text || '';
+
+      setStep(2, 'active');
+
+      const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      try {
+        contentJson = JSON.parse(cleaned);
+      } catch(e) {
+        throw new Error('Claude hat kein valides JSON zurückgegeben. Versuche es nochmals.');
+      }
+
+      if (currentType === 'accordion' && contentJson.panels) {
+        contentJson.panels.forEach(p => { if (p.content) p.content.subContentId = uuid(); });
+      }
+    }
+
+    setStep(3, 'active');
+
+    const h5pJson = {
+      title,
+      language: 'U',
+      mainLibrary: DEPS[currentType][0].machineName,
+      license: 'U',
+      embedTypes: currentType === 'ivideo' ? ['iframe'] : ['div'],
+      preloadedDependencies: DEPS[currentType]
+    };
+
+    const zip = new JSZip();
+    zip.file('h5p.json', JSON.stringify(h5pJson, null, 2));
+    zip.file('content/content.json', JSON.stringify(contentJson, null, 2));
+    Object.keys(zip.files).forEach(k => { if (zip.files[k].dir) delete zip.files[k]; });
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title.replace(/[^a-zA-Z0-9äöüÄÖÜ]/g,'_')}.h5p`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 300);
+
+    setStep(3, 'done');
+    document.getElementById('success-box').style.display = 'block';
+
+  } catch(e) {
+    const errBox = document.getElementById('error-box');
+    errBox.style.display = 'block';
+    errBox.textContent = '✗ Fehler: ' + e.message;
+    statusBox.className = 'status-box';
+  }
+
+  btn.disabled = false;
+}
+
+/* ─── Init ──────────────────────────────────────── */
+renderChips();
+</script>
+</body>
+</html>
