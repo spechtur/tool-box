@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHGR Timer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb:    #c7d200;
+      --tuerkis: #23b2c6;
+      --rot:     #ed6a69;
+      --orange:  #fbb900;
+      --violett: #6169af;
+      --gruen:   #5aab6e;
+      --dg:      #878787;
+      --mg:      #c6c6c6;
+      --hg:      #ececec;
+      --clr:     #5aab6e;   /* live color – changes with time */
+    }
+
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--hg); color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; user-select: none; }
+
+    /* ── Header ── */
+    header { background: var(--gelb); padding: 13px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 21px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 21px; color: #111; letter-spacing: .04em; }
+    .sep { width: 2px; height: 22px; background: rgba(0,0,0,.15); }
+    .header-title { font-size: 17px; font-weight: 700; color: #111; }
+    .back-link { margin-left: auto; font-size: 13px; font-weight: 700; color: #333; text-decoration: none; background: rgba(0,0,0,.1); padding: 5px 13px; border-radius: 20px; }
+    .back-link:hover { background: rgba(0,0,0,.18); }
+
+    /* ── Layout ── */
+    main { flex: 1; display: flex; gap: 0; overflow: hidden; min-height: 0; }
+
+    /* ── Clock panel ── */
+    #clock-panel {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 32px; gap: 28px; background: white;
+    }
+    #clock-panel:fullscreen { background: white; justify-content: center; }
+
+    /* Canvas wrapper */
+    #canvas-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    #timer-canvas { display: block; cursor: pointer; }
+
+    /* Digital overlay on canvas */
+    #digital-display {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: clamp(48px, 8vw, 96px); font-weight: 800; font-variant-numeric: tabular-nums;
+      color: #1a1a1a; letter-spacing: -.02em; text-align: center; line-height: 1;
+      pointer-events: none;
+    }
+    #digital-display.overtime { color: var(--rot); }
+    #digital-display.hidden { display: none; }
+
+    /* Pure digital (no canvas) */
+    #pure-digital {
+      font-size: clamp(80px, 18vw, 200px); font-weight: 800; font-variant-numeric: tabular-nums;
+      color: #1a1a1a; letter-spacing: -.03em; line-height: 1; text-align: center;
+      transition: color .5s;
+    }
+    #pure-digital.overtime { color: var(--rot); }
+    #pure-digital.hidden { display: none; }
+
+    /* Colour bar under digital */
+    #color-bar { width: 100%; max-width: 500px; height: 8px; border-radius: 4px; background: var(--mg); overflow: hidden; }
+    #color-bar-fill { height: 100%; border-radius: 4px; background: var(--gruen); width: 100%; transition: width .5s linear, background .5s; }
+
+    /* Controls row */
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .btn { border: none; border-radius: 10px; padding: 12px 22px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .15s, transform .1s; }
+    .btn:hover { opacity: .85; }
+    .btn:active { transform: scale(.97); }
+    .btn-start  { background: var(--gruen); color: white; min-width: 110px; font-size: 17px; padding: 14px 28px; }
+    .btn-stop   { background: var(--rot);   color: white; min-width: 110px; font-size: 17px; padding: 14px 28px; }
+    .btn-reset  { background: var(--hg); color: #555; border: 2px solid var(--mg); }
+    .btn-add    { background: var(--tuerkis); color: white; padding: 10px 14px; font-size: 13px; }
+    .btn-fs     { background: var(--violett); color: white; padding: 12px 16px; font-size: 15px; }
+    .btn-fly    { background: var(--orange); color: #111; padding: 12px 16px; font-size: 15px; }
+
+    /* Overtime label */
+    #overtime-label { font-size: 14px; font-weight: 700; color: var(--rot); display: none; letter-spacing: .05em; text-transform: uppercase; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 280px; flex-shrink: 0; background: var(--hg); border-left: 1px solid var(--mg);
+      display: flex; flex-direction: column; overflow-y: auto; padding: 20px 18px; gap: 20px;
+    }
+    .s-group { display: flex; flex-direction: column; gap: 10px; }
+    .s-label { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--dg); }
+
+    /* Preset buttons */
+    .presets { display: flex; flex-wrap: wrap; gap: 7px; }
+    .preset-btn { padding: 8px 14px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: #1a1a1a; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial; transition: all .15s; }
+    .preset-btn:hover { border-color: var(--tuerkis); color: var(--tuerkis); }
+    .preset-btn.active { background: var(--tuerkis); border-color: var(--tuerkis); color: white; }
+
+    /* Custom input */
+    .time-input-row { display: flex; gap: 6px; align-items: center; }
+    .time-spin { width: 60px; padding: 9px 8px; border-radius: 8px; border: 2px solid var(--mg); background: white; font-size: 18px; font-weight: 700; text-align: center; font-family: Arial; outline: none; }
+    .time-spin:focus { border-color: var(--tuerkis); }
+    .time-sep { font-size: 20px; font-weight: 800; color: var(--dg); }
+    .set-btn { flex: 1; padding: 9px 12px; border-radius: 8px; background: var(--gelb); color: #111; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial; }
+
+    /* Toggle switch */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-label { font-size: 13px; color: #333; font-weight: 600; }
+    .switch { position: relative; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 24px; background: var(--mg); cursor: pointer; transition: background .2s; }
+    .slider:before { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: transform .2s; }
+    input:checked + .slider { background: var(--tuerkis); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Mode selector */
+    .mode-row { display: flex; gap: 6px; }
+    .mode-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-align: center; transition: all .15s; }
+    .mode-btn.on { background: var(--violett); border-color: var(--violett); color: white; }
+
+    /* Alert options */
+    .alert-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .alert-btn { flex: 1; padding: 8px 6px; border-radius: 8px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-align: center; transition: all .15s; min-width: 60px; }
+    .alert-btn.on { background: var(--orange); border-color: var(--orange); color: #111; }
+
+    /* ── Flash overlay ── */
+    #flash { position: fixed; inset: 0; background: var(--rot); opacity: 0; pointer-events: none; z-index: 800; transition: opacity .1s; }
+
+    /* ── Floating mini-timer ── */
+    #flyover {
+      display: none; position: fixed; z-index: 700;
+      background: white; border-radius: 16px; padding: 10px 14px;
+      box-shadow: 0 6px 28px rgba(0,0,0,.22);
+      border: 3px solid var(--gelb);
+      cursor: grab; min-width: 130px;
+      flex-direction: column; align-items: center; gap: 6px;
+    }
+    #flyover.open { display: flex; }
+    #flyover:active { cursor: grabbing; }
+    #fly-canvas { display: block; }
+    #fly-time { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: #1a1a1a; text-align: center; line-height: 1; }
+    #fly-time.overtime { color: var(--rot); }
+    .fly-controls { display: flex; gap: 6px; }
+    .fly-btn { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; font-family: Arial; }
+    .fly-start { background: var(--gruen); color: white; }
+    .fly-stop  { background: var(--rot); color: white; }
+    .fly-close { background: var(--hg); color: var(--dg); border: 1px solid var(--mg); }
+    #fly-handle { width: 32px; height: 4px; border-radius: 2px; background: var(--mg); margin-bottom: 2px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      main { flex-direction: column; }
+      #sidebar { width: 100%; border-left: none; border-top: 1px solid var(--mg); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="sep"></div>
+  <div class="header-title">Timer</div>
+  <a class="back-link" href="../index.html">← tool-box</a>
+</header>
+
+<!-- Flash overlay -->
+<div id="flash"></div>
+
+<!-- Floating mini-timer -->
+<div id="flyover">
+  <div id="fly-handle"></div>
+  <canvas id="fly-canvas" width="90" height="90"></canvas>
+  <div id="fly-time">00:00</div>
+  <div class="fly-controls">
+    <button class="fly-btn fly-start" id="fly-startstop" onclick="toggleTimer()">▶</button>
+    <button class="fly-btn fly-close" onclick="closeFlyover()">✕</button>
+  </div>
+</div>
+
+<main>
+  <!-- Clock panel -->
+  <div id="clock-panel">
+    <div id="canvas-wrap">
+      <canvas id="timer-canvas" width="340" height="340" onclick="toggleTimer()"></canvas>
+      <div id="digital-display" class="hidden">00:00</div>
+    </div>
+    <div id="pure-digital" class="hidden">00:00</div>
+    <div id="color-bar" class="hidden"><div id="color-bar-fill"></div></div>
+    <div id="overtime-label">⚠ Überzeit</div>
+
+    <div class="controls">
+      <button class="btn btn-start" id="main-btn" onclick="toggleTimer()">▶ Start</button>
+      <button class="btn btn-reset" onclick="resetTimer()">↺ Reset</button>
+      <button class="btn btn-add" onclick="addTime(60)">+1 min</button>
+      <button class="btn btn-add" onclick="addTime(300)">+5 min</button>
+      <button class="btn btn-fs"  onclick="goFullscreen()" title="Vollbild">⛶</button>
+      <button class="btn btn-fly" onclick="openFlyover()" title="Flyover">⧉</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+
+    <div class="s-group">
+      <div class="s-label">Schnellwahl</div>
+      <div class="presets">
+        <button class="preset-btn" data-s="300"  onclick="setPreset(300)">5 min</button>
+        <button class="preset-btn" data-s="600"  onclick="setPreset(600)">10 min</button>
+        <button class="preset-btn" data-s="900"  onclick="setPreset(900)">15 min</button>
+        <button class="preset-btn" data-s="1200" onclick="setPreset(1200)">20 min</button>
+        <button class="preset-btn" data-s="1500" onclick="setPreset(1500)">25 min</button>
+        <button class="preset-btn" data-s="1800" onclick="setPreset(1800)">30 min</button>
+        <button class="preset-btn" data-s="2700" onclick="setPreset(2700)">45 min</button>
+        <button class="preset-btn" data-s="3600" onclick="setPreset(3600)">60 min</button>
+      </div>
+    </div>
+
+    <div class="s-group">
+      <div class="s-label">Eigene Zeit</div>
+      <div class="time-input-row">
+        <input class="time-spin" type="number" id="inp-min" value="10" min="0" max="99">
+        <span class="time-sep">:</span>
+        <input class="time-spin" type="number" id="inp-sec" value="0" min="0" max="59">
+        <button class="set-btn" onclick="setCustomTime()">Setzen</button>
+      </div>
+    </div>
+
+    <div class="s-group">
+      <div class="s-label">Anzeige</div>
+      <div class="mode-row">
+        <button class="mode-btn on" data-m="analog-rel" onclick="setMode('analog-rel')">Relativ</button>
+        <button class="mode-btn"    data-m="analog-abs" onclick="setMode('analog-abs')">Absolut</button>
+        <button class="mode-btn"    data-m="digital"    onclick="setMode('digital')">Digital</button>
+      </div>
+    </div>
+
+    <div class="s-group">
+      <div class="s-label">Alarm bei Ablauf</div>
+      <div class="alert-row">
+        <button class="alert-btn on" data-a="sound" onclick="toggleAlert('sound')">🔔 Ton</button>
+        <button class="alert-btn on" data-a="flash" onclick="toggleAlert('flash')">⚡ Blinken</button>
+      </div>
+    </div>
+
+    <div class="s-group">
+      <div class="s-label">Optionen</div>
+      <div class="toggle-row">
+        <span class="toggle-label">Digitalzeit im Kreis</span>
+        <label class="switch"><input type="checkbox" id="tog-digincircle" checked onchange="applySettings()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <span class="toggle-label">Farbverlauf (grün → rot)</span>
+        <label class="switch"><input type="checkbox" id="tog-colorprog" checked onchange="applySettings()"><span class="slider"></span></label>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ── State ─────────────────────────────────────────────────
+let totalSecs  = 600;   // configured time
+let remaining  = 600;   // remaining seconds (can go negative = overtime)
+let running    = false;
+let interval   = null;
+let mode       = 'analog-rel';  // analog-rel | analog-abs | digital
+let alertSound = true;
+let alertFlash = true;
+let alerted    = false;
+let audioCtx   = null;
+
+// ── AudioContext (lazy) ───────────────────────────────────
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playChime(type) {
+  if (!alertSound) return;
+  const ctx = getAudio();
+  const freqs = type === 'end' ? [880, 660, 440] : [660, 880];
+  freqs.forEach((f, i) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    const t = ctx.currentTime + i * 0.28;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.start(t); osc.stop(t + 0.55);
+  });
+}
+
+function doFlash() {
+  if (!alertFlash) return;
+  const el = document.getElementById('flash');
+  let count = 0;
+  const blink = () => {
+    el.style.opacity = count % 2 === 0 ? '0.55' : '0';
+    count++;
+    if (count < 6) setTimeout(blink, 200);
+    else el.style.opacity = '0';
+  };
+  blink();
+}
+
+// ── Timer logic ───────────────────────────────────────────
+function toggleTimer() {
+  if (running) pause(); else start();
+}
+
+function start() {
+  if (remaining <= -3599) return; // safety
+  running = true;
+  alerted = false;
+  interval = setInterval(tick, 1000);
+  updateMainBtn();
+  updateFlyBtn();
+}
+
+function pause() {
+  running = false;
+  clearInterval(interval);
+  updateMainBtn();
+  updateFlyBtn();
+}
+
+function resetTimer() {
+  pause();
+  remaining = totalSecs;
+  alerted = false;
+  draw();
+  updateTimeLabel();
+  document.getElementById('overtime-label').style.display = 'none';
+}
+
+function tick() {
+  remaining--;
+  if (remaining === 0 && !alerted) {
+    alerted = true;
+    playChime('end');
+    doFlash();
+  }
+  draw();
+  updateTimeLabel();
+  if (remaining < 0) {
+    document.getElementById('overtime-label').style.display = 'block';
+  }
+}
+
+function addTime(secs) {
+  totalSecs  += secs;
+  remaining  += secs;
+  if (remaining < 0) remaining = secs; // recovery from deep overtime
+  alerted = false;
+  document.getElementById('overtime-label').style.display = 'none';
+  draw();
+  updateTimeLabel();
+}
+
+// ── Time setting ──────────────────────────────────────────
+function setPreset(secs) {
+  pause();
+  totalSecs = secs; remaining = secs; alerted = false;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.s) === secs));
+  document.getElementById('overtime-label').style.display = 'none';
+  draw(); updateTimeLabel();
+}
+
+function setCustomTime() {
+  const m = parseInt(document.getElementById('inp-min').value) || 0;
+  const s = parseInt(document.getElementById('inp-sec').value) || 0;
+  const total = m * 60 + s;
+  if (total <= 0) return;
+  pause();
+  totalSecs = total; remaining = total; alerted = false;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('overtime-label').style.display = 'none';
+  draw(); updateTimeLabel();
+}
+
+// ── Mode & settings ───────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  applySettings();
+  draw();
+}
+
+function applySettings() {
+  const digInCircle = document.getElementById('tog-digincircle').checked;
+  const colorProg   = document.getElementById('tog-colorprog').checked;
+  const canvas      = document.getElementById('timer-canvas');
+  const pureDigital = document.getElementById('pure-digital');
+  const digDisplay  = document.getElementById('digital-display');
+  const colorBar    = document.getElementById('color-bar');
+
+  if (mode === 'digital') {
+    canvas.style.display      = 'none';
+    digDisplay.classList.add('hidden');
+    pureDigital.classList.remove('hidden');
+    colorBar.classList.toggle('hidden', !colorProg);
+  } else {
+    canvas.style.display      = 'block';
+    pureDigital.classList.add('hidden');
+    colorBar.classList.add('hidden');
+    if (digInCircle) digDisplay.classList.remove('hidden');
+    else digDisplay.classList.add('hidden');
+  }
+  draw();
+}
+
+function toggleAlert(type) {
+  const btn = document.querySelector(`.alert-btn[data-a="${type}"]`);
+  if (type === 'sound') { alertSound = !alertSound; btn.classList.toggle('on', alertSound); }
+  if (type === 'flash') { alertFlash = !alertFlash; btn.classList.toggle('on', alertFlash); }
+}
+
+// ── Color progression ─────────────────────────────────────
+function getColor(frac) {
+  // frac 1 = full time remaining, 0 = zero, <0 = overtime
+  if (frac <= 0) return '#ed6a69';   // red
+  if (frac > 0.5) return '#5aab6e';  // green
+  if (frac > 0.2) {
+    // green → orange interpolation
+    const t = (0.5 - frac) / 0.3;
+    return lerpColor('#5aab6e', '#fbb900', t);
+  }
+  // orange → red
+  const t = (0.2 - frac) / 0.2;
+  return lerpColor('#fbb900', '#ed6a69', t);
+}
+
+function lerpColor(a, b, t) {
+  const ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
+  const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
+  const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+  const rr = Math.round(ar + (br - ar) * t);
+  const rg = Math.round(ag + (bg - ag) * t);
+  const rb = Math.round(ab + (bb - ab) * t);
+  return `rgb(${rr},${rg},${rb})`;
+}
+
+// ── Draw ──────────────────────────────────────────────────
+function draw() {
+  const colorProg = document.getElementById('tog-colorprog').checked;
+  const frac = totalSecs > 0 ? Math.max(0, remaining) / totalSecs : 0;
+  const color = colorProg ? getColor(frac) : '#23b2c6';
+  const isOT  = remaining < 0;
+
+  // ── Analog ──
+  if (mode !== 'digital') {
+    const canvas = document.getElementById('timer-canvas');
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+    const R  = Math.min(W, H) / 2 - 16;
+    ctx.clearRect(0, 0, W, H);
+
+    // Background ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ececec';
+    ctx.lineWidth   = 22;
+    ctx.stroke();
+
+    // Arc
+    const startAngle = -Math.PI / 2;
+    let sweepFrac;
+    if (mode === 'analog-rel') {
+      sweepFrac = isOT ? 0 : frac;
+    } else {
+      // absolute: full circle = 60 min; position of start = elapsed from 12 o'clock
+      const elapsed60 = Math.max(0, totalSecs - Math.max(0, remaining));
+      const totalIn60 = Math.min(totalSecs, 3600);
+      sweepFrac = isOT ? 0 : Math.max(0, (totalIn60 - elapsed60) / 3600);
+    }
+
+    if (sweepFrac > 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, startAngle, startAngle + sweepFrac * Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = 22;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+    }
+
+    // Overtime arc (red, grows from 12 o'clock)
+    if (isOT) {
+      const otFrac = Math.min(1, Math.abs(remaining) / totalSecs);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, startAngle, startAngle + otFrac * Math.PI * 2);
+      ctx.strokeStyle = '#ed6a69';
+      ctx.lineWidth   = 22;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+    }
+
+    // Tick marks (analog-abs)
+    if (mode === 'analog-abs') {
+      for (let i = 0; i < 12; i++) {
+        const a  = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        const r1 = R + 8, r2 = R + 14;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
+        ctx.strokeStyle = '#c6c6c6';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    // Centre dot
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = isOT ? '#ed6a69' : color;
+    ctx.fill();
+
+    // Digital overlay in circle
+    const dig = document.getElementById('digital-display');
+    dig.textContent = formatTime(remaining);
+    dig.style.color = isOT ? '#ed6a69' : (colorProg ? color : '#1a1a1a');
+    dig.classList.toggle('overtime', isOT);
+  }
+
+  // ── Pure digital ──
+  if (mode === 'digital') {
+    const pd = document.getElementById('pure-digital');
+    pd.textContent  = formatTime(remaining);
+    pd.style.color  = isOT ? '#ed6a69' : (colorProg ? color : '#1a1a1a');
+    pd.classList.toggle('overtime', isOT);
+
+    // color bar
+    const fill = document.getElementById('color-bar-fill');
+    fill.style.width      = `${Math.max(0, frac * 100)}%`;
+    fill.style.background = color;
+  }
+
+  // Flyover sync
+  drawFly(color, frac, isOT);
+}
+
+function formatTime(s) {
+  const neg  = s < 0;
+  const abs  = Math.abs(s);
+  const m    = Math.floor(abs / 60);
+  const sec  = abs % 60;
+  return (neg ? '−' : '') + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+function updateTimeLabel() {
+  const t = formatTime(remaining);
+  document.getElementById('digital-display').textContent  = t;
+  document.getElementById('pure-digital').textContent     = t;
+  document.getElementById('fly-time').textContent         = t;
+  document.title = t + ' – PHGR Timer';
+}
+
+function updateMainBtn() {
+  const btn = document.getElementById('main-btn');
+  btn.textContent = running ? '⏸ Pause' : '▶ Start';
+  btn.className   = 'btn ' + (running ? 'btn-stop' : 'btn-start');
+}
+function updateFlyBtn() {
+  const btn = document.getElementById('fly-startstop');
+  btn.textContent = running ? '⏸' : '▶';
+  btn.className   = 'fly-btn ' + (running ? 'fly-stop' : 'fly-start');
+}
+
+// ── Flyover canvas ────────────────────────────────────────
+function drawFly(color, frac, isOT) {
+  const canvas = document.getElementById('fly-canvas');
+  const ctx    = canvas.getContext('2d');
+  const W = 90, H = 90, cx = 45, cy = 45, R = 34;
+  ctx.clearRect(0, 0, W, H);
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+  ctx.strokeStyle = '#ececec'; ctx.lineWidth = 10; ctx.stroke();
+  const sf = mode === 'analog-abs'
+    ? Math.max(0, (Math.min(totalSecs,3600) - Math.max(0, totalSecs - Math.max(0,remaining))) / 3600)
+    : (isOT ? 0 : frac);
+  if (sf > 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, -Math.PI/2, -Math.PI/2 + sf*Math.PI*2);
+    ctx.strokeStyle = color; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+  }
+  if (isOT) {
+    const of = Math.min(1, Math.abs(remaining)/totalSecs);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, -Math.PI/2, -Math.PI/2 + of*Math.PI*2);
+    ctx.strokeStyle = '#ed6a69'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.fillStyle = isOT ? '#ed6a69' : color; ctx.fill();
+  document.getElementById('fly-time').textContent = formatTime(remaining);
+  document.getElementById('fly-time').classList.toggle('overtime', isOT);
+}
+
+// ── Fullscreen ────────────────────────────────────────────
+function goFullscreen() {
+  const panel = document.getElementById('clock-panel');
+  if (!document.fullscreenElement) panel.requestFullscreen().catch(() => document.documentElement.requestFullscreen());
+  else document.exitFullscreen();
+}
+
+// ── Flyover ───────────────────────────────────────────────
+function openFlyover() {
+  const fly = document.getElementById('flyover');
+  fly.classList.add('open');
+  fly.style.right  = '24px';
+  fly.style.bottom = '24px';
+  fly.style.left   = '';
+  fly.style.top    = '';
+}
+function closeFlyover() {
+  document.getElementById('flyover').classList.remove('open');
+}
+
+// Dragging
+(function() {
+  const fly = document.getElementById('flyover');
+  let dragging = false, ox = 0, oy = 0;
+  fly.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    ox = e.clientX - fly.getBoundingClientRect().left;
+    oy = e.clientY - fly.getBoundingClientRect().top;
+    fly.style.right = ''; fly.style.bottom = '';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    fly.style.left = (e.clientX - ox) + 'px';
+    fly.style.top  = (e.clientY - oy) + 'px';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  // Touch support
+  fly.addEventListener('touchstart', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    const t = e.touches[0];
+    dragging = true;
+    ox = t.clientX - fly.getBoundingClientRect().left;
+    oy = t.clientY - fly.getBoundingClientRect().top;
+    fly.style.right = ''; fly.style.bottom = '';
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    fly.style.left = (t.clientX - ox) + 'px';
+    fly.style.top  = (t.clientY - oy) + 'px';
+  }, { passive: true });
+  document.addEventListener('touchend', () => { dragging = false; });
+})();
+
+// ── Keyboard ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' && e.target.tagName !== 'INPUT') { e.preventDefault(); toggleTimer(); }
+  if (e.key === 'r' || e.key === 'R') resetTimer();
+  if (e.key === 'F11') { e.preventDefault(); goFullscreen(); }
+});
+
+// ── Init ─────────────────────────────────────────────────
+draw();
+updateTimeLabel();
+applySettings();
+</script>
+</body>
+</html>
