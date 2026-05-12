@@ -7,25 +7,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #F7F4EF;
+    --bg: #ececec;
     --card: #FFFFFF;
-    --accent: #2D6A8F;
-    --accent-light: #E8F2F8;
-    --text: #1C1C1A;
-    --text-muted: #7A7A72;
-    --border: #E2DAD0;
-    --user-bg: #EEF6FB;
+    --accent: #23b2c6;
+    --accent-light: #ddf4f8;
+    --text: #1a1a1a;
+    --text-muted: #878787;
+    --border: #c6c6c6;
+    --user-bg: #ddf4f8;
     --ai-bg: #FFFFFF;
+    --gelb: #c7d200;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'DM Sans', sans-serif;
     background: var(--bg);
     color: var(--text);
-    padding: 28px 16px 40px;
-    max-width: 680px;
-    margin: 0 auto;
   }
+  .content-wrap { max-width: 680px; margin: 0 auto; padding: 28px 16px 40px; }
 
   .header {
     text-align: center;
@@ -35,7 +34,7 @@
     font-size: 11px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--text-muted);
     font-weight: 500;
     margin-bottom: 6px;
   }
@@ -202,8 +201,8 @@
   }
 
   .send-btn {
-    background: var(--accent);
-    color: white;
+    background: var(--gelb);
+    color: #111;
     border: none;
     border-radius: 10px;
     padding: 0 22px;
@@ -215,7 +214,7 @@
     transition: all 0.18s;
     white-space: nowrap;
   }
-  .send-btn:hover { background: #245a7a; }
+  .send-btn:hover { background: #a2aa00; }
   .send-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
   .send-btn:active { transform: scale(0.97); }
 
@@ -243,6 +242,14 @@
 </head>
 <body>
 
+<nav style="background:#c7d200;padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;width:100%">
+  <span style="font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:21px;color:#111">ph</span><span style="font-variant:small-caps;font-weight:300;font-size:21px;color:#111;letter-spacing:.04em">GR</span>
+  <span style="width:2px;height:22px;background:rgba(0,0,0,.15);display:inline-block"></span>
+  <span style="font-size:16px;font-weight:700;color:#111;font-family:Arial">Sokrates</span>
+  <a href="../../index.html" style="margin-left:auto;font-size:13px;font-weight:700;color:#333;text-decoration:none;background:rgba(0,0,0,.1);padding:5px 13px;border-radius:20px;font-family:Arial">← tool-box</a>
+</nav>
+
+<div class="content-wrap">
 <div class="header">
   <div class="eyebrow">KI-Lernbegleiter</div>
   <h1>Denken durch Gespräch</h1>
@@ -377,5 +384,6 @@ document.getElementById('input').addEventListener('keydown', function(e) {
   }
 });
 </script>
+</div><!-- /content-wrap -->
 </body>
 </html>
