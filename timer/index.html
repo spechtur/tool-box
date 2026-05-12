@@ -91,7 +91,6 @@
     input:checked + .slider { background: var(--tuerkis); }
     input:checked + .slider:before { transform: translateX(20px); }
 
-    #flash { position: fixed; inset: 0; background: var(--rot); opacity: 0; pointer-events: none; z-index: 800; transition: opacity .1s; }
 
     @media (max-width: 700px) {
       main { flex-direction: column; }
@@ -106,8 +105,6 @@
   <div class="header-title">Timer</div>
   <a class="back-link" href="../index.html">← tool-box</a>
 </header>
-
-<div id="flash"></div>
 
 <main>
   <div id="clock-panel">
@@ -449,9 +446,7 @@ function draw() {
       }
     }
 
-    // Centre dot
-    ctx.beginPath(); ctx.arc(cx, cy, Math.max(6, lw*.35), 0, Math.PI*2);
-    ctx.fillStyle = isOT ? '#ed6a69' : color; ctx.fill();
+
   }
 
   if (mode === 'digital') {
@@ -541,7 +536,7 @@ function draw(){
   let sf=isOT?0:(mode==='analog-abs'?Math.max(0,(Math.min(tot,3600)-(tot-Math.max(0,rem)))/3600):frac);
   if(sf>0){ctx.beginPath();ctx.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+sf*Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();}
   if(isOT){const of=Math.min(1,Math.abs(rem)/tot);ctx.beginPath();ctx.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+of*Math.PI*2);ctx.strokeStyle='#ed6a69';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();}
-  ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fillStyle=isOT?'#ed6a69':color;ctx.fill();
+  
   const neg=rem<0,abs=Math.abs(rem);
   const txt=(neg?'−':'')+String(Math.floor(abs/60)).padStart(2,'0')+':'+String(abs%60).padStart(2,'0');
   document.getElementById('t').textContent=txt;
@@ -584,5 +579,6 @@ draw();
 updateTimeLabel();
 applySettings();
 </script>
+<div id="flash" style="position:fixed;inset:0;background:#ed6a69;opacity:0;pointer-events:none;z-index:99999;transition:opacity .08s"></div>
 </body>
 </html>
