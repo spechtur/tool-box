@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHGR Methodensammlung</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb:    #c7d200;
+      --tuerkis: #23b2c6;
+      --rot:     #ed6a69;
+      --orange:  #fbb900;
+      --violett: #6169af;
+      --dg:      #878787;
+      --mg:      #c6c6c6;
+      --hg:      #ececec;
+    }
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--hg); color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header { background: var(--gelb); padding: 14px 32px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 22px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 22px; color: #111; letter-spacing: .04em; }
+    .sep { width: 2px; height: 24px; background: rgba(0,0,0,.15); }
+    .header-title { font-size: 18px; font-weight: 700; color: #111; }
+    .back-link { margin-left: auto; font-size: 13px; font-weight: 700; color: #333; text-decoration: none; background: rgba(0,0,0,.1); padding: 6px 14px; border-radius: 20px; }
+    .back-link:hover { background: rgba(0,0,0,.18); }
+
+    /* ── Hero ── */
+    .hero { background: white; border-bottom: 3px solid var(--gelb); padding: 36px 32px 30px; }
+    .hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .hero p  { font-size: 15px; color: var(--dg); max-width: 560px; line-height: 1.6; }
+
+    /* ── Main ── */
+    main { flex: 1; padding: 36px 32px; max-width: 860px; width: 100%; margin: 0 auto; }
+    .section-label { font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--dg); margin-bottom: 16px; }
+
+    /* ── Tag filter ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .tag-btn { padding: 6px 16px; border-radius: 20px; border: 2px solid var(--mg); background: white; color: var(--dg); font-size: 13px; font-weight: 700; cursor: pointer; font-family: Arial; transition: all .15s; }
+    .tag-btn:hover { border-color: var(--tuerkis); color: var(--tuerkis); }
+    .tag-btn.active { background: var(--tuerkis); border-color: var(--tuerkis); color: white; }
+
+    /* ── Accordion ── */
+    .accordion { display: flex; flex-direction: column; gap: 10px; }
+
+    .item { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 5px solid var(--tuerkis); transition: box-shadow .2s; }
+    .item:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+    .item.hidden { display: none; }
+
+    /* Accent colors per tag */
+    .item[data-tag="aktivierung"]  { border-left-color: var(--tuerkis); }
+    .item[data-tag="diskussion"]   { border-left-color: var(--violett); }
+    .item[data-tag="reflexion"]    { border-left-color: var(--orange); }
+    .item[data-tag="kooperation"]  { border-left-color: var(--rot); }
+
+    .item-header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; cursor: pointer; user-select: none; }
+    .item-icon   { font-size: 22px; flex-shrink: 0; }
+    .item-info   { flex: 1; min-width: 0; }
+    .item-title  { font-size: 17px; font-weight: 800; color: #1a1a1a; }
+    .item-meta   { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+    .tag-pill    { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 12px; background: var(--hg); color: var(--dg); }
+    .time-pill   { font-size: 11px; color: var(--mg); padding: 2px 0; }
+    .chevron     { font-size: 18px; color: var(--mg); transition: transform .25s; flex-shrink: 0; }
+    .item.open .chevron { transform: rotate(180deg); }
+
+    /* Body */
+    .item-body { display: none; padding: 0 22px 22px; border-top: 1px solid var(--hg); }
+    .item.open .item-body { display: block; }
+    .desc-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--dg); margin: 16px 0 8px; }
+    .desc-text  { font-size: 14px; color: #333; line-height: 1.65; }
+    .show-btn   { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; background: var(--gelb); color: #111; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .15s; }
+    .show-btn:hover { opacity: .85; }
+
+    /* ── Fullscreen overlay ── */
+    #overlay { display: none; position: fixed; inset: 0; background: white; z-index: 999; flex-direction: column; }
+    #overlay.open { display: flex; }
+    .ov-header { background: var(--gelb); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .ov-title  { font-size: 20px; font-weight: 800; color: #111; }
+    .ov-close  { background: rgba(0,0,0,.12); border: none; border-radius: 8px; padding: 8px 18px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial; color: #111; }
+    .ov-body   { flex: 1; overflow-y: auto; padding: 52px 10vw; display: flex; flex-direction: column; justify-content: flex-start; }
+    .ov-instruction { font-size: clamp(17px, 2.2vw, 24px); color: #1a1a1a; line-height: 1.75; white-space: pre-wrap; }
+    .ov-step   { display: flex; gap: 18px; margin-bottom: 28px; align-items: flex-start; }
+    .ov-num    { width: 38px; height: 38px; border-radius: 50%; background: var(--gelb); color: #111; font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .ov-step-text { font-size: clamp(16px, 2vw, 21px); line-height: 1.65; color: #1a1a1a; }
+    .ov-hint   { font-size: 14px; color: var(--dg); margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--hg); }
+
+    /* ── Footer ── */
+    footer { background: white; border-top: 1px solid var(--mg); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+    footer p { font-size: 12px; color: var(--mg); }
+    footer a { color: var(--tuerkis); font-size: 12px; text-decoration: none; }
+
+    @media (max-width: 600px) {
+      header, .hero, main, footer { padding-left: 16px; padding-right: 16px; }
+      .ov-body { padding: 32px 6vw; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="sep"></div>
+  <div class="header-title">Methodensammlung</div>
+  <a class="back-link" href="../index.html">← tool-box</a>
+</header>
+
+<div class="hero">
+  <h1>Hochschuldidaktische Methoden</h1>
+  <p>Aktivierende Methoden für Seminare und Weiterbildungen – mit Kurzinfo für Dozierende und direkter Anleitung für Teilnehmende.</p>
+</div>
+
+<!-- Fullscreen overlay -->
+<div id="overlay">
+  <div class="ov-header">
+    <div class="ov-title" id="ov-title"></div>
+    <button class="ov-close" onclick="closeOverlay()">✕ Schliessen</button>
+  </div>
+  <div class="ov-body" id="ov-body"></div>
+</div>
+
+<main>
+  <div class="section-label">Filter nach Kategorie</div>
+  <div class="tags" id="tags"></div>
+
+  <div class="section-label" style="margin-top:8px">Methoden</div>
+  <div class="accordion" id="accordion"></div>
+</main>
+
+<footer>
+  <div><span class="ph">ph</span><span class="gr">GR</span><span style="font-size:12px;color:var(--mg);margin-left:8px">Methodensammlung</span></div>
+  <p><a href="../index.html">tool-box</a></p>
+</footer>
+
+<script>
+// ============================================================
+// METHODEN – hier einfach neue ergänzen
+// ============================================================
+const METHODEN = [
+  {
+    titel:   '3×3×3',
+    icon:    '🔢',
+    tag:     'aktivierung',
+    dauer:   '10–15 min',
+    beschreibung: `Strukturiertes Denk- und Austauschformat in drei Phasen à drei Minuten. Startet als Einzelarbeit, öffnet sich schrittweise zur Gruppe. Ideal als Einstieg in ein Thema oder zur Aktivierung von Vorwissen. Die Zeitstruktur schützt ruhigere Personen und verhindert, dass einzelne das Gespräch dominieren.`,
+    anleitung: [
+      { schritt: 'Einzelarbeit (3 min)', text: 'Notiert still für euch: Was wisst ihr bereits zum Thema? Was beschäftigt euch dabei? Schreibt mindestens 3 Punkte auf.' },
+      { schritt: 'Austausch zu zweit (3 min)', text: 'Tauscht euch mit der Person neben euch aus. Welche Punkte überschneiden sich? Was überrascht euch beim Gegenüber?' },
+      { schritt: 'Runde zu sechst (3 min)', text: 'Zwei Paare finden sich zusammen. Haltet fest: Was sind eure drei wichtigsten gemeinsamen Erkenntnisse? Jemand übernimmt die Moderation.' },
+    ],
+    hinweis: 'Die Gruppe kann danach Ergebnisse im Plenum teilen.'
+  },
+  {
+    titel:   'Fishbowl',
+    icon:    '🐠',
+    tag:     'diskussion',
+    dauer:   '20–40 min',
+    beschreibung: `Diskussionsformat mit zwei Kreisen: Ein kleiner Innenkreis (4–6 Personen) diskutiert aktiv, der Aussenkreis beobachtet. Nach einer definierten Zeit wechseln Personen die Kreise. Fördert konzentriertes Zuhören, Perspektivenwechsel und strukturierte Diskussionskultur. Besonders wirksam bei kontroversen oder komplexen Themen.`,
+    anleitung: [
+      { schritt: 'Aufstellung', text: 'Stellt zwei Kreise auf: 4–6 Stühle innen, alle anderen aussen. Im Innenkreis ist ein Stuhl frei (der "Fischstuhl").' },
+      { schritt: 'Diskussion (10–15 min)', text: 'Nur wer im Innenkreis sitzt, spricht. Der freie Stuhl kann jederzeit von einer Person aus dem Aussenkreis besetzt werden – dann verlässt jemand anderes den Innenkreis.' },
+      { schritt: 'Beobachtung', text: 'Aussenkreis: Hört aktiv zu. Welche Argumente überzeugen euch? Was fehlt eurer Meinung nach in der Diskussion?' },
+      { schritt: 'Abschluss-Plenum', text: 'Zusammenführung: Aussenkreis gibt Rückmeldung. Was habt ihr beobachtet? Was nehmt ihr mit?' },
+    ],
+    hinweis: 'Thema und Diskussionsfrage vorher klar kommunizieren. Zeitwächter bestimmen.'
+  },
+  {
+    titel:   'Kugellager',
+    icon:    '⚙️',
+    tag:     'kooperation',
+    dauer:   '15–25 min',
+    beschreibung: `Zwei konzentrische Kreise mit gleich vielen Personen stehen sich paarweise gegenüber. Nach einem kurzen Austausch rotiert ein Kreis, sodass neue Paare entstehen. Ideal für gegenseitiges Kennenlernen, Meinungsaustausch oder die Bearbeitung verschiedener Fragestellungen. Erzeugt hohe Energie und viele kurze, fokussierte Begegnungen.`,
+    anleitung: [
+      { schritt: 'Aufstellung', text: 'Bildet zwei gleich grosse Gruppen. Innenkreis steht im Kreis und schaut nach aussen. Aussenkreis steht gegenüber und schaut nach innen.' },
+      { schritt: 'Austausch (2–3 min)', text: 'Tauscht euch mit eurer Gegenüberperson zur aktuellen Frage aus. Beide kommen zu Wort – achtet auf eine gleichmässige Redezeit.' },
+      { schritt: 'Rotation', text: 'Auf Signal rotiert der Aussenkreis um eine Position weiter. Ihr habt jetzt eine neue Gesprächspartner:in.' },
+      { schritt: 'Wiederholung', text: 'Je nach Fragestellung 3–5 Runden – pro Runde kann eine neue oder die gleiche Frage bearbeitet werden.' },
+    ],
+    hinweis: 'Für ungleich grosse Gruppen: eine Person im Innenkreis macht eine Runde aus.'
+  },
+  {
+    titel:   'Think – Pair – Share',
+    icon:    '💭',
+    tag:     'aktivierung',
+    dauer:   '8–12 min',
+    beschreibung: `Klassisches kooperatives Lernformat in drei Phasen: Zuerst denkt jede Person allein nach, dann erfolgt ein Austausch zu zweit, anschliessend wird im Plenum geteilt. Senkt die Hemmschwelle für Wortmeldungen erheblich, da die Antwort bereits im Gespräch überprüft wurde. Eignet sich für fast jede Frage oder Aufgabenstellung.`,
+    anleitung: [
+      { schritt: 'Think – Denken (2 min)', text: 'Lest die Frage und denkt allein nach. Schreibt eure Gedanken kurz auf – Stichworte genügen. Noch keine Absprache mit anderen.' },
+      { schritt: 'Pair – Austausch (3 min)', text: 'Tauscht euch mit der Person neben euch aus. Erklärt gegenseitig eure Überlegungen. Einigt euch auf eine gemeinsame Antwort oder haltet Unterschiede fest.' },
+      { schritt: 'Share – Teilen', text: 'Einige Paare teilen ihre Antwort im Plenum. Formuliert eure Antwort so, dass alle im Raum folgen können.' },
+    ],
+    hinweis: 'Paare können auch kurz aufgeschrieben werden, bevor ans Plenum berichtet wird.'
+  },
+  {
+    titel:   '1-2-4-Alle',
+    icon:    '🔺',
+    tag:     'kooperation',
+    dauer:   '15–20 min',
+    beschreibung: `Skalierendes Diskussionsformat: Erste Einzelarbeit, dann Zweier-, dann Vierer-Gruppen, schliesslich Plenum. Jede Stufe baut auf der vorherigen auf. Durch die schrittweise Erweiterung entsteht eine Verdichtung der Ideen – unterschiedliche Perspektiven werden integriert, bevor sie geteilt werden. Gut für Entscheidungsprozesse oder Ideenentwicklung.`,
+    anleitung: [
+      { schritt: 'Allein (2 min)', text: 'Bearbeitet die Frage still für euch. Notiert eure wichtigsten Gedanken.' },
+      { schritt: 'Zu zweit (3 min)', text: 'Tauscht euch mit einer Person aus. Einigt euch auf 1–3 gemeinsame Kernpunkte.' },
+      { schritt: 'Zu viert (5 min)', text: 'Zwei Paare kommen zusammen. Teilt eure Kernpunkte und destilliert daraus gemeinsam die 3 wichtigsten Erkenntnisse.' },
+      { schritt: 'Im Plenum', text: 'Jede Vierer-Gruppe teilt ihre 3 Punkte. Gemeinsamkeiten und Unterschiede werden sichtbar gemacht.' },
+    ],
+    hinweis: 'Ideal wenn alle Stimmen gleichwertig einfliessen sollen.'
+  },
+  {
+    titel:   'Galerie-Rundgang',
+    icon:    '🖼️',
+    tag:     'reflexion',
+    dauer:   '20–30 min',
+    beschreibung: `Arbeitsergebnisse werden wie in einer Galerie im Raum aufgehängt. Alle gehen still durch den Raum, betrachten die Resultate und können mit Klebepunkten oder kurzen Kommentaren reagieren. Danach Auswertung im Plenum. Fördert gegenseitige Wertschätzung, Vergleich von Ergebnissen und ruhige, konzentrierte Auseinandersetzung.`,
+    anleitung: [
+      { schritt: 'Vorbereitung', text: 'Alle hängen ihre Arbeitsergebnisse (Plakate, Skizzen, Notizblätter) sichtbar im Raum auf – verteilt, sodass Abstand zwischen den Exponaten bleibt.' },
+      { schritt: 'Stiller Rundgang (7–10 min)', text: 'Geht allein und still durch den Raum. Schaut euch alle Exponate an. Macht euch kurze Notizen: Was beeindruckt euch? Was überrascht euch? Was wollt ihr fragen?' },
+      { schritt: 'Feedback geben', text: 'Klebt Punkte oder Post-its an Exponate, die euch besonders ansprechen oder bei denen ihr eine Rückmeldung geben möchtet.' },
+      { schritt: 'Auswertung', text: 'Im Plenum: Welche Exponate haben viele Rückmeldungen erhalten? Was fällt auf? Jede Gruppe kommentiert kurz ihr eigenes Ergebnis.' },
+    ],
+    hinweis: 'Klebepunkte in drei Farben: grün = "überzeugend", gelb = "interessant", blau = "Frage dazu".'
+  },
+];
+
+// ============================================================
+// Tags sammeln und Filter bauen
+// ============================================================
+const allTags = [...new Set(METHODEN.map(m => m.tag))];
+let activeTag = null;
+
+function buildTags() {
+  const container = document.getElementById('tags');
+  const allBtn = document.createElement('button');
+  allBtn.className = 'tag-btn active';
+  allBtn.textContent = 'Alle';
+  allBtn.onclick = () => filterTag(null);
+  container.appendChild(allBtn);
+  allTags.forEach(tag => {
+    const b = document.createElement('button');
+    b.className = 'tag-btn';
+    b.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+    b.dataset.tag = tag;
+    b.onclick = () => filterTag(tag);
+    container.appendChild(b);
+  });
+}
+
+function filterTag(tag) {
+  activeTag = tag;
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    b.classList.toggle('active',
+      tag === null ? b.textContent === 'Alle' : b.dataset.tag === tag
+    );
+  });
+  document.querySelectorAll('.item').forEach(el => {
+    el.classList.toggle('hidden', tag !== null && el.dataset.tag !== tag);
+  });
+}
+
+// ============================================================
+// Accordion aufbauen
+// ============================================================
+function buildAccordion() {
+  const container = document.getElementById('accordion');
+  METHODEN.forEach((m, i) => {
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.dataset.tag = m.tag;
+    item.innerHTML = `
+      <div class="item-header" onclick="toggle(${i})">
+        <div class="item-icon">${m.icon}</div>
+        <div class="item-info">
+          <div class="item-title">${m.titel}</div>
+          <div class="item-meta">
+            <span class="tag-pill">${m.tag}</span>
+            <span class="time-pill">⏱ ${m.dauer}</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="item-body">
+        <div class="desc-label">Für Dozierende</div>
+        <div class="desc-text">${m.beschreibung}</div>
+        <button class="show-btn" onclick="openOverlay(${i})">▶ Anleitung für Teilnehmende anzeigen</button>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function toggle(i) {
+  const items = document.querySelectorAll('.item');
+  items[i].classList.toggle('open');
+}
+
+// ============================================================
+// Overlay
+// ============================================================
+function openOverlay(i) {
+  const m = METHODEN[i];
+  document.getElementById('ov-title').textContent = m.titel;
+  const body = document.getElementById('ov-body');
+  body.innerHTML = '';
+
+  m.anleitung.forEach((s, idx) => {
+    const step = document.createElement('div');
+    step.className = 'ov-step';
+    step.innerHTML = `
+      <div class="ov-num">${idx + 1}</div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--dg);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">${s.schritt}</div>
+        <div class="ov-step-text">${s.text}</div>
+      </div>
+    `;
+    body.appendChild(step);
+  });
+
+  if (m.hinweis) {
+    const hint = document.createElement('div');
+    hint.className = 'ov-hint';
+    hint.innerHTML = `<strong>Hinweis:</strong> ${m.hinweis}`;
+    body.appendChild(hint);
+  }
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeOverlay();
+});
+
+// ============================================================
+// Init
+// ============================================================
+buildTags();
+buildAccordion();
+</script>
+</body>
+</html>
