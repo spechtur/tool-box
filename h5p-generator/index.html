@@ -8,16 +8,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
-    --bg: #F7F4EF; --card: #FFFFFF; --accent: #D4501A; --accent-light: #F5E6DF;
-    --text: #1C1C1A; --text-muted: #7A7A72; --border: #E2DAD0;
-    --green: #3A7D44; --green-light: #EAF4EC; --blue: #2D6A8F; --blue-light: #E8F2F8;
-    --purple: #6040A0; --purple-light: #EEEBF8;
+    --bg: #ececec; --card: #FFFFFF; --accent: #23b2c6; --accent-light: #ddf4f8;
+    --text: #1a1a1a; --text-muted: #878787; --border: #c6c6c6;
+    --green: #5aab6e; --green-light: #e6f4ea; --blue: #6169af; --blue-light: #eaebf7;
+    --purple: #6169af; --purple-light: #eaebf7;
+    --gelb: #c7d200; --gelb-light: #f2f5b0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 28px 16px 48px; max-width: 680px; margin: 0 auto; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+  .content-wrap { max-width: 680px; margin: 0 auto; padding: 28px 16px 48px; }
 
   .header { text-align: center; margin-bottom: 28px; }
-  .header .eyebrow { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .header .eyebrow { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; }
   .header h1 { font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(22px,4vw,28px); margin-bottom: 8px; }
   .header p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
@@ -25,8 +27,8 @@
   .type-btn { flex: 1; min-width: 85px; padding: 10px 10px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--card); cursor: pointer; text-align: center; transition: all .18s; font-family: 'DM Sans', sans-serif; }
   .type-btn .type-icon { font-size: 18px; margin-bottom: 3px; }
   .type-btn .type-name { font-size: 11px; font-weight: 500; color: var(--text); line-height: 1.3; }
-  .type-btn:hover { border-color: var(--accent); }
-  .type-btn.active { border-color: var(--accent); background: var(--accent-light); }
+  .type-btn:hover { border-color: var(--gelb); }
+  .type-btn.active { border-color: var(--gelb); background: var(--gelb-light); }
   .type-btn.ivideo-btn:hover { border-color: var(--purple); }
   .type-btn.ivideo-btn.active { border-color: var(--purple); background: var(--purple-light); }
 
@@ -59,10 +61,10 @@
   .url-row .url-icon { position: absolute; left: 13px; top: 13px; font-size: 15px; color: var(--text-muted); pointer-events: none; }
   .divider { border: none; border-top: 1px solid var(--border); margin: 2px 0 14px; }
 
-  .generate-btn { width: 100%; height: 52px; background: var(--accent); color: white; border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .generate-btn:hover { background: #b8401a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212,80,26,.3); }
-  .generate-btn.ivideo-mode { background: var(--purple); }
-  .generate-btn.ivideo-mode:hover { background: #4d3290; box-shadow: 0 4px 16px rgba(96,64,160,.3); }
+  .generate-btn { width: 100%; height: 52px; background: var(--gelb); color: #111; border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .generate-btn:hover { background: #a2aa00; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212,80,26,.3); }
+  .generate-btn.ivideo-mode { background: var(--blue); color: white; }
+  .generate-btn.ivideo-mode:hover { background: #4d5398; box-shadow: 0 4px 16px rgba(96,64,160,.3); }
   .generate-btn:disabled { background: var(--border); color: var(--text-muted); transform: none; box-shadow: none; cursor: not-allowed; }
 
   .status-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 16px; display: none; }
@@ -91,6 +93,14 @@
 </head>
 <body>
 
+<nav style="background:#c7d200;padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;width:100%">
+  <span style="font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:21px;color:#111">ph</span><span style="font-variant:small-caps;font-weight:300;font-size:21px;color:#111;letter-spacing:.04em">GR</span>
+  <span style="width:2px;height:22px;background:rgba(0,0,0,.15);display:inline-block"></span>
+  <span style="font-size:16px;font-weight:700;color:#111;font-family:Arial">H5P-Generator</span>
+  <a href="../index.html" style="margin-left:auto;font-size:13px;font-weight:700;color:#333;text-decoration:none;background:rgba(0,0,0,.1);padding:5px 13px;border-radius:20px;font-family:Arial">← tool-box</a>
+</nav>
+
+<div class="content-wrap">
 <div class="header">
   <div class="eyebrow">H5P KI-Generator</div>
   <h1>Beschreiben. Generieren. Fertig.</h1>
@@ -764,5 +774,6 @@ async function generate() {
 /* ─── Init ──────────────────────────────────────── */
 renderChips();
 </script>
+</div><!-- /content-wrap -->
 </body>
 </html>
