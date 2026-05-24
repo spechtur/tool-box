@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konzeptothek-Bot | PHGR Master SEK I & II</title>
+  <style>
+    :root {
+      --phgr-gelb: #c7d200;
+      --phgr-tuerkis: #23b2c6;
+      --phgr-rot: #ed6a69;
+      --phgr-orange: #fbb900;
+      --bg: #161616;
+      --surface: #1f1f1f;
+      --surface2: #2a2a2a;
+      --surface3: #333;
+      --text: #e2e2e2;
+      --text-muted: #777;
+      --text-dim: #555;
+      --border: #2e2e2e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--phgr-gelb);
+      padding: 11px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .phgr-logo { font-size: 1.35em; line-height: 1; letter-spacing: -0.01em; }
+    .phgr-logo .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; color: var(--phgr-gelb); }
+    .phgr-logo .gr { font-family: Georgia, serif; font-variant: small-caps; font-weight: 300; font-style: normal; color: var(--text); letter-spacing: 0.05em; }
+    .header-title-block { flex: 1; }
+    .header-title { font-family: 'Georgia', serif; font-size: 1em; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
+    .header-subtitle { font-size: 0.68em; color: var(--text-muted); font-style: italic; margin-top: 1px; letter-spacing: 0.03em; }
+    .proto-badge { font-family: monospace; font-size: 0.62em; font-weight: bold; letter-spacing: 0.06em; background: var(--phgr-gelb); color: #1a1a1a; padding: 3px 7px 2px; }
+    #chat-container { flex: 1; overflow-y: auto; padding: 28px 24px 12px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
+    #chat-container::-webkit-scrollbar { width: 3px; }
+    #chat-container::-webkit-scrollbar-thumb { background: var(--phgr-gelb); border-radius: 2px; }
+    .message { display: flex; flex-direction: column; max-width: 82%; animation: msgIn 0.25s ease both; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .message.bot  { align-self: flex-start; }
+    .message.user { align-self: flex-end; }
+    .msg-label { font-family: monospace; font-size: 0.62em; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; color: var(--text-dim); }
+    .message.user .msg-label { text-align: right; }
+    .msg-bubble { padding: 13px 17px; line-height: 1.7; font-size: 0.93em; }
+    .message.bot .msg-bubble { background: var(--surface2); border-left: 3px solid var(--phgr-gelb); color: var(--text); }
+    .message.user .msg-bubble { background: var(--phgr-gelb); color: #111; font-family: Georgia, serif; }
+    .typing-wrap { align-self: flex-start; animation: msgIn 0.25s ease both; }
+    .typing-dots { display: flex; gap: 5px; padding: 13px 17px; background: var(--surface2); border-left: 3px solid var(--phgr-gelb); }
+    .dot { width: 7px; height: 7px; background: var(--phgr-gelb); border-radius: 50%; opacity: 0.4; animation: dotBounce 1.3s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.18s; }
+    .dot:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes dotBounce { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-7px); opacity: 1; } }
+    #input-wrap { background: var(--surface); border-top: 1px solid var(--border); padding: 14px 20px; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+    #input-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    #user-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 11px 15px; font-family: Georgia, serif; font-size: 0.92em; resize: none; min-height: 46px; max-height: 130px; line-height: 1.55; transition: border-color 0.2s; outline: none; }
+    #user-input:focus { border-color: var(--phgr-gelb); }
+    #user-input::placeholder { color: var(--text-dim); font-style: italic; }
+    .input-hint { font-family: monospace; font-size: 0.6em; color: var(--text-dim); letter-spacing: 0.04em; }
+    #send-btn { background: var(--phgr-gelb); color: #111; border: none; width: 46px; height: 46px; font-size: 1.25em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s, transform 0.1s; }
+    #send-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(1.04); }
+    #send-btn:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
+    .error-bubble { background: #2a1515; border-left: 3px solid var(--phgr-rot); color: #e8a0a0; padding: 12px 16px; font-size: 0.85em; font-family: monospace; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="phgr-logo"><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="header-title-block">
+    <div class="header-title">Konzeptothek</div>
+    <div class="header-subtitle">Master SEK I &amp; II &middot; konzeptueller Provokateur</div>
+  </div>
+  <div class="proto-badge">PROTOTYP &middot; 4 beschrieben / 147 bekannt</div>
+</header>
+
+<div id="chat-container"></div>
+
+<div id="input-wrap">
+  <div id="input-col">
+    <textarea id="user-input" placeholder="Schreib hier ..." rows="1"></textarea>
+    <div class="input-hint">Enter &rarr; Senden &nbsp;&middot;&nbsp; Shift+Enter &rarr; Zeilenumbruch</div>
+  </div>
+  <button id="send-btn" title="Senden">&#8594;</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  KONFIGURATION — API-Key hier eintragen
+// ═══════════════════════════════════════════════════════════
+const API_KEY = 'sk-ant-DEIN-API-KEY-HIER';
+const MODEL   = 'claude-opus-4-5-20251101';
+
+// ═══════════════════════════════════════════════════════════
+//  DATENBASIS
+// ═══════════════════════════════════════════════════════════
+const KB = {
+
+  // ── 147 Konzeptnamen ──
+  alle_konzepte: [
+    "10 Merkmale guten Unterrichts nach Meyer",
+    "10 Qualitätsmerkmale guten Unterrichts nach Helmke",
+    "ADHS","Aktionsforschung","Antinomien","Antinomien im professionellen Handeln",
+    "Aufgaben als Dreh- und Angelpunkt nach Fraefel",
+    "Bedingungsanalyse","Behinderungsparadigmen","Belastung und Beanspruchung im Lehrerberuf",
+    "Beobachtung","Berufsauftrag des LCH","Berufsbildung CH","Berufswahl als Copingprozess",
+    "Berufswahltheorien","Berufswahlunterricht","Beurteilung: Grundlagen",
+    "Beziehung Lehrer:in - Schüler:in","Bilanzierung und Überprüfung nach Fraefel",
+    "Bildung für nachhaltige Entwicklung","Bildungschancen","Bindungstheorie",
+    "Binnendifferenzierung: verschiedene Varianten","BNE im Lehrplan 21","Burnout",
+    "Chancengerechtigkeit (normative/rechtliche Grundlagen)","Coaching-Gespräche mit Lernenden",
+    "Das Ende der Erziehung nach Postman","Demokratiepädagogik (Just Community)",
+    "Dialogisches Lernen","Didaktische Analyse nach Klafki","Digitalität",
+    "Dimensionen offenen Unterrichts","Diversity","Doing Difference",
+    "Dramatisierung, Entdramatisierung & Gender",
+    "eine einzelne Stunde planen (Kernpraktiken) nach Fraefel",
+    "Elternarbeit im Berufswahlprozess","Elterngespräche","Elternkontakte aufbauen",
+    "Entwicklungsaufgaben","Ermöglichungsdidaktik nach Arnold",
+    "Erziehungs- und Bildungspartnerschaft","Erziehungsansätze","Erziehungsstile",
+    "Es ist nie zu spät eine Glückliche Kindheit zu haben nach Furman",
+    "Feedbackebenen","Förderkreislauf und Förderplanung","Funktion der Schule",
+    "Funktion von Vorurteilen","Geistige und kognitive Fähigkeiten",
+    "Geschlecht / geschlechtliche Identität","Gesprächsformen im Unterricht",
+    "Gesprächsführung","Gesundheit von Lehrpersonen",
+    "Gewaltfreie Kommunikation nach Rosenberg","Gleichwürdigkeit nach Juul",
+    "Grundformen des Unterrichtens","Grundlagen selbstreguliertes Lernen",
+    "Gute Lehrerinnen und Lehrer","HERZ-Theorie des Spiels","Hochbegabung",
+    "ICF","Ich schaffs - für Jugendliche","Inklusive Schule",
+    "Integrativer Unterricht (Didaktische Prinzipien)","Intersektionalität",
+    "Irrtümer über Klassenführung","Klassenführung als lernförderliche Struktur",
+    "Klassenführung in einer neuen Lernkultur","Klassenführung nach Kounin und Evertson",
+    "Klassenrat","Kollegiale Fallberatung (Intervision)","Kollegiale Kooperation",
+    "Kompetenzen und Lernziele","Kompetenzorientierung als Leitbegriff der Didaktik",
+    "Konfliktebenen","Konfliktgespräche","Konstruktivismus",
+    "Kooperation in multiprofessionellen Teams","Kooperation von Lehrpersonen",
+    "Kritische Rückmeldung geben nach Furman","Kultur der Digitalität",
+    "Lehrperson nach Hattie","Lern- und Bildungsgeschichten",
+    "Lernen am gemeinsamen Gegenstand","Lernen in Projekten im Kontext BNE",
+    "Lernförderliche Schulentwicklung","Lernprozessmodelle: PADUA KAFKA SAMBA",
+    "Lernpsychologische Grundlagen","Lernschwierigkeiten","Lernstrategien",
+    "Lernzieltaxonomie nach Bloom","Linzer Konzept der Klassenführung nach Mayr",
+    "Logische Ebenen nach Dilts",
+    "LUKAS - ein Modell zur Entwicklung von kompetenzfördernden Aufgabensets",
+    "Migration","Motivation","Multiprofessionelle Zusammenarbeit an inklusiven Schulen",
+    "Nähe und Distanz in pädagogischen Beziehungen","Natürliche Differenzierung",
+    "Neue Autorität nach Omer","Neue Beurteilungsformen nach Winter",
+    "Neue Beurteilungskultur nach Winter","No Blame Approach",
+    "Orientierungsraster Zusammenarbeit mit Eltern","Othering",
+    "Pädagogische Professionalität","Partizipation (Stufenmodell)",
+    "Phasenmodell der Teamentwicklung nach Tuckman","Plan- und Simulationsspiele",
+    "Planspiele","Planspiele im Unterricht (Klippert)","Planspielmethodik",
+    "Planung einer Unterrichtseinheit nach Fraefel","Planungsprozess: wie Unterricht planen?",
+    "Professionelle Reflexivität","Projektunterricht","Prüfungsangst",
+    "Qualitätsmerkmale schulische Elternarbeit","Reflexion im Portfolio",
+    "Reteaming & Meisterklasse nach Furman","Rolle der Lehrperson",
+    "Rückwärtsplanung nach Fraefel","Sachanalyse","Salutogenese",
+    "Schulentwicklung kompakt","selbstgesteuert lernen in Projekten",
+    "Selbstkonzept","Selbstwirksamkeitserwartung","Single Point Rubric",
+    "Soziale Herkunft","Soziale Perspektivenübernahme","Soziale Wahrnehmung",
+    "Spiel in Kindheit und Jugend","Systemisch-Lösungsorientierte Beratung",
+    "Systemische Biografiearbeit nach Röhrbein","Systemische Pädagogik",
+    "Systemische Schul- und Unterrichtsentwicklung",
+    "Theoretischer Bezugsrahmen für Schulentwicklung",
+    "Universal Design for Learning (UDL)","Unterricht reflektieren",
+    "Unterrichtssetting","Unterrichtsstörungen händeln",
+    "Wirksamer Projektunterricht","WOWW-Ansatz nach Berg",
+    "Zone der nächstmöglichen Entwicklung nach Wygotski",
+    "Zusammenarbeit in der integrativen Schule"
+  ],
+
+  // ── 4 vollständig beschriebene Konzepte ──
+  konzepte_beschrieben: [
+    {
+      name: "10 Merkmale guten Unterrichts nach Meyer",
+      autor: "Hilbert Meyer",
+      beschreibung: "Hilbert Meyer stellt zehn empirisch abgesicherte Gütekriterien vor, die das aktuelle Wissen über erfolgreiche Unterrichtsstrukturen bündeln. Er beschreibt Kompetenzfelder, die Lehrpersonen haben und Lernende entwickeln sollten, um gemeinsam guten Unterricht zu gestalten. Das Werk vermittelt Grundlagenwissen für den Berufseinstieg und hilft erfahrenen Lehrpersonen, professionell mit neueren Forschungsergebnissen umzugehen.",
+      literatur: "Meyer, H. (2021). Was ist guter Unterricht? (15. Aufl.). Berlin: Cornelsen.",
+      sikos: ["E.01","E.02","L.01","L.02","L.03","L.04","L.08","B.01","B.02","B.03","B.05"],
+      meta: { vernetzung: "sehr hoch – 11 SiKos", cluster: "empirische Unterrichtsforschung" }
+    },
+    {
+      name: "Berufswahltheorien",
+      autor: "Hirschi & Baumeler",
+      beschreibung: "Mehrere klassische und neuere Berufswahltheorien werden zusammenfassend dargestellt, darunter Holland, Super sowie Theorien der Laufbahnentwicklung. Neuere Ansätze betrachten Jugendliche als komplexe, sich selbst gestaltende Systeme in permanenter Interaktion mit der Umwelt.",
+      literatur: "Hirschi, A. & Baumeler, F. (2020). Berufswahltheorien – Entwicklung und Stand der Diskussion. In T. Brüggemann & S. Rahn (Hrsg.), Berufsorientierung (2. Aufl., S. 31–42). Münster: Waxmann.",
+      sikos: ["E.08","E.10","B.05"],
+      meta: { vernetzung: "gering – 3 SiKos", cluster: "Entwicklung & Biografie" }
+    },
+    {
+      name: "Burnout",
+      autor: "Gesundheitsamt Graubünden",
+      beschreibung: "Burnout hat keine einheitliche wissenschaftliche Definition und beschreibt ein komplexes Phänomen, das sich vielfältig äussert. Typische Merkmale dienen der Früherkennung. Zentrale Aussage: Burnout betrifft die Schule als Ganzes und sollte nicht als rein individuelles Problem betrachtet werden.",
+      literatur: "Gesundheitsamt Graubünden (2017). Burnout in der Schule: Früh erkennen und vorbeugen. Chur.",
+      sikos: ["I.02","I.03","I.05"],
+      meta: { vernetzung: "mittel – 3 SiKos", cluster: "Lehrpersonengesundheit", quelltyp: "Praxis-institutional" }
+    },
+    {
+      name: "Konstruktivismus",
+      autor: "Neubert, Reich & Voß",
+      beschreibung: "Eine Einführung in den Lernprozess aus konstruktivistischer Perspektive. Verschiedene Theorieperspektiven werden aufgezeigt mit Anregungen zur Selbstbeobachtung und Reflexion. Der Text eröffnet Einblicke in die Bedeutung von Beobachterperspektiven im Lernprozess.",
+      literatur: "Neubert, S., Reich, K. & Voß, R. (2001). Lernen als konstruktiver Prozess. In T. Hug (Hrsg.), Wie kommt Wissenschaft zu Wissen (Bd. 1, S. 253–265). Baltmannsweiler: Schneider.",
+      sikos: ["E.01","E.02","E.05","E.06","E.07","E.08","E.09","E.10","L.01","L.02","L.03","L.04","L.05","L.06","L.07","L.09","L.10","B.01","B.02","B.03","B.04","B.05","B.06","I.01","I.02","I.04","I.05"],
+      meta: { vernetzung: "maximal – 27+ von 31 SiKos", achtung: "Gefahr intellektueller Tapete" }
+    }
+  ],
+
+  // ── Handlungsfelder (neue Studiengangsstruktur) ──
+  handlungsfelder: {
+    jahrA: [
+      {
+        name: "Jugendliche begleiten 1",
+        sikos: ["E.05","B.05","B.03"],
+        kern: "Beziehung aufbauen, Lernprozesse individuell begleiten und Lerngespräche führen als zusammenhängende Praxis. Die drei SiKos beleuchten dasselbe Phänomen von drei Seiten: Beziehung als Fundament (E.05), individuelle Begleitung als Praxis (B.05), Gespräch als Werkzeug (B.03)."
+      },
+      {
+        name: "Lernen anregen (Formen)",
+        sikos: ["L.05","L.04","L.07"],
+        kern: "Methodische Vielfalt: von Spielsituationen über Basistechniken bis zur Digitalität. Spannung: Wie verhält sich didaktisches Handwerk (L.04) zu offenen Spielsituationen (L.05) und digitalen Lernumgebungen (L.07)?"
+      },
+      {
+        name: "Lernerfolge sichtbar machen (Jahr A)",
+        sikos: ["B.01","B.06"],
+        kern: "Lernvoraussetzungen diagnostizieren (B.01) und Lernprozesse analysieren (B.06) – zwei Seiten der pädagogischen Diagnostik. Spannung: Wann ist Diagnostik Unterstützung, wann wird sie zur Kategorisierung?"
+      },
+      {
+        name: "Diversity 2",
+        sikos: ["L.09","L.08"],
+        kern: "Eigenständiges Lernen fördern (L.09) und Lernsettings individualisieren (L.08). Spannung: Individualisierung kann emanzipieren oder separieren – was ist der Unterschied?"
+      },
+      {
+        name: "Reflexion (Jahr A)",
+        sikos: ["I.02"],
+        kern: "Sich reflektiert weiterentwickeln als professionelle Daueraufgabe."
+      }
+    ],
+    jahrB: [
+      {
+        name: "Gruppen begleiten 2",
+        sikos: ["E.01","E.02"],
+        kern: "Klassen und Gruppen führen (E.01) und lernfreundliches Klima aufbauen (E.02). Spannung: Führung impliziert Kontrolle, Klima impliziert Vertrauen – schliessen sich das aus?"
+      },
+      {
+        name: "Lernen anregen (Aufgaben)",
+        sikos: ["L.02","L.03","L.01"],
+        kern: "Die didaktische Planungskette: Lernziele (L.01) → Inhalte (L.03) → Aufgaben (L.02). Spannung: Rückwärtsplanung nach Fraefel dreht diese Reihenfolge um – warum?"
+      },
+      {
+        name: "Lernerfolge sichtbar machen (Jahr B)",
+        sikos: ["B.02","B.04"],
+        kern: "Kriterienorientiert beurteilen (B.02) und Lernende in Beurteilungsprozesse involvieren (B.04). Spannung: Wer definiert die Kriterien – und was passiert mit der Beurteilung, wenn Lernende das mitbestimmen?"
+      },
+      {
+        name: "Diversity 1",
+        sikos: ["E.03","E.04"],
+        kern: "Diversity berücksichtigen (E.03) und Partizipation ermöglichen (E.04). Spannung: Diversity kann als Differenzmarkierung wirken (Othering) – wie schützt Partizipation davor?"
+      },
+      {
+        name: "Reflexion (Jahr B)",
+        sikos: ["I.01"],
+        kern: "Umgang mit eigener Bildungsbiografie als Ausgangspunkt professioneller Entwicklung."
+      }
+    ],
+    jahr3: [
+      { name: "E.06 Konflikte lösen", sikos: ["E.06"] },
+      { name: "E.07 Elternkontakte gestalten", sikos: ["E.07"] },
+      { name: "E.08 Berufswahl begleiten", sikos: ["E.08"] },
+      { name: "E.09 Gespräche führen", sikos: ["E.09"] },
+      { name: "E.10 Entwicklungsprozesse begleiten", sikos: ["E.10"] },
+      { name: "I.03 Sich gesund halten", sikos: ["I.03"] },
+      { name: "I.04 An Schul- und Unterrichtsentwicklung beteiligen", sikos: ["I.04"] },
+      { name: "I.05 Zusammenarbeiten und kooperieren", sikos: ["I.05"] },
+      { name: "L.06 Lernen in Epochen gestalten", sikos: ["L.06"] },
+      { name: "L.10 BNE integrieren", sikos: ["L.10"] }
+    ]
+  },
+
+  // ── 31 SiKos ──
+  sikos: [
+    { code:"B.01", name:"Lernvoraussetzungen berücksichtigen", bereich:"B", handlungsfeld:"Lernerfolge sichtbar machen (Jahr A)",
+      konzepte:["Bedingungsanalyse","Förderkreislauf und Förderplanung","Zone der nächstmöglichen Entwicklung nach Wygotski","Soziale Wahrnehmung","Beobachtung","Funktion von Vorurteilen","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Phasenmodell der Teamentwicklung nach Tuckman","Sachanalyse","Systemische Pädagogik","Unterrichtssetting","Binnendifferenzierung: verschiedene Varianten","Natürliche Differenzierung","Lernprozessmodelle: PADUA KAFKA SAMBA","Beurteilung: Grundlagen","Lernstrategien","Bindungstheorie","Neue Beurteilungsformen nach Winter","Lern- und Bildungsgeschichten","Entwicklungsaufgaben","Selbstkonzept","Inklusive Schule","ICF","Reteaming & Meisterklasse nach Furman","Hochbegabung","Didaktische Analyse nach Klafki","Unterrichtsstörungen händeln","Integrativer Unterricht (Didaktische Prinzipien)","Othering","Doing Difference","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Soziale Perspektivenübernahme","Selbstwirksamkeitserwartung","Prüfungsangst","Projektunterricht","Konstruktivismus","Diversity","Intersektionalität","Bildungschancen","Migration","Behinderungsparadigmen"] },
+    { code:"B.02", name:"Kriterienorientiert beurteilen", bereich:"B", handlungsfeld:"Lernerfolge sichtbar machen (Jahr B)",
+      konzepte:["Beurteilung: Grundlagen","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Single Point Rubric","Konstruktivismus","Sachanalyse","Unterrichtssetting","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke"] },
+    { code:"B.03", name:"Lerngespräche führen", bereich:"B", handlungsfeld:"Jugendliche begleiten 1",
+      konzepte:["Coaching-Gespräche mit Lernenden","Gesprächsführung","Zone der nächstmöglichen Entwicklung nach Wygotski","Ich schaffs - für Jugendliche","Selbstwirksamkeitserwartung","Lernstrategien","Feedbackebenen","Systemisch-Lösungsorientierte Beratung","Dialogisches Lernen","Gleichwürdigkeit nach Juul","Lernprozessmodelle: PADUA KAFKA SAMBA","WOWW-Ansatz nach Berg","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Bindungstheorie","Lehrperson nach Hattie","Beurteilung: Grundlagen","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Lern- und Bildungsgeschichten","Selbstkonzept","Förderkreislauf und Förderplanung","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Hochbegabung","Integrativer Unterricht (Didaktische Prinzipien)","Konstruktivismus","Motivation","Prüfungsangst"] },
+    { code:"B.04", name:"Lernende in Beurteilungsprozesse involvieren", bereich:"B", handlungsfeld:"Lernerfolge sichtbar machen (Jahr B)",
+      konzepte:["Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Beurteilung: Grundlagen","Partizipation (Stufenmodell)","Single Point Rubric","Selbstwirksamkeitserwartung","Feedbackebenen","Ermöglichungsdidaktik nach Arnold","Dialogisches Lernen","Zone der nächstmöglichen Entwicklung nach Wygotski","Kritische Rückmeldung geben nach Furman","Demokratiepädagogik (Just Community)","Bildungschancen","Unterrichtssetting","Konstruktivismus","Motivation"] },
+    { code:"B.05", name:"Lernprozesse individuell begleiten", bereich:"B", handlungsfeld:"Jugendliche begleiten 1",
+      konzepte:["Förderkreislauf und Förderplanung","Dialogisches Lernen","Zone der nächstmöglichen Entwicklung nach Wygotski","Binnendifferenzierung: verschiedene Varianten","Natürliche Differenzierung","Lernstrategien","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Integrativer Unterricht (Didaktische Prinzipien)","Ich schaffs - für Jugendliche","Coaching-Gespräche mit Lernenden","Ermöglichungsdidaktik nach Arnold","Unterrichtssetting","Konstruktivismus","Diversity","Intersektionalität","Doing Difference","Bindungstheorie","Beurteilung: Grundlagen","Lernprozessmodelle: PADUA KAFKA SAMBA","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Lern- und Bildungsgeschichten","Beobachtung","Entwicklungsaufgaben","Selbstkonzept","Inklusive Schule","ICF","Zusammenarbeit in der integrativen Schule","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Motivation","Systemisch-Lösungsorientierte Beratung","Behinderungsparadigmen","Soziale Perspektivenübernahme","Hochbegabung","Prüfungsangst","Single Point Rubric","Feedbackebenen","Berufswahltheorien"] },
+    { code:"B.06", name:"Lernen analysieren", bereich:"B", handlungsfeld:"Lernerfolge sichtbar machen (Jahr A)",
+      konzepte:["Bedingungsanalyse","Beobachtung","Beurteilung: Grundlagen","Förderkreislauf und Förderplanung","Selbstkonzept","Motivation","Prüfungsangst","Systemische Pädagogik","Dialogisches Lernen","Unterrichtssetting","Konstruktivismus","Lern- und Bildungsgeschichten","Entwicklungsaufgaben","ICF","Hochbegabung","Selbstwirksamkeitserwartung","Diversity","Intersektionalität","Othering","Bildungschancen","Single Point Rubric","Lernstrategien","Lernprozessmodelle: PADUA KAFKA SAMBA","Zone der nächstmöglichen Entwicklung nach Wygotski"] },
+    { code:"E.01", name:"Klassen und Gruppen führen", bereich:"E", handlungsfeld:"Gruppen begleiten 2",
+      konzepte:["Klassenführung nach Kounin und Evertson","Linzer Konzept der Klassenführung nach Mayr","Phasenmodell der Teamentwicklung nach Tuckman","Gesprächsformen im Unterricht","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Unterrichtsstörungen händeln","Lehrperson nach Hattie","Systemisch-Lösungsorientierte Beratung","Nähe und Distanz in pädagogischen Beziehungen","Erziehungsstile","Erziehungsansätze","Gewaltfreie Kommunikation nach Rosenberg","Neue Autorität nach Omer","WOWW-Ansatz nach Berg","Reteaming & Meisterklasse nach Furman","Bindungstheorie","Konstruktivismus","Motivation"] },
+    { code:"E.02", name:"Lernfreundliches Klima aufbauen", bereich:"E", handlungsfeld:"Gruppen begleiten 2",
+      konzepte:["Reteaming & Meisterklasse nach Furman","WOWW-Ansatz nach Berg","Unterrichtsstörungen händeln","No Blame Approach","Gewaltfreie Kommunikation nach Rosenberg","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Phasenmodell der Teamentwicklung nach Tuckman","Klassenrat","Demokratiepädagogik (Just Community)","Lehrperson nach Hattie","Linzer Konzept der Klassenführung nach Mayr","Systemisch-Lösungsorientierte Beratung","Nähe und Distanz in pädagogischen Beziehungen","Coaching-Gespräche mit Lernenden","HERZ-Theorie des Spiels","Projektunterricht","Systemische Biografiearbeit nach Röhrbein","Neue Autorität nach Omer","Dramatisierung, Entdramatisierung & Gender","Selbstkonzept","Lernstrategien","Kritische Rückmeldung geben nach Furman","Logische Ebenen nach Dilts","Erziehungsstile","Erziehungsansätze","Konstruktivismus","Motivation","Ich schaffs - für Jugendliche","Othering","Soziale Perspektivenübernahme","Bindungstheorie","Spiel in Kindheit und Jugend"] },
+    { code:"E.03", name:"Diversity berücksichtigen", bereich:"E", handlungsfeld:"Diversity 1",
+      konzepte:["Diversity","Doing Difference","Intersektionalität","Dramatisierung, Entdramatisierung & Gender","Funktion von Vorurteilen","Othering","Inklusive Schule","Bildungschancen","Migration","Behinderungsparadigmen","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Partizipation (Stufenmodell)","Dimensionen offenen Unterrichts","Demokratiepädagogik (Just Community)","Soziale Wahrnehmung","Lernstrategien","Logische Ebenen nach Dilts","Hochbegabung","ICF","Zusammenarbeit in der integrativen Schule","Förderkreislauf und Förderplanung","Integrativer Unterricht (Didaktische Prinzipien)","Bedingungsanalyse","Unterrichtssetting","Binnendifferenzierung: verschiedene Varianten","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Systemische Biografiearbeit nach Röhrbein","Beobachtung","Entwicklungsaufgaben","Selbstkonzept","Das Ende der Erziehung nach Postman","Reteaming & Meisterklasse nach Furman","Konstruktivismus","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Soziale Perspektivenübernahme","Ermöglichungsdidaktik nach Arnold","ADHS"] },
+    { code:"E.04", name:"Partizipation ermöglichen", bereich:"E", handlungsfeld:"Diversity 1",
+      konzepte:["Inklusive Schule","Partizipation (Stufenmodell)","Dimensionen offenen Unterrichts","Klassenrat","Demokratiepädagogik (Just Community)","Bildungschancen","Gleichwürdigkeit nach Juul","Soziale Perspektivenübernahme","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Migration","Behinderungsparadigmen","Dialogisches Lernen","Gesprächsformen im Unterricht","Antinomien","Diversity","Intersektionalität","Othering","Doing Difference","Erziehungsstile","Neue Autorität nach Omer","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","No Blame Approach","WOWW-Ansatz nach Berg","Selbstkonzept","Das Ende der Erziehung nach Postman","Reteaming & Meisterklasse nach Furman","Konstruktivismus","Motivation","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Ermöglichungsdidaktik nach Arnold"] },
+    { code:"E.05", name:"Beziehung aufbauen", bereich:"E", handlungsfeld:"Jugendliche begleiten 1",
+      konzepte:["Gleichwürdigkeit nach Juul","Antinomien","Antinomien im professionellen Handeln","Systemische Pädagogik","Beziehung Lehrer:in - Schüler:in","Erziehungsstile","Erziehungsansätze","Soziale Perspektivenübernahme","Neue Autorität nach Omer","Nähe und Distanz in pädagogischen Beziehungen","Bindungstheorie","Dialogisches Lernen","Selbstwirksamkeitserwartung","Coaching-Gespräche mit Lernenden","Gewaltfreie Kommunikation nach Rosenberg","Lehrperson nach Hattie","No Blame Approach","WOWW-Ansatz nach Berg","Entwicklungsaufgaben","Selbstkonzept","Gute Lehrerinnen und Lehrer","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Unterrichtsstörungen händeln","Konstruktivismus","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Klassenrat","HERZ-Theorie des Spiels","Spiel in Kindheit und Jugend","Elterngespräche"] },
+    { code:"E.06", name:"Konflikte lösen", bereich:"E", handlungsfeld:"3. Studienjahr",
+      konzepte:["Konfliktebenen","Konfliktgespräche","Erziehungsstile","Gleichwürdigkeit nach Juul","Gewaltfreie Kommunikation nach Rosenberg","Neue Autorität nach Omer","No Blame Approach","Nähe und Distanz in pädagogischen Beziehungen","Logische Ebenen nach Dilts","Kritische Rückmeldung geben nach Furman","Soziale Perspektivenübernahme","WOWW-Ansatz nach Berg","Elterngespräche","Gesprächsführung","Phasenmodell der Teamentwicklung nach Tuckman","Dramatisierung, Entdramatisierung & Gender","Entwicklungsaufgaben","Reteaming & Meisterklasse nach Furman","Unterrichtsstörungen händeln","Konstruktivismus","Kollegiale Fallberatung (Intervision)","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Intersektionalität","Othering","Klassenrat","Demokratiepädagogik (Just Community)","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Migration","Coaching-Gespräche mit Lernenden"] },
+    { code:"E.07", name:"Elternkontakte gestalten", bereich:"E", handlungsfeld:"3. Studienjahr",
+      konzepte:["Elternkontakte aufbauen","Orientierungsraster Zusammenarbeit mit Eltern","Qualitätsmerkmale schulische Elternarbeit","Erziehungs- und Bildungspartnerschaft","Elterngespräche","Konfliktgespräche","Berufsauftrag des LCH","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Konstruktivismus","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Migration","Systemische Pädagogik","Gesprächsführung"] },
+    { code:"E.08", name:"Berufswahl begleiten", bereich:"E", handlungsfeld:"3. Studienjahr",
+      konzepte:["Berufsbildung CH","Berufswahlunterricht","Berufswahltheorien","Berufswahl als Copingprozess","Elternarbeit im Berufswahlprozess","Systemische Biografiearbeit nach Röhrbein","Entwicklungsaufgaben","Orientierungsraster Zusammenarbeit mit Eltern","Selbstkonzept","ICF","Reteaming & Meisterklasse nach Furman","Hochbegabung","Konstruktivismus","Motivation","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Diversity","Bildungschancen","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Migration","Coaching-Gespräche mit Lernenden","Selbstwirksamkeitserwartung","Soziale Wahrnehmung","Logische Ebenen nach Dilts","Feedbackebenen","Es ist nie zu spät eine Glückliche Kindheit zu haben nach Furman","Funktion der Schule"] },
+    { code:"E.09", name:"Gespräche führen", bereich:"E", handlungsfeld:"3. Studienjahr",
+      konzepte:["Gesprächsführung","Elterngespräche","Coaching-Gespräche mit Lernenden","Gewaltfreie Kommunikation nach Rosenberg","Systemisch-Lösungsorientierte Beratung","Ich schaffs - für Jugendliche","Feedbackebenen","Neue Autorität nach Omer","No Blame Approach","Gesprächsformen im Unterricht","WOWW-Ansatz nach Berg","Nähe und Distanz in pädagogischen Beziehungen","Logische Ebenen nach Dilts","Systemische Biografiearbeit nach Röhrbein","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Konstruktivismus","Kollegiale Fallberatung (Intervision)","Motivation","Systemische Pädagogik","Gleichwürdigkeit nach Juul","Erziehungsstile","Dialogisches Lernen","Orientierungsraster Zusammenarbeit mit Eltern"] },
+    { code:"E.10", name:"Entwicklungsprozesse begleiten", bereich:"E", handlungsfeld:"3. Studienjahr",
+      konzepte:["Entwicklungsaufgaben","Förderkreislauf und Förderplanung","Bindungstheorie","Ich schaffs - für Jugendliche","Coaching-Gespräche mit Lernenden","Logische Ebenen nach Dilts","Es ist nie zu spät eine Glückliche Kindheit zu haben nach Furman","Systemische Biografiearbeit nach Röhrbein","Lern- und Bildungsgeschichten","Systemisch-Lösungsorientierte Beratung","Zone der nächstmöglichen Entwicklung nach Wygotski","Berufswahltheorien","Dramatisierung, Entdramatisierung & Gender","Beobachtung","Selbstkonzept","HERZ-Theorie des Spiels","Inklusive Schule","Lernstrategien","ICF","Zusammenarbeit in der integrativen Schule","Reteaming & Meisterklasse nach Furman","Hochbegabung","Integrativer Unterricht (Didaktische Prinzipien)","Konstruktivismus","Motivation","Diversity","Othering","Behinderungsparadigmen","Soziale Perspektivenübernahme","Selbstwirksamkeitserwartung","Erziehungsstile","Neue Autorität nach Omer","Feedbackebenen","Orientierungsraster Zusammenarbeit mit Eltern"] },
+    { code:"I.01", name:"Umgang mit eigener Bildungsbiografie weiterentwickeln", bereich:"I", handlungsfeld:"Reflexion (Jahr B)",
+      konzepte:["Es ist nie zu spät eine Glückliche Kindheit zu haben nach Furman","Systemische Biografiearbeit nach Röhrbein","Berufsauftrag des LCH","Gute Lehrerinnen und Lehrer","Rolle der Lehrperson","Konstruktivismus","Antinomien","Antinomien im professionellen Handeln","Erziehungsstile","Kollegiale Fallberatung (Intervision)","Selbstwirksamkeitserwartung","Neue Beurteilungsformen nach Winter","Logische Ebenen nach Dilts","Neue Beurteilungskultur nach Winter","Selbstkonzept","Reteaming & Meisterklasse nach Furman","Migration"] },
+    { code:"I.02", name:"Sich reflektiert weiterentwickeln", bereich:"I", handlungsfeld:"Reflexion (Jahr A)",
+      konzepte:["Professionelle Reflexivität","Unterricht reflektieren","Kollegiale Fallberatung (Intervision)","Logische Ebenen nach Dilts","Berufsauftrag des LCH","Gute Lehrerinnen und Lehrer","Rolle der Lehrperson","Lehrperson nach Hattie","Antinomien","Antinomien im professionellen Handeln","Pädagogische Professionalität","Systemische Pädagogik","Aktionsforschung","Soziale Wahrnehmung","Funktion von Vorurteilen","Nähe und Distanz in pädagogischen Beziehungen","Beobachtung","Belastung und Beanspruchung im Lehrerberuf","Funktion der Schule","Unterrichtsstörungen händeln","Motivation","Konstruktivismus","Othering","Doing Difference","Coaching-Gespräche mit Lernenden","Salutogenese","Burnout","Kooperation von Lehrpersonen"] },
+    { code:"I.03", name:"Sich gesund halten", bereich:"I", handlungsfeld:"3. Studienjahr",
+      konzepte:["Gesundheit von Lehrpersonen","Kollegiale Fallberatung (Intervision)","Salutogenese","Belastung und Beanspruchung im Lehrerberuf","Unterrichtsstörungen händeln","Burnout","Konstruktivismus","Motivation","Es ist nie zu spät eine Glückliche Kindheit zu haben nach Furman","Systemische Biografiearbeit nach Röhrbein","Berufsauftrag des LCH","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Rolle der Lehrperson"] },
+    { code:"I.04", name:"An Schul- und Unterrichtsentwicklung beteiligen", bereich:"I", handlungsfeld:"3. Studienjahr",
+      konzepte:["Kollegiale Fallberatung (Intervision)","Unterricht reflektieren","Kooperation von Lehrpersonen","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Berufsauftrag des LCH","Selbstkonzept","Inklusive Schule","Funktion der Schule","Das Ende der Erziehung nach Postman","Reteaming & Meisterklasse nach Furman","Rolle der Lehrperson","Ermöglichungsdidaktik nach Arnold","Gesundheit von Lehrpersonen","Aktionsforschung","Erziehungsansätze","Bildungschancen","Chancengerechtigkeit (normative/rechtliche Grundlagen)","Konstruktivismus"] },
+    { code:"I.05", name:"Zusammenarbeiten und kooperieren", bereich:"I", handlungsfeld:"3. Studienjahr",
+      konzepte:["Kooperation von Lehrpersonen","Zusammenarbeit in der integrativen Schule","Kollegiale Fallberatung (Intervision)","Berufsauftrag des LCH","Unterricht reflektieren","Phasenmodell der Teamentwicklung nach Tuckman","Gesundheit von Lehrpersonen","Inklusive Schule","Förderkreislauf und Förderplanung","ICF","Kritische Rückmeldung geben nach Furman","Reteaming & Meisterklasse nach Furman","Integrativer Unterricht (Didaktische Prinzipien)","Rolle der Lehrperson","Logische Ebenen nach Dilts","Belastung und Beanspruchung im Lehrerberuf","Unterrichtssetting","Konstruktivismus","Systemisch-Lösungsorientierte Beratung","Partizipation (Stufenmodell)","Soziale Perspektivenübernahme","Systemische Pädagogik","WOWW-Ansatz nach Berg","Gleichwürdigkeit nach Juul","Neue Autorität nach Omer","Feedbackebenen","Funktion der Schule","Burnout"] },
+    { code:"L.01", name:"Lernziele formulieren", bereich:"L", handlungsfeld:"Lernen anregen (Aufgaben)",
+      konzepte:["Lernzieltaxonomie nach Bloom","Förderkreislauf und Förderplanung","Bedingungsanalyse","Sachanalyse","Beurteilung: Grundlagen","Binnendifferenzierung: verschiedene Varianten","Natürliche Differenzierung","Zone der nächstmöglichen Entwicklung nach Wygotski","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Konstruktivismus","Ermöglichungsdidaktik nach Arnold","Lernprozessmodelle: PADUA KAFKA SAMBA","Unterrichtssetting","ICF","Hochbegabung","WOWW-Ansatz nach Berg","Motivation"] },
+    { code:"L.02", name:"Lernaufgaben entwickeln", bereich:"L", handlungsfeld:"Lernen anregen (Aufgaben)",
+      konzepte:["Ermöglichungsdidaktik nach Arnold","LUKAS - ein Modell zur Entwicklung von kompetenzfördernden Aufgabensets","Lernprozessmodelle: PADUA KAFKA SAMBA","Konstruktivismus","Dimensionen offenen Unterrichts","HERZ-Theorie des Spiels","Projektunterricht","Binnendifferenzierung: verschiedene Varianten","Natürliche Differenzierung","Lernzieltaxonomie nach Bloom","Bedingungsanalyse","Sachanalyse","Unterrichtssetting","Beurteilung: Grundlagen","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Förderkreislauf und Förderplanung","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Lernstrategien","Zone der nächstmöglichen Entwicklung nach Wygotski","Inklusive Schule","Kompetenzorientierung als Leitbegriff der Didaktik","Hochbegabung","Didaktische Analyse nach Klafki","Integrativer Unterricht (Didaktische Prinzipien)","Reteaming & Meisterklasse nach Furman","Dialogisches Lernen"] },
+    { code:"L.03", name:"Passende Inhalte aufbereiten", bereich:"L", handlungsfeld:"Lernen anregen (Aufgaben)",
+      konzepte:["Didaktische Analyse nach Klafki","Sachanalyse","Bedingungsanalyse","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Binnendifferenzierung: verschiedene Varianten","Natürliche Differenzierung","Unterrichtssetting","Grundformen des Unterrichtens","Konstruktivismus","Lernstrategien","Dimensionen offenen Unterrichts","Dialogisches Lernen","Lernprozessmodelle: PADUA KAFKA SAMBA","Das Ende der Erziehung nach Postman","Integrativer Unterricht (Didaktische Prinzipien)","Motivation","Ermöglichungsdidaktik nach Arnold"] },
+    { code:"L.04", name:"Basistechniken situativ einsetzen", bereich:"L", handlungsfeld:"Lernen anregen (Formen)",
+      konzepte:["Grundformen des Unterrichtens","Dimensionen offenen Unterrichts","Gesprächsformen im Unterricht","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Unterrichtssetting","HERZ-Theorie des Spiels","Lehrperson nach Hattie","Konstruktivismus","Erziehungsstile","WOWW-Ansatz nach Berg","Unterrichtsstörungen händeln"] },
+    { code:"L.05", name:"Spielsituationen gestalten", bereich:"L", handlungsfeld:"Lernen anregen (Formen)",
+      konzepte:["Spiel in Kindheit und Jugend","HERZ-Theorie des Spiels","Planspiele","Unterrichtssetting","Konstruktivismus","Motivation"] },
+    { code:"L.06", name:"Lernen in Epochen gestalten", bereich:"L", handlungsfeld:"3. Studienjahr",
+      konzepte:["Unterrichtssetting","Dimensionen offenen Unterrichts","Projektunterricht","Konstruktivismus","Dialogisches Lernen","Lernprozessmodelle: PADUA KAFKA SAMBA","Ermöglichungsdidaktik nach Arnold"] },
+    { code:"L.07", name:"Lernen und Digitalität verbinden", bereich:"L", handlungsfeld:"Lernen anregen (Formen)",
+      konzepte:["Kultur der Digitalität","Digitalität","Projektunterricht","HERZ-Theorie des Spiels","Didaktische Analyse nach Klafki","Konstruktivismus","Spiel in Kindheit und Jugend"] },
+    { code:"L.08", name:"Lernsettings individualisieren", bereich:"L", handlungsfeld:"Diversity 2",
+      konzepte:["Integrativer Unterricht (Didaktische Prinzipien)","Dimensionen offenen Unterrichts","Projektunterricht","Binnendifferenzierung: verschiedene Varianten","Natürliche Differenzierung","Lernstrategien","Hochbegabung","Inklusive Schule","Förderkreislauf und Förderplanung","ICF","Zusammenarbeit in der integrativen Schule","Zone der nächstmöglichen Entwicklung nach Wygotski","10 Merkmale guten Unterrichts nach Meyer","10 Qualitätsmerkmale guten Unterrichts nach Helmke","Bedingungsanalyse","Lernzieltaxonomie nach Bloom","Dialogisches Lernen","Lernprozessmodelle: PADUA KAFKA SAMBA","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Diversity","Doing Difference","Lern- und Bildungsgeschichten","Beobachtung","Selbstkonzept","Reteaming & Meisterklasse nach Furman","Ermöglichungsdidaktik nach Arnold","Unterrichtssetting","Konstruktivismus","Motivation","Behinderungsparadigmen","Coaching-Gespräche mit Lernenden","Prüfungsangst","ADHS","Ich schaffs - für Jugendliche","Single Point Rubric"] },
+    { code:"L.09", name:"Eigenständiges Lernen fördern", bereich:"L", handlungsfeld:"Diversity 2",
+      konzepte:["Lernstrategien","Dialogisches Lernen","Ermöglichungsdidaktik nach Arnold","Dimensionen offenen Unterrichts","Projektunterricht","Neue Beurteilungsformen nach Winter","Neue Beurteilungskultur nach Winter","Motivation","Ich schaffs - für Jugendliche","Systemisch-Lösungsorientierte Beratung","Lern- und Bildungsgeschichten","Hochbegabung","Integrativer Unterricht (Didaktische Prinzipien)","Partizipation (Stufenmodell)","Klassenrat","Demokratiepädagogik (Just Community)","Coaching-Gespräche mit Lernenden","Selbstwirksamkeitserwartung","Systemische Pädagogik","ADHS","WOWW-Ansatz nach Berg","Beobachtung","Selbstkonzept","Das Ende der Erziehung nach Postman","Reteaming & Meisterklasse nach Furman","Bedingungsanalyse","Unterrichtssetting","Konstruktivismus","Behinderungsparadigmen","Erziehungsansätze","Single Point Rubric","Feedbackebenen"] },
+    { code:"L.10", name:"BNE integrieren", bereich:"L", handlungsfeld:"3. Studienjahr",
+      konzepte:["Bildung für nachhaltige Entwicklung","BNE im Lehrplan 21","Dimensionen offenen Unterrichts","Projektunterricht","Konstruktivismus"] }
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════
+//  SYSTEM PROMPT
+// ═══════════════════════════════════════════════════════════
+const SYSTEM_PROMPT = `Du bist der Konzeptothek-Bot des Masterstudiengangs SEK I & II der Pädagogischen Hochschule Graubünden (PHGR).
+
+DEINE IDENTITÄT:
+Du bist kein digitaler Bibliothekar. Du bist ein konzeptueller Provokateur – manchmal unbequem, gelegentlich mit einem Augenzwinkern, immer präzise. Du erzeugst produktive Reibung zwischen Konzepten, die zum Positionieren zwingt.
+
+DEINE KERNAUFGABE:
+1. Erkunde die theoretische Landschaft: Womit hat die Person gearbeitet? In welchem Handlungsfeld bewegt sie sich?
+2. Identifiziere Muster und Lücken: Welcher Theoriehabitat? Was fehlt auffällig?
+3. Erzeuge eine gezielte Kollision: Zwei Konzepte, die sich genau am blinden Fleck reiben.
+4. Stelle EINE Frage – oder mach eine Aussage, die keine Frage braucht.
+
+═══════════════════════════
+REAKTIONSREPERTOIRE – variiere bewusst, niemals Schema:
+═══════════════════════════
+Du hast verschiedene Züge zur Auswahl. Wähle den, der sitzt – nicht immer denselben:
+
+• DIREKTEINSTIEG: Ohne Puffer direkt in die Spannung. "Wygotski und Omer im selben Atemzug. Das verträgt sich nicht. Warum nicht?"
+• KURZE BEOBACHTUNG OHNE FRAGE: Manchmal wirkt eine Aussage stärker als jede Frage. "Du bewegst dich seit drei Antworten im selben Theoriehabitat. Das ist kein Zufall."
+• RÜCKSPIEGELUNG MIT VERDREHUNG: Was die Person sagte, leicht verschoben zurückgeben, sodass sie es neu hört.
+• EINE EINZIGE FRAGE, DANN NICHTS: "Was passiert, wenn Kounin versagt?" Fertig.
+• SEHR KURZ: 1-2 Sätze können mehr auslösen als ein Absatz. Trau der Kürze.
+• ÜBERRASCHENDE VERBINDUNG: Konzept aus einem völlig anderen SiKo-Bereich ins Spiel bringen.
+
+VERBOTEN:
+- Mit Affirmation beginnen ("Interessant!", "Guter Punkt", "Das stimmt")
+- Das Drei-Akt-Schema: aufnehmen → herausfordern → fragen
+- Mehr als eine Frage pro Antwort
+- Erklärende Puffersätze vor der eigentlichen Aussage
+- Konzeptlisten aufzählen
+
+═══════════════════════════
+HUMOR – sparsam, situativ, nie erzwungen:
+═══════════════════════════
+Gelegentliche Leichtigkeit ist erlaubt – als Überraschungsmoment, nicht als Muster.
+Erlaubt: sanfte Ironie über konzeptuelle Reflexe ("Konstruktivismus – das theoretische Graubrot der Pädagogik: nährt, aber irgendwann fragt man sich, ob es auch schmeckt"), Selbstironie über die eigene Rolle als Provokationsmaschine.
+Nie: zynisch, auf Kosten der studierenden Person, bei ernsten Themen (Burnout, Gesundheit, Biografie, Inklusion, Konflikt).
+Maximum: ein Moment pro Gespräch, wenn er sich organisch ergibt.
+
+═══════════════════════════
+WENN NACH KONZEPTINHALTEN GEFRAGT WIRD:
+═══════════════════════════
+Verweigere Zusammenfassungen NICHT mit technischen Gründen.
+Verweigere sie mit pädagogischen: "Eine Zusammenfassung würde genau die Denkarbeit abnehmen, die deine Konstruktion trägt – und das wäre schade, weil du das kannst."
+
+Biete stattdessen Scaffolding an, das das Lesen wertvoller macht:
+• LESEFRAGE MITGEBEN: "Lies es mit dieser Frage: Was ist das Gegenteil davon – und warum nennen sie es nie beim Namen?"
+• VERGLEICHSRAHMEN: "Lies es neben [Konzept X]. Die Spannung zwischen beiden ist die eigentliche Botschaft."
+• SUCHLINIE: "Schau beim Lesen: Wer ist hier das Subjekt – Lehrperson oder Lernende?"
+• KONTEXTVERORTUNG: "Dieses Konzept sitzt im Handlungsfeld [Y]. Was sagt das über seinen Anwendungskontext?"
+• KONZEPTAUSWAHL-HILFE: Du kannst aktiv dabei helfen, welche Konzepte für eine Konstruktion relevant sein könnten – das ist keine Abkürzung, sondern Orientierung im Netz.
+
+═══════════════════════════
+KONSTRUKTIVISMUS-ALARM:
+═══════════════════════════
+Erscheint in 27+ von 31 SiKos. Bei Erwähnung sofort nachfragen – aber ohne Schema:
+Manchmal: "Was meinst du damit genau?" Manchmal: "Welche Lerntheorie hast du ihm je gegenübergestellt?" Manchmal nur: "Konstruktivismus. Und was nicht?"
+
+═══════════════════════════
+ÜBER HANDLUNGSFELDER:
+═══════════════════════════
+Seit dem Umbau des Studiengangs sind 21 der 31 SiKos in Jahr A und Jahr B zu Handlungsfeldern gebündelt. 1. und 2. Studienjahr sind immer im gleichen Jahr (A oder B). Konstruktionen entstehen neu auf Handlungsfeld-Ebene (2-3 SiKos zusammen), nicht mehr auf Einzel-SiKo-Ebene. Das 3. Studienjahr (10 SiKos) bleibt unverändert.
+
+Jahr A: Jugendliche begleiten 1 (E.05/B.05/B.03) | Lernen anregen Formen (L.05/L.04/L.07) | Lernerfolge sichtbar machen A (B.01/B.06) | Diversity 2 (L.09/L.08) | Reflexion A (I.02)
+Jahr B: Gruppen begleiten 2 (E.01/E.02) | Lernen anregen Aufgaben (L.02/L.03/L.01) | Lernerfolge sichtbar machen B (B.02/B.04) | Diversity 1 (E.03/E.04) | Reflexion B (I.01)
+Jahr 3: E.06 | E.07 | E.08 | E.09 | E.10 | I.03 | I.04 | I.05 | L.06 | L.10
+
+Für den Bot bedeutet das: Wenn jemand ein Handlungsfeld nennt, denke in der konzeptuellen Schnittmenge aller beteiligten SiKos. Die interessantesten Kollisionen liegen oft INNERHALB eines Handlungsfelds – Konzepte aus verschiedenen SiKos, die dasselbe Phänomen unterschiedlich beleuchten oder widersprechen.
+
+═══════════════════════════
+KONZEPTCLUSTER (für Reasoning):
+═══════════════════════════
+- Klassenführung: Kounin/Evertson | Linzer Konzept/Mayr | als lernförderliche Struktur | in neuer Lernkultur | Irrtümer
+- Planspiele: Planspiele | Plan- und Simulationsspiele | im Unterricht/Klippert | Planspielmethodik
+- Fraefel-Didaktik: Rückwärtsplanung | Planung Unterrichtseinheit | Bilanzierung/Überprüfung | Aufgaben als Dreh-/Angelpunkt | einzelne Stunde planen
+- Lehrpersonengesundheit: Burnout | Salutogenese | Belastung/Beanspruchung | Gesundheit von Lehrpersonen
+- Diversität/Macht: Othering | Doing Difference | Intersektionalität | Diversity | Dramatisierung/Gender | Soziale Herkunft
+
+DATENBASIS:
+${JSON.stringify(KB, null, 1)}`;
+
+// ═══════════════════════════════════════════════════════════
+//  UI-LOGIK
+// ═══════════════════════════════════════════════════════════
+const chat    = document.getElementById('chat-container');
+const input   = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+let history   = [];
+let busy      = false;
+
+function append(role, html) {
+  const wrap   = document.createElement('div');
+  wrap.className = `message ${role}`;
+  const label  = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'bot' ? 'Konzeptothek' : 'Du';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML  = html;
+  wrap.appendChild(label);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+  const w = document.createElement('div');
+  w.className = 'typing-wrap'; w.id = 'typing';
+  w.innerHTML = '<div class="msg-label">Konzeptothek</div><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  chat.appendChild(w);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function rmTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function callAPI(msgs, maxTokens) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
+    body: JSON.stringify({ model:MODEL, max_tokens:maxTokens||800, system:SYSTEM_PROMPT, messages:msgs })
+  });
+  if (!r.ok) throw new Error(`API ${r.status}: ${await r.text()}`);
+  return (await r.json()).content[0].text;
+}
+
+async function send() {
+  const txt = input.value.trim();
+  if (!txt || busy) return;
+  input.value = ''; input.style.height = 'auto';
+  busy = true; sendBtn.disabled = true;
+  append('user', esc(txt));
+  history.push({ role:'user', content:txt });
+  showTyping();
+  try {
+    const reply = await callAPI(history);
+    rmTyping(); append('bot', esc(reply));
+    history.push({ role:'assistant', content:reply });
+  } catch(e) {
+    rmTyping();
+    const w = document.createElement('div'); w.className = 'message bot';
+    w.innerHTML = `<div class="msg-label">System</div><div class="error-bubble">&#9888; ${esc(e.message)}<br><br>API-Key in der HTML-Datei prüfen (const API_KEY = ...).</div>`;
+    chat.appendChild(w);
+  }
+  busy = false; sendBtn.disabled = false; input.focus();
+}
+
+input.addEventListener('input', function() { this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,130)+'px'; });
+input.addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } });
+sendBtn.addEventListener('click', send);
+
+// ── Init ──
+(async () => {
+  showTyping();
+  try {
+    const opening = await callAPI([{ role:'user', content:'[SYSTEM-INIT: Eröffne das Gespräch. Max. 3 Sätze + eine einzige Frage. Kein Kundenservice-Ton. Direkt, provokativ, einladend. Ziel: Die Person beschreibt ihre theoretische Landschaft.]' }], 300);
+    rmTyping(); append('bot', esc(opening));
+    history.push({ role:'assistant', content:opening });
+  } catch(_) {
+    rmTyping();
+    const fb = 'Du bist in der Konzeptothek. 147 Konzepte, 31 SiKos – und die Verbindungen, auch die widersprüchlichen. Ich liefere keine Definitionen.\n\nMit welchen Theorien oder Konzepten bist du gerade unterwegs?';
+    append('bot', esc(fb)); history.push({ role:'assistant', content:fb });
+  }
+  input.focus();
+})();
+</script>
+</body>
+</html>
