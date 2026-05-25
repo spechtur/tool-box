@@ -46,9 +46,10 @@
     .header-title { font-family: 'Georgia', serif; font-size: 1em; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
     .header-subtitle { font-size: 0.68em; color: var(--text-muted); font-style: italic; margin-top: 1px; letter-spacing: 0.03em; }
     .proto-badge { font-family: monospace; font-size: 0.62em; font-weight: bold; letter-spacing: 0.06em; background: var(--phgr-gelb); color: #1a1a1a; padding: 3px 7px 2px; }
-    #chat-container { flex: 1; overflow-y: auto; padding: 28px 24px 12px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
-    #chat-container::-webkit-scrollbar { width: 3px; }
-    #chat-container::-webkit-scrollbar-thumb { background: var(--phgr-gelb); border-radius: 2px; }
+    #chat-scroll { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+    #chat-scroll::-webkit-scrollbar { width: 3px; }
+    #chat-scroll::-webkit-scrollbar-thumb { background: var(--phgr-gelb); border-radius: 2px; }
+    #chat-container { max-width: 800px; margin: 0 auto; padding: 28px 24px 12px; display: flex; flex-direction: column; gap: 20px; }
     .message { display: flex; flex-direction: column; max-width: 82%; animation: msgIn 0.25s ease both; }
     @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .message.bot  { align-self: flex-start; }
@@ -64,7 +65,8 @@
     .dot:nth-child(2) { animation-delay: 0.18s; }
     .dot:nth-child(3) { animation-delay: 0.36s; }
     @keyframes dotBounce { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-7px); opacity: 1; } }
-    #input-wrap { background: var(--surface); border-top: 1px solid var(--border); padding: 14px 20px; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+    #input-wrap { background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
+    .input-inner { max-width: 800px; margin: 0 auto; padding: 14px 20px; display: flex; gap: 10px; align-items: flex-end; }
     #input-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
     #user-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 11px 15px; font-family: Georgia, serif; font-size: 0.92em; resize: none; min-height: 46px; max-height: 130px; line-height: 1.55; transition: border-color 0.2s; outline: none; }
     #user-input:focus { border-color: var(--phgr-gelb); }
@@ -87,22 +89,26 @@
   <div class="proto-badge">PROTOTYP &middot; 4 beschrieben / 147 bekannt</div>
 </header>
 
-<div id="chat-container"></div>
+<div id="chat-scroll">
+  <div id="chat-container"></div>
+</div>
 
 <div id="input-wrap">
-  <div id="input-col">
-    <textarea id="user-input" placeholder="Schreib hier ..." rows="1"></textarea>
-    <div class="input-hint">Enter &rarr; Senden &nbsp;&middot;&nbsp; Shift+Enter &rarr; Zeilenumbruch</div>
+  <div class="input-inner">
+    <div id="input-col">
+      <textarea id="user-input" placeholder="Schreib hier ..." rows="1"></textarea>
+      <div class="input-hint">Enter &rarr; Senden &nbsp;&middot;&nbsp; Shift+Enter &rarr; Zeilenumbruch</div>
+    </div>
+    <button id="send-btn" title="Senden">&#8594;</button>
   </div>
-  <button id="send-btn" title="Senden">&#8594;</button>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  KONFIGURATION — API-Key hier eintragen
+//  KONFIGURATION — Worker-URL hier eintragen
 // ═══════════════════════════════════════════════════════════
-const API_KEY = 'sk-ant-DEIN-API-KEY-HIER';
-const MODEL   = 'claude-opus-4-5-20251101';
+const WORKER_URL = 'https://konzeptothek-bot.david-halser.workers.dev';
+const MODEL      = 'claude-opus-4-6';
 
 // ═══════════════════════════════════════════════════════════
 //  DATENBASIS
@@ -470,7 +476,8 @@ ${JSON.stringify(KB, null, 1)}`;
 // ═══════════════════════════════════════════════════════════
 //  UI-LOGIK
 // ═══════════════════════════════════════════════════════════
-const chat    = document.getElementById('chat-container');
+const chat      = document.getElementById('chat-container');
+const chatScroll = document.getElementById('chat-scroll');
 const input   = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 let history   = [];
@@ -488,7 +495,7 @@ function append(role, html) {
   wrap.appendChild(label);
   wrap.appendChild(bubble);
   chat.appendChild(wrap);
-  chat.scrollTop = chat.scrollHeight;
+  chatScroll.scrollTop = chatScroll.scrollHeight;
 }
 
 function showTyping() {
@@ -496,7 +503,7 @@ function showTyping() {
   w.className = 'typing-wrap'; w.id = 'typing';
   w.innerHTML = '<div class="msg-label">Konzeptothek</div><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
   chat.appendChild(w);
-  chat.scrollTop = chat.scrollHeight;
+  chatScroll.scrollTop = chatScroll.scrollHeight;
 }
 
 function rmTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
@@ -506,9 +513,9 @@ function esc(s) {
 }
 
 async function callAPI(msgs, maxTokens) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+  const r = await fetch(WORKER_URL, {
     method: 'POST',
-    headers: { 'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
+    headers: { 'Content-Type':'application/json' },
     body: JSON.stringify({ model:MODEL, max_tokens:maxTokens||800, system:SYSTEM_PROMPT, messages:msgs })
   });
   if (!r.ok) throw new Error(`API ${r.status}: ${await r.text()}`);
@@ -529,9 +536,13 @@ async function send() {
     history.push({ role:'assistant', content:reply });
   } catch(e) {
     rmTyping();
+    const hint = WORKER_URL.includes('DEINE-WORKER') 
+      ? 'Worker-URL noch nicht eingetragen – <code>WORKER_URL</code> in der HTML-Datei ersetzen.'
+      : 'Worker nicht erreichbar. CORS-Problem beim lokalen Testen? Im Moodle-Kontext funktioniert es – oder Worker-URL prüfen.';
     const w = document.createElement('div'); w.className = 'message bot';
-    w.innerHTML = `<div class="msg-label">System</div><div class="error-bubble">&#9888; ${esc(e.message)}<br><br>API-Key in der HTML-Datei prüfen (const API_KEY = ...).</div>`;
+    w.innerHTML = `<div class="msg-label">System</div><div class="error-bubble">&#9888; ${esc(e.message)}<br><br>${hint}</div>`;
     chat.appendChild(w);
+    chatScroll.scrollTop = chatScroll.scrollHeight;
   }
   busy = false; sendBtn.disabled = false; input.focus();
 }
@@ -542,6 +553,12 @@ sendBtn.addEventListener('click', send);
 
 // ── Init ──
 (async () => {
+  if (WORKER_URL.includes('DEINE-WORKER')) {
+    rmTyping && rmTyping();
+    const fb = 'Du bist in der Konzeptothek. 147 Konzepte, 31 SiKos – und die Verbindungen, auch die widersprüchlichen. Ich liefere keine Definitionen.\n\nMit welchen Theorien oder Konzepten bist du gerade unterwegs?\n\n(Hinweis: Worker-URL noch nicht eingetragen – Bot läuft im Offline-Modus.)';
+    append('bot', esc(fb)); history.push({ role:'assistant', content:fb });
+    input.focus(); return;
+  }
   showTyping();
   try {
     const opening = await callAPI([{ role:'user', content:'[SYSTEM-INIT: Eröffne das Gespräch. Max. 3 Sätze + eine einzige Frage. Kein Kundenservice-Ton. Direkt, provokativ, einladend. Ziel: Die Person beschreibt ihre theoretische Landschaft.]' }], 300);
