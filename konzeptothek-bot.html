@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konzeptothek-Bot | PHGR Master SEK I & II</title>
+  <style>
+    :root {
+      --phgr-gelb: #c7d200;
+      --phgr-tuerkis: #23b2c6;
+      --phgr-rot: #ed6a69;
+      --phgr-orange: #fbb900;
+      --phgr-violett: #6169af;
+      --bg: #161616;
+      --surface: #1f1f1f;
+      --surface2: #2a2a2a;
+      --surface3: #333;
+      --text: #e2e2e2;
+      --text-muted: #777;
+      --text-dim: #555;
+      --border: #2e2e2e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--phgr-gelb);
+      padding: 11px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .back-btn {
+      font-family: monospace;
+      font-size: 0.72em;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 4px 9px;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .back-btn:hover { color: var(--phgr-gelb); border-color: var(--phgr-gelb); }
+    .phgr-logo { font-size: 1.35em; line-height: 1; letter-spacing: -0.01em; }
+    .phgr-logo .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; color: var(--phgr-gelb); }
+    .phgr-logo .gr { font-family: Georgia, serif; font-variant: small-caps; font-weight: 300; color: var(--text); letter-spacing: 0.05em; }
+    .header-title-block { flex: 1; }
+    .header-title { font-family: 'Georgia', serif; font-size: 1em; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
+    .header-subtitle { font-size: 0.68em; color: var(--text-muted); font-style: italic; margin-top: 1px; letter-spacing: 0.03em; }
+    .badge { font-family: monospace; font-size: 0.62em; font-weight: bold; letter-spacing: 0.06em; background: var(--phgr-gelb); color: #1a1a1a; padding: 3px 7px 2px; white-space: nowrap; }
+
+    /* ── Passwort-Overlay ── */
+    #pw-overlay {
+      position: fixed; inset: 0; background: rgba(22,22,22,0.97);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; flex-direction: column; gap: 18px;
+      padding: 24px;
+    }
+    #pw-overlay .pw-logo { font-size: 2em; }
+    #pw-overlay .pw-logo .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; color: var(--phgr-gelb); }
+    #pw-overlay .pw-logo .gr { font-family: Georgia, serif; font-variant: small-caps; font-weight: 300; color: var(--text); letter-spacing: 0.05em; }
+    #pw-overlay h2 { font-family: Georgia, serif; font-size: 1.1em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); text-align: center; }
+    #pw-overlay p { font-size: 0.8em; color: var(--text-muted); font-style: italic; text-align: center; max-width: 320px; }
+    .pw-box { display: flex; gap: 0; max-width: 340px; width: 100%; }
+    #pw-input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border); border-right: none;
+      color: var(--text); padding: 11px 14px; font-family: Georgia, serif; font-size: 0.95em;
+      outline: none; letter-spacing: 0.08em;
+    }
+    #pw-input:focus { border-color: var(--phgr-gelb); }
+    #pw-input::placeholder { color: var(--text-dim); letter-spacing: 0.02em; font-style: italic; }
+    #pw-btn {
+      background: var(--phgr-gelb); color: #111; border: none;
+      padding: 11px 18px; font-family: monospace; font-size: 0.85em;
+      font-weight: bold; letter-spacing: 0.06em; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #pw-btn:hover { opacity: 0.85; }
+    #pw-error { font-family: monospace; font-size: 0.75em; color: var(--phgr-rot); min-height: 1em; text-align: center; }
+
+    /* ── Chat ── */
+    #chat-container { flex: 1; overflow-y: auto; padding: 28px 24px 12px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
+    #chat-container::-webkit-scrollbar { width: 3px; }
+    #chat-container::-webkit-scrollbar-thumb { background: var(--phgr-gelb); border-radius: 2px; }
+
+    .message { display: flex; flex-direction: column; max-width: 82%; animation: msgIn 0.25s ease both; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .message.bot  { align-self: flex-start; }
+    .message.user { align-self: flex-end; }
+    .msg-label { font-family: monospace; font-size: 0.62em; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; color: var(--text-dim); }
+    .message.user .msg-label { text-align: right; }
+
+    .msg-bubble { padding: 13px 17px; line-height: 1.75; font-size: 0.93em; }
+    .message.bot .msg-bubble {
+      background: var(--surface2);
+      border-left: 3px solid var(--phgr-gelb);
+      border-radius: 0 6px 6px 2px;
+      color: var(--text);
+    }
+    .message.user .msg-bubble {
+      background: var(--phgr-gelb);
+      color: #111;
+      font-family: Georgia, serif;
+      border-radius: 6px 6px 2px 6px;
+    }
+
+    /* Strukturierte Antwortblöcke */
+    .msg-bubble strong { color: var(--phgr-gelb); font-weight: 600; }
+    .msg-bubble em { color: #bbb; font-style: italic; }
+    .collision-block {
+      margin: 10px 0 8px;
+      padding: 10px 14px;
+      border-left: 3px solid var(--phgr-tuerkis);
+      background: rgba(35,178,198,0.07);
+      line-height: 1.7;
+      border-radius: 0 4px 4px 0;
+    }
+    .collision-label {
+      font-family: monospace; font-size: 0.72em; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--phgr-tuerkis); display: block; margin-bottom: 5px;
+    }
+    .question-block {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-left: 3px solid var(--phgr-orange);
+      background: rgba(251,185,0,0.07);
+      font-style: italic;
+      color: #ddd;
+      border-radius: 0 4px 4px 0;
+    }
+    .question-label {
+      font-family: monospace; font-size: 0.72em; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--phgr-orange); display: block;
+      margin-bottom: 5px; font-style: normal;
+    }
+
+    /* Typing */
+    .typing-wrap { align-self: flex-start; animation: msgIn 0.25s ease both; }
+    .typing-dots { display: flex; gap: 5px; padding: 13px 17px; background: var(--surface2); border-left: 3px solid var(--phgr-gelb); border-radius: 0 6px 6px 2px; }
+    .dot { width: 7px; height: 7px; background: var(--phgr-gelb); border-radius: 50%; opacity: 0.4; animation: dotBounce 1.3s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.18s; }
+    .dot:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes dotBounce { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-7px); opacity: 1; } }
+
+    /* Input */
+    #input-wrap { background: var(--surface); border-top: 1px solid var(--border); padding: 14px 20px; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+    #input-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    #user-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 11px 15px; font-family: Georgia, serif;
+      font-size: 0.92em; resize: none; min-height: 46px; max-height: 130px;
+      line-height: 1.55; transition: border-color 0.2s; outline: none; border-radius: 2px;
+    }
+    #user-input:focus { border-color: var(--phgr-gelb); }
+    #user-input::placeholder { color: var(--text-dim); font-style: italic; }
+    .input-hint { font-family: monospace; font-size: 0.6em; color: var(--text-dim); letter-spacing: 0.04em; }
+    #send-btn {
+      background: var(--phgr-gelb); color: #111; border: none;
+      width: 46px; height: 46px; font-size: 1.25em; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: opacity 0.15s, transform 0.1s; border-radius: 2px;
+    }
+    #send-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(1.04); }
+    #send-btn:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
+    .error-bubble { background: #2a1515; border-left: 3px solid var(--phgr-rot); color: #e8a0a0; padding: 12px 16px; font-size: 0.85em; font-family: monospace; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<!-- Wissensbasis als JSON – kein Backtick-Problem, kein Escaping -->
+<script type="application/json" id="kb-data">
+{"k": [{"name": "10 Merkmale guten Unterrichts nach Meyer", "desc": "Hilbert Meyer stellt hier zehn empirisch abgesicherte Gütekriterien vor, die das aktuelle Wissen über erfolgreiche Unterrichtsstrukturen bündeln. Er beschreibt Kompetenzfelder, die Lehrer/-innen haben und Schüler/-innen entwickeln sollten, um gemeinsam guten Unterricht machen zu …", "sikos": ["L.03", "B.03", "L.02", "E.02", "B.01", "L.08", "B.05", "L.01", "B.02", "L.04", "E.01"]}, {"name": "10 Qualitätsmerkmale guten Unterrichts nach Helmke", "desc": "Helmke geht der Frage nach den Merkmalen eines guten Lehrers bzw. nach den Gelingensbedingungen erfolgreichen Unterrichts als Gegenstand der empirischen Unterrichtsforschung nach.", "sikos": ["L.03", "B.03", "L.02", "E.02", "B.01", "L.08", "B.05", "L.01", "B.02", "L.04", "E.01"]}, {"name": "ADHS", "desc": "Dieses Buch ist für alle Eltern und Pädagogen geschrieben, die ihr Kind und seine „Störung“ verstehen wollen und nach Lösungswegen aus der belastenden Situation suchen. Bonney betrachtet ADHS aus einem anderen Blickwinkel als allgemein üblich: Er sieht „handlungsbereite und wahrn…", "sikos": ["E.03", "L.09", "L.08"]}, {"name": "Aktionsforschung", "desc": "»Aktionsforschung ist die systematische Reflexion von Praktikern über ihr Handeln in der Absicht, es weiter- zuentwickeln« (John Elliott). Im Kontext zunehmender wirtschaftlicher, sozialer und kultureller Anforderungen an Bildungseinrichtungen eröffnet Aktionsforschung die Mög…", "sikos": ["I.04", "I.02"]}, {"name": "Antinomien", "desc": "Hans Berners beleuchtet die Antinomien der Pädagogik und führt vor, wie diese gegensätzlichen Prinzipien die Erziehungspraxis prägen. Es ist eine herausfordernde Aufforderung an jede Lehrperson, ihr eigenes, individuelles Erziehungsbild zu konstruieren und damit den oft widersprü…", "sikos": ["E.05", "E.04", "I.02", "I.01"]}, {"name": "Antinomien im professionellen Handeln", "desc": "Im Lehrberuf gibt es zahlreiche unauflösbare Widersprüche, wie etwa der Konflikt zwischen Individualisierung und Standardisierung oder Nähe und Distanz. Diese Widersprüche müssen Lehrkräfte reflektiert bearbeiten, um ihre Handlungsspielräume besser zu verstehen.", "sikos": ["E.05", "I.02", "I.01"]}, {"name": "Aufgaben als Dreh- und Angelpunkt nach Fraefel", "desc": "Das Konzept der Lernaufgabe nach Fraefel (Erfolgreichen Unterricht planen) stellt die Aufgabe als zentralen Ausgangspunkt der Unterrichtsplanung in den Vordergrund. Lernaufgaben sind komplex, handlungs- und problemorientiert und eröffnen verschiedene Lösungswege, wodurch sie fach…", "sikos": ["L.03", "L.02", "B.01", "L.08", "L.09", "L.01", "B.02"]}, {"name": "Bedingungsanalyse", "desc": "Wer soll etwas lernen? Wenn man sich bei der Planung einer Unterrichtseinheit zunächst dieser Frage widmet, rücken das bereits vorhandene Wissen und Können, die Ressourcen und Interessen der Lerngruppe ins Zentrum.", "sikos": ["L.03", "B.06", "L.02", "B.01", "L.08", "L.09", "L.01"]}, {"name": "Behinderungsparadigmen", "desc": "Der Text beschreibt den Begriff der Behinderung und die verschiedenen Sichtweisen und Paradigmen, die damit verbunden sind. Der Begriff der Behinderung ist komplex und umstritten, und es gibt unterschiedliche Definitionen und Ansätze, um ihn zu beschreiben.", "sikos": ["E.04", "B.06", "B.01", "E.03", "E.10", "B.05"]}, {"name": "Belastung und Beanspruchung im Lehrerberuf", "desc": "Das Thema Belastung und Beanspruchung im Lehrerberuf bildet einen Schwerpunkt der empirischen Forschung zum Lehrerberuf. In der zweiten Auflage des Lehrbuchs wird auf der Basis aktueller Forschungsbefunde und Fachdiskussionen ein verständlicher und orientierender Überblick zu den…", "sikos": ["I.05", "I.03", "I.02"]}, {"name": "Beobachtung", "desc": "Im Kapitel 7 des Buchs von Fisseni geht es um die Verhaltensbeobachtung als eigenständige Methode der psychologischen Diagnostik. Dabei wird erklärt, wie menschliches Verhalten systematisch erfasst, beschrieben und ausgewertet werden kann – sei es in natürlichen oder künstlich er…", "sikos": ["I.02", "B.06", "B.01", "L.08", "E.03", "E.10", "B.05", "L.09"]}, {"name": "Berufsauftrag des LCH", "desc": "Der Lehrberuf hat sich in den vergangenen Jahren stark verändert, die Tätigkeit von Lehrerinnen und Lehrern ist vielfältiger und anspruchsvoller geworden. Der «Berufsauftrag der Lehrerinnen und Lehrer», der auf dem LCH-Berufsleitbild von 2006 und den LCH-Standesregeln von 1999 gr…", "sikos": ["I.05", "I.02", "I.03", "I.04", "E.07"]}, {"name": "Berufsbildung CH", "desc": "Der Text fokussiert primär den Übergang von der obligatorischen in die nachobligatorische Ausbildung in der Schweiz. Die Berufswahl resp. Lehrstellensuche wird ebenso thematisiert wie der Lehrstellenmarkt, die Selektion von Lernenden sowie Brückenangebote und das Case Management.…", "sikos": ["E.10", "I.05"]}, {"name": "Berufswahl als Copingprozess", "desc": "Der Text legt den Fokus auf eine bestimmte Ansicht, den Berufswahlprozess von den Jugendlichen her zu betrachten: den Coping-Ansatz. Dieser geht davon aus, dass Menschen intentionale Wesen sind, die sich mit den Bedingungen und Anforderungen an ihre Lebensgestaltung aktiv und kon…", "sikos": ["E.10", "B.05", "I.05"]}, {"name": "Berufswahltheorien", "desc": "Im Text werden mehrere klassische und neuere Berufswahltheorien zusammenfassend dargestellt, darunter diejenigen von Holland oder Super, und Theorien der Laufbahnentwicklung.", "sikos": ["E.10", "B.05"]}, {"name": "Berufswahlunterricht", "desc": "Im Text werden Ansätze für einen handlungsbefähigenden Berufswahlunterricht skizziert, darunter der Aufbau von Wissen, die Förderung von Selbstwirksamkeit und die Sinnfindung.", "sikos": ["E.08", "E.10", "B.05"]}, {"name": "Beziehung Lehrer:in - Schüler:in", "desc": "Die Lehrer-Schüler-Beziehung ist eine der entscheidensten aber auch komplexesten Determinanten erfolgreicher Bildungsprozesse — von der Primarschule bis zum Schulabschluss. Sie kann von verschiedenen theoretischen\nAnsätzen aus beleuchtet werden. Literatur Hagenauer, G.", "sikos": ["E.05"]}, {"name": "Bilanzierung und Überprüfung nach Fraefel", "desc": "Fraefel betont im Kapitel zur Bilanzierung und Überprüfung, dass Unterricht nicht nur auf die Durchführung von Lernaufgaben abzielt, sondern auch auf die Reflexion der Ergebnisse.", "sikos": ["B.04", "I.04", "E.10", "B.05", "L.09", "B.02"]}, {"name": "Bildung für nachhaltige Entwicklung", "desc": "Diese Publikation umreisst das Verständnis von Bildung für Nachhaltige Entwicklung (BNE) der Stiftung éducation21 und erhebt keinen Anspruch auf Allgemeingültigkeit. Auf der Grundlage dieses BNE- Verständnisses begleitet éducation21 unterschiedliche BNE-Prozesse in offener und tr…", "sikos": ["L.03", "L.07", "E.04", "L.01", "I.02", "L.02", "E.09", "E.02", "I.01", "E.10", "L.08", "E.03", "E.06", "B.04", "L.10", "I.05", "I.03", "I.04", "B.01", "L.09", "L.05", "E.05", "L.06"]}, {"name": "Bildungschancen", "desc": "Das Schweizer Bildungssystem ist unzureichend und ungerecht, da Bildungschancen stark von sozialer Herkunft, Migrationshintergrund und Geschlecht abhängen. Es reproduziert soziale Ungleichheiten und verursacht der Gesellschaft mehr Kosten als Nutzen.", "sikos": ["B.04", "E.04", "B.06", "E.08", "I.04", "B.01", "E.03"]}, {"name": "Bindungstheorie", "desc": "Pädagogischen Fachkräften ist die Bedeutung von Bindung und Beziehung in Förderkontexten hinreichend bekannt: Beziehungsgestaltung ist der Schlüssel zum Fördererfolg! Eine wesentliche Grundlage der Auseinandersetzung mit beziehungsorientierter Förderung ist die Bindungstheorie.", "sikos": ["B.03", "E.02", "B.01", "E.10", "B.05", "E.05", "E.01"]}, {"name": "Binnendifferenzierung: verschiedene Varianten", "desc": "Dieses Buch liefert keine Zauberformeln, sondern praxistaugliche Lösungen, die Binnendifferenzierung auch unter schwierigen Voraussetzungen gelingen lassen. Es werden verschiedene Differenzierungsvarianten vorgestellt sowie deren Vor- und Nachteile erläutert.", "sikos": ["L.03", "L.02", "B.01", "L.08", "B.05"]}, {"name": "BNE im Lehrplan 21", "desc": "Bildung für nachhaltige Entwicklung wird im Lehrplan 21 nicht als eigenes Fach, sondern als Leitidee und Querschnittsthema abgebildet. Nachhaltige Entwicklung ist eine Leitidee für die Entwicklung der Gesellschaft.", "sikos": ["L.03", "L.07", "E.04", "E.08", "L.01", "B.02", "E.07", "I.02", "L.02", "E.09", "E.02", "I.01", "E.10", "B.05", "L.08", "E.03", "E.06", "B.03", "B.04", "L.10", "I.05", "I.03", "B.06", "I.04", "B.01", "L.09", "L.05", "E.05", "L.04", "L.06", "E.01"]}, {"name": "Burnout", "desc": "Der Begriff Burnout hat keine einheitliche wissenschaftliche Definition und beschreibt ein komplexes Phänomen, das sich auf vielfältige Weise äussern kann. Dennoch gibt es typische Merkmale, die sich herauskristallisiert haben und die für die Früherkennung hilfreich sind.", "sikos": ["I.05", "I.03", "I.02"]}, {"name": "Chancengerechtigkeit (normative/rechtliche Grundlagen)", "desc": "Zusammenstellung normativer und rechtlicher Grundlagen (Menschenrechte, Kinderrechte, Gleichstellung, Beseitigung von Benachteiligungen etc.) Literatur (Rechtliche Vorgaben werden als Fussnote zitiert) weiterführende Links UNO Allgemeine Erklärung der Menschenrechte (Art.", "sikos": ["E.04", "E.08", "I.04", "B.01", "E.03", "E.06", "E.07"]}, {"name": "Coaching-Gespräche mit Lernenden", "desc": "Das Praxisbuch richtet sich unabhängig von Schulformen an Einsteiger in\ndas Thema Coaching und ist zugleich ein hilfreiches Grundlagenwerk für\nbereits erfahrene Coaches und Beratungslehrer*innen.", "sikos": ["B.03", "I.02", "E.08", "E.09", "E.02", "L.08", "E.06", "E.10", "B.05", "L.09", "E.05"]}, {"name": "Das Ende der Erziehung nach Postman", "desc": "Viele Wege führen nach Rom, und alle sind richtig - aber warum Rom? Postman nimmt sich dem grossen Thema von Sinn und Zweck der Schulerziehung unserer Kinder an. Nicht die Wege und Methoden der Wissensvermittlung sind dabei entscheidend, sondern die Frage nach dem Warum, nach dem…", "sikos": ["L.03", "E.04", "I.04", "E.03", "L.09"]}, {"name": "Demokratiepädagogik (Just Community)", "desc": "Gelebte Demokratie bedeutet, dass Schüler/innen die konkrete Erfahrung demokratischer Teilhabe machen, Verantwortung übernehmen und Konfliktlösung einüben. Dies hilft, Schule und Unterricht als Ort für authentische Demokratie-Erfahrungen zu gestalten - mit bewärten Konzepten und …", "sikos": ["B.04", "E.04", "E.02", "E.03", "E.06", "L.09"]}, {"name": "Dialogisches Lernen", "desc": "Seit es Unterricht gibt, denken Pädagogen über die Verbesserung von Unterricht nach. Die beiden Schweizer Autoren wenden sich  an alle, die wie sie unzufrieden sind mit dem Unterricht heute und die nach Lösungsideen suchen: Lehrkräfte an den Schulen aller Schulstufen und aller Un…", "sikos": ["L.03", "B.03", "B.04", "B.06", "L.02", "E.09", "L.08", "B.05", "L.09", "E.05", "L.06"]}, {"name": "Didaktische Analyse nach Klafki", "desc": "Zur bildungstheoretischen Didaktik gelangte Klafki, nachdem er sich seit den 1950er Jahren mit dem traditionellen Widerspruch zwischen materialen (Bildungsinhalte, die so wichtig sind, dass Schüler sie lernen müssen) und formalen (Verhalten und Handlungsformen, die für Schüler wi…", "sikos": ["L.03", "L.07", "B.06", "L.02", "B.01"]}, {"name": "Digitalität", "desc": "Digitalität ist mehr als Digitalisierung. Digitalität ist der vierte Leitmedienwechsel nach der Oralität, der Skriptografie und der Typografie und stellt die Paradigmen, wie Gesellschaft und damit auch Schule funktionieren, neu ein.", "sikos": ["L.03", "L.07", "E.04", "B.02", "I.02", "L.02", "E.02", "I.01", "B.05", "L.08", "E.03", "B.04", "I.05", "I.04", "B.01", "L.09", "L.05", "L.06", "E.01"]}, {"name": "Dimensionen offenen Unterrichts", "desc": "\"Offener Unterricht gestattet es dem Schüler, sich unter Freigabe von Raum, Zeit und Sozialform Wissen und Können innerhalb eines 'offenen Lehrplanes' an selbstgewählten Inhalten auf methodisch individuellem Weg anzueignen.", "sikos": ["L.03", "L.10", "E.04", "L.02", "L.08", "L.09", "L.04", "L.06"]}, {"name": "Diversity", "desc": "In diesem Beitrag wird der Frage nachgegangen, wie sich die Begriffe Vielfalt, Heterogenität, Diversity / Diversität und Intersektionalität voneinander unterscheiden. Auf welche Bedeutungsdimensionen, Prämissen oder Gründungsnarrative bezieht man sich implizit bzw.", "sikos": ["E.04", "B.06", "E.08", "B.01", "E.03", "E.10", "B.05"]}, {"name": "Doing Difference", "desc": "Differenzsensible Schul- und Unterrichtsforschungen über soziale Konstruktionsprozesse in Lehrer-Schüler-Interaktionen haben spätestens seit den 1990er Jahren Konjunktur.", "sikos": ["E.04", "I.02", "B.01", "E.03", "B.05"]}, {"name": "Dramatisierung, Entdramatisierung & Gender", "desc": "In geschlechterreflektiertem Verhalten und Kommunizieren liegt oft die Problematik, dass auf der einen Seite die gesellschaftlich konstruierte Kategorie des Geschlechts aufgelöst werden soll, um die Individualität von Menschen zu unterstützen.", "sikos": ["E.03", "E.10", "E.02", "E.06"]}, {"name": "eine einzelne Stunden planen (Kernpraktiken) nach Fraefel", "desc": "Fraefel zeigt, dass die Planung einzelner Unterrichtsstunden bei erfahrenen Lehrpersonen auf Kernpraktiken beruht. Diese umfassen das Setzen von Zielen, die Auswahl passender Lernaufgaben, die Strukturierung des Ablaufs und die Überprüfung der Ergebnisse.", "sikos": ["L.04"]}, {"name": "Elternarbeit im Berufswahlprozess", "desc": "Im Text wird der Frage nachgegangen, wie Eltern und die Kooperation von Eltern und Lehrpersonen den Berufsorientierungsprozess fördern. Auf der Grundlage konzeptueller Überlegungen werden Theorien und Forschungsergebnisse mit Bezug zur Schweiz dargestellt.", "sikos": ["I.05", "E.08", "E.09", "E.10", "B.05", "E.07"]}, {"name": "Elterngespräche", "desc": "Wie lässt sich die Beziehung zu Eltern von Anfang an so gestalten, dass Kooperation und Vertrauen angelegt sind? Wie lassen sich zahlreiche Gespräche – auch schwierigen Inhalts – konfliktfrei durchführen?", "sikos": ["I.05", "E.09", "E.06", "E.05", "E.07"]}, {"name": "Elternkontakte aufbauen", "desc": "Der Text führt kurz in die Grundsätze der Elternarbeit ein und beleuchtet anschliessend anhand verschiedener Formen der Elternarbeit beispielhaft den Aufbau einer tragfähigen Zusammenarbeit - kurz und auf die grundlegenden Überlegungen ausgerichtet.", "sikos": ["E.05", "I.05", "E.09", "E.07"]}, {"name": "Entwicklungsaufgaben", "desc": "Ausgangspunkt dieses Kapitels ist das Konzept der Entwicklungsaufgaben nach Havighurst, das sehr prominent geworden ist und dessen Grundideen bis heute weitgehend Gültigkeit besitzen.", "sikos": ["B.06", "E.08", "B.01", "E.06", "E.10", "B.05", "E.05"]}, {"name": "Ermöglichungsdidaktik nach Arnold", "desc": "Ein Lernbuch? Genau, denn das Lehrbuch hat in der Ermöglichungsdidaktik seine Existenzgrundlage verloren. Jemanden zu belehren ist unmöglich – nur selbstgesteuert und eigenverantwortlich kommt der Mensch zum Ziel.", "sikos": ["L.03", "B.04", "E.04", "L.02", "I.04", "L.08", "B.05", "L.01", "L.09", "L.06"]}, {"name": "Erziehungs- und Bildungspartnerschaft", "desc": "Um das Verhältnis zwischen Schule, Lehrperson und Eltern zu charakterisieren, hat sich in den letzten ca. 15 Jahren der Begriff \"Erziehungspartnerschaft\" etabliert. Damit ist gemeint, dass die Förderung der Kinder als gemeinsames Anliegen von Schule und Elternhaus ein kooperative…", "sikos": ["B.03", "I.05", "I.04", "E.09", "B.01", "E.07"]}, {"name": "Erziehungsansätze", "desc": "Das Lehrbuch gibt einen Überblick über die wichtigsten allgemein- und sozialpädagogischen Konzepte der europäischen Geschichte - von Platon bis Lyotard. Im Zentrum der komprimierten und verständlichen Darstellung von Erziehungs- und Bildungstheorien stehen nicht allein 'Klassiker…", "sikos": ["I.04", "E.02", "L.09", "E.05", "E.01"]}, {"name": "Erziehungsstile", "desc": "Wie Kinder erzogen werden, ist eine zentrale Determinante für die Entwicklung des Verhaltens von Kindern. Anhand von Erziehungsstilen werden intraindividuelle, relativ stabile Muster der Eltern-Kind-Beziehung beschrieben.", "sikos": ["E.04", "E.09", "E.02", "I.01", "E.06", "E.10", "E.05", "L.04", "E.01"]}, {"name": "Es ist nie zu spät eine Glückliche Kindheit zu haben nach Furman", "desc": "In Wissenschaft und Öffentlichkeit ist der Mythos fest verankert, dass schwierige Bedingungen in der Kindheit unweigerlich zu einem unglücklichen, gefährdeten Erwachsenenleben führen. Dies kann so sein, ist aber in den meisten Fällen nicht zwangsläufig so.", "sikos": ["E.08", "E.10", "I.03", "I.01"]}, {"name": "Feedbackebenen", "desc": "Seit Veröffentlichung der Hattie-Studie steht Feedback im Zentrum der pädagogischen Aufmerksamkeit. Aber welches Feedback ist wirklich hilfreich? Visible Feedback begleitet Sie bei der Beschäftigung mit unterrichtsbezogenen Rückmeldungen.", "sikos": ["B.03", "B.04", "I.05", "E.08", "E.09", "E.10", "B.05", "L.09"]}, {"name": "Funktion der Schule", "desc": "Helmut Fend legt in diesem im Jahr 1974 erstmals publizierten Text eine knappe Skizze der funktionalistischen Betrachtung von Bildungs- und Erziehungsprozessen vor. Das Bildungswesen ist Fend zufolge nicht nur durch seine Qualifikations- und Selektionsfuniktion gekennzeichnet.", "sikos": ["E.08", "I.04", "I.05", "I.02"]}, {"name": "Funktion von Vorurteilen", "desc": "In seinem einleitenden Grundlagenbeitrag \"Die Bedeutung von Vorurteil und Stereotyp im interkulturellen Handeln\" liefert Alexander Thomas einen umfassenden Forschungsüberblick zu Stereotyp und Vorurteil.", "sikos": ["E.03", "I.02", "B.01"]}, {"name": "Förderkreislauf und Förderplanung", "desc": "Der Artikel stellt den Diagnostik-Förder-Kreislauf als zentrales Modell für die heil- und sonderpädagogische Praxis vor, das Diagnostik und Förderung systematisch miteinander verknüpft.", "sikos": ["B.03", "I.05", "B.06", "L.02", "B.01", "L.08", "E.10", "B.05", "L.01"]}, {"name": "Geistige und kognitive Fähigkeiten", "desc": "Sturm (2024) thematisiert im Kapitel 4.5 behinderungsbedingte Differenzen im schulischen Kontext und beschreibt, wie Behinderung – analog zu anderen Differenzlinien wie Klasse, Geschlecht und Ethnizität – gesellschaftlich und institutionell konstruiert wird.", "sikos": ["E.03", "B.01", "L.09", "L.08"]}, {"name": "Geschlecht / geschlechtliche Identität", "desc": "Sturm zeigt in Kapitel 4.3, dass Geschlecht eine zentrale, gesellschaftlich konstruierte Differenzkategorie darstellt, die stark auf binäre Zuschreibungen basiert und tief in alltägliche Praktiken sowie schulische Strukturen eingebettet ist.", "sikos": ["E.03", "E.04", "B.01"]}, {"name": "Gesprächsformen im Unterricht", "desc": "Nur durch angemessene Kommunikation und Partizipation gelingen Unterricht und Lernen. Das Kapitel Gesprächsformen im Unterricht hilft, sich verschiedene Gesprächstechniken anzueignen.", "sikos": ["L.04", "E.09", "E.01", "E.04"]}, {"name": "Gesprächsführung", "desc": "So gelingen Gespräche! Mit einem systemisch-lösungsorientierten Vorgehen ans Ziel kommen. Systemisch-lösungsorientierte Vorgehensweisen zählen zu den Standardverfahren gelingender Gesprächsführung und Beratung.", "sikos": ["E.06", "E.09", "E.07", "B.03"]}, {"name": "Gesundheit von Lehrpersonen", "desc": "Gesunde Lehrpersonen bilden die Voraussetzung um die psychische Gesundheit der Schüler:innen und ihren Bildungserfolg fördern zu können. Dabei handelt es sich nicht nur um ein individuelles Problem, sondern um ein Thema, das eng mit den beruflichen Anforderungen und den Rahmenbed…", "sikos": ["I.04", "I.05", "I.03"]}, {"name": "Gewaltfreie Kommunikation nach Rosenberg", "desc": "Die Gewaltfreie Kommunikation (GFK) ist ein Konzept, um eine empathische Haltung in der menschlichen Kommunikation zu unterstützen. Das Konzept wurde von Marshall B. Rosenberg in den 1960er-Jahren entwickelt und persönlich in Workshops auf der ganzen Welt angeboten.", "sikos": ["E.09", "E.02", "E.06", "E.05", "E.01"]}, {"name": "Gleichwürdigkeit nach Juul", "desc": "Mit Kindern bedürfnis- und beziehungsorientiert umgehen, das geht nicht nur zu Hause, sondern auch in der Schule. Wer Wege sucht, Kinder als eigenverantwortliche Menschen zu stärken, findet in diesem Buch eine Fülle von Anregungen.", "sikos": ["B.03", "I.05", "E.04", "E.09", "E.06", "E.05"]}, {"name": "Grundformen des Unterrichtens", "desc": "Der Lehrperson kommt bei der Anregung und Begleitung von Lernprozessen ihrer Schüler:innen sowie in Bezug auf deren Lernerfolg eine sehr bedeutende Rolle zu. Eine wesentliche Bedingung für die Gestaltung lernwirksamen Unterrichts bildet dabei unter anderem die Fertigkeit, den Unt…", "sikos": ["L.03", "L.04"]}, {"name": "Grundlagen selbstreguliertes Lernen", "desc": "Das Grundlagenkapitel zeigt, weshalb selbstreguliertes Lernen (SRL) eine zentrale Voraussetzung für erfolgreiches, nachhaltiges und lebenslanges Lernen ist. In einer zunehmend komplexen und digitalisierten Welt reicht Fachwissen allein nicht mehr aus: Lernende müssen ihr Lernen a…", "sikos": ["B.05", "L.09"]}, {"name": "Gute Lehrerinnen und Lehrer", "desc": "Die einfachen Antworten auf die Frage «Was ist eine gute Lehrerin, was ein\nguter Lehrer?» erfolgen häufig in Form von eher naiven, additiven Wunschkatalogen über ideale Lehrpersonen.", "sikos": ["E.05", "I.02", "I.01"]}, {"name": "HERZ-Theorie des Spiels", "desc": "Es gibt in der Psychologie unzählige Überlegungen zu verschiedenen Aspekten des Spiels. In diesem Buchkapitel wird versucht, das kindliche Spiel anhand seiner zentralen Bezugskomponenten zu erklären.", "sikos": ["L.07", "L.02", "E.02", "E.10", "L.05", "E.05", "L.04"]}, {"name": "Hochbegabung", "desc": "Um intellektuell hochbegabte Kinder und Jugendliche angemessen fördern zu können, sind eine rechtzeitige Diagnostik und fundierte Beratung unumgänglich. Das vorliegende Buch bietet einen umfassenden und aktuellen Überblick über die theoretischen Grundlagen von Hochbegabung sowie …", "sikos": ["B.03", "B.06", "E.08", "L.02", "B.01", "L.08", "E.03", "E.10", "B.05", "L.01", "L.09"]}, {"name": "ICF", "desc": "ICF steht für \"International Classification of Functioning, Disability and Health\" (Internationale Klassifikation der Funktionsfähigkeit, Behinderung und Gesundheit). Es geht darum, wie Lehrpersonen sich bewusst und aktiv um das entsprechende Wissen bemühen müssen, um auf die Bed…", "sikos": ["I.05", "B.06", "E.08", "B.01", "L.08", "E.03", "E.10", "B.05", "L.01"]}, {"name": "Ich schaffs - für Jugendliche", "desc": "„Ich schaffs! – Cool ans Ziel“ ist ein spielerisches und lösungsorientiertes Programm für die Arbeit mit 13- bis 18-Jährigen, das sich die Vitalität, Neugier und Begeisterungsfähigkeit von Teenagern zunutze macht.", "sikos": ["B.03", "E.04", "E.08", "E.09", "E.02", "L.08", "E.03", "E.06", "E.10", "B.05", "L.09", "E.05", "E.07"]}, {"name": "Inklusive Schule", "desc": "Die inklusive Schule - die Schule für alle - nicht nur zu fordern, sondern Realität werden zu lassen, ist eine Herausforderung sowohl für Lehrkräfte als auch für Fachkräfte aus der Heilpädagogik. Wie gelingt die Umsetzung im Schulalltag?", "sikos": ["I.05", "E.04", "B.06", "L.02", "I.04", "B.01", "L.08", "E.03", "E.10", "B.05"]}, {"name": "Integrativer Unterricht (Didaktische Prinzipien)", "desc": "Die schulische Integration von Kindern und Jugendlichen mit Beeinträchtigungen wird von zahlreichen Seiten gefordert. In der praktischen Umsetzung zeigt sich jedoch, dass damit grosse Herausforderungen für Schule und Lehrpersonen verbunden sind.", "sikos": ["L.03", "B.03", "I.05", "B.06", "L.02", "B.01", "L.08", "E.10", "B.05", "L.09"]}, {"name": "Intersektionalität", "desc": "Dieser Text gibt eine Einführung in das Konzept der Intersektionalität. Literatur Walgenbach, K. (2012). Intersektionalität – eine Einführung. URL:\nwww.portal-intersektionalität.de [19.5.2023] LINK weiterführende Links SRF-Audiobeitrag zum Begriff Intersektionalität Link Link", "sikos": ["E.04", "B.06", "B.01", "E.03", "E.06", "B.05"]}, {"name": "Irrtümer über Klassenführung", "desc": "»Eine lebendige Klasse muss eng geführt werden«, »Feste Regeln unterbinden die Autonomie der Schüler:innen« oder »Wer keine natürliche Autorität hat, wird eine Klasse nie führen können«.", "sikos": ["E.01"]}, {"name": "Klassenführung als lernförderliche Struktur", "desc": "Den Unterricht so zu strukturieren, dass Schüler:innen möglichst viel Unterrichtszeit mit Lernen verbringen können, gehört zu den zentralen Aufgaben von Lehrpersonen. Sie sind dafür verantwortlich, die Lernaktivitäten zu überblicken und Störungen durch eine lernförderliche Strukt…", "sikos": ["E.01"]}, {"name": "Klassenführung in einer neuen Lernkultur", "desc": "Selbstgesteuerte Lernumgebungen, in denen Schüler:innen vermehrt selbstorganisiert arbeiten, stellen andere Anforderungen an die Klassenführung als Plenumsphasen in einer Lerngruppe. Insbesondere die präventiven Maßnahmen der Klassenführung sind hierbei zentral.", "sikos": ["B.05", "E.01", "E.02", "L.09"]}, {"name": "Klassenführung nach Kounin und Evertson", "desc": "Unter den Forschungsarbeiten zur Klassenführung gelten die Beiträge von Jacob S. Kounin als wegweisend. Aus forschungsmethodischer Sicht sind die Arbeiten von Kounin von besonderer Qualität und erfüllen viele Kriterien, die aktuell in der Bildungsforschung eingefordert werden.", "sikos": ["E.04", "E.02", "E.03", "E.06", "E.05", "E.01"]}, {"name": "Klassenrat", "desc": "Der Klassenrat ist ein basisdemokratischer Ansatz, um\ngemeinsam Verantwortung für das Leben der Klasse zu\nübernehmen. Die Klasse befragt sich über ihr Handeln\nund ihr Verhalten, über Zufriedenheit und Ärger, über\nProbleme und Ansichten, über Pläne und Absichten,\nüber Vor…", "sikos": ["E.04", "E.02", "E.06", "L.09", "E.05"]}, {"name": "Kollegiale Fallberatung (Intervision)", "desc": "Intervision, auch Kollegiale Beratung genannt, ist eine zielgerichtete und lösungsorientierte Methode zur Bearbeitung von\nAnliegen und Fragen aus dem professionellen Kontext: In einer Gruppe werden berufliche Praxisfälle vorgestellt.", "sikos": ["I.05", "I.03", "I.02", "I.04", "E.09", "I.01", "E.06"]}, {"name": "Kollegiale Kooperation", "desc": "Kollegiale Kooperation ist für Lehrer:innen selbstverständlich, gleichzeitig aber eine zentrale Herausforderung der Schulentwicklung. Ihr Beitrag zur Qualität des Unterrichts ist noch nicht eindeutig erforscht, macht die systematische Betrachtung aber notwendig.", "sikos": ["I.04", "I.05"]}, {"name": "Kompetenzen und Lernziele", "desc": "sollen die Schülerinnen und Schüler lernen? Oder anders gefragt: Welches Wissen und\nKönnen und welche Haltungen sollen schliesslich aus ihren Lerntätigkeiten\nresultieren?", "sikos": ["L.03", "L.02", "B.01", "L.01", "B.02"]}, {"name": "Kompetenzorientierung als Leitbegriff der Didaktik", "desc": "Im Beitrag wird der Begriff der Kompetenzorientierung als didaktischer Leitbegriff aus einem wissenspädagogischen Blickwinkel beleuchtet. Auch unter der Leitidee der Kompetenzorientierung bleibt die kulturelle Dimension von Wissen und fachlicher Bildung zentral.", "sikos": ["L.03", "B.03", "L.02", "L.01", "B.02"]}, {"name": "Konfliktebenen", "desc": "Interaktionen innerhalb von Organisationen oder Gruppen sind häufig durch Konflikte geprägt. Neben negativen Aspekten wie Stress bergen Konflikte auch kreatives Potenzial für Veränderungen im System.", "sikos": ["I.05", "I.03", "I.02", "I.04", "E.09", "E.06", "E.07"]}, {"name": "Konfliktgespräche", "desc": "Im Text wird eine Reihe von Strategien beschrieben, um produktiv mit Konflikten in Gesprächssituationen umgehen zu können; dazu gehören u. a. Humor, Kollaboration, Intervention oder Worst-Case- & Best-Case-Szenarien.", "sikos": ["E.06", "I.05", "E.09", "E.07"]}, {"name": "Konstruktivismus", "desc": "Der Text bietet eine umfassende Einführung in den Lernprozess aus einer konstruktivistischen Perspektive. Er zeigt verschiedene Theorieperspektiven auf und gibt Anregungen zur Selbstbeobachtung und Reflexion des eigenen Lernens.", "sikos": ["L.03", "L.07", "E.08", "L.01", "B.02", "E.07", "I.02", "L.02", "E.09", "E.02", "I.01", "E.10", "B.05", "E.06", "B.03", "B.04", "L.10", "I.05", "B.06", "I.04", "B.01", "L.09", "L.05", "E.05", "L.04", "L.06", "E.01"]}, {"name": "Kooperation in multiprofessionellen Teams", "desc": "Kooperation in multiprofessionellen Teams an inklusiven Schulen ist entscheidend, um die unterschiedlichen Bedürfnisse von Schüler:innen bestmöglich zu fördern. Effektive Teamarbeit ermöglicht den Austausch von Fachwissen, koordiniertes Vorgehen und gemeinsame Verantwortung für L…", "sikos": ["E.10", "B.05", "I.05", "L.08"]}, {"name": "Kooperation von Lehrpersonen", "desc": "Die Kooperation von Lehrpersonen ist entscheidend für die Qualität des Unterrichts und die Schulkultur. Dabei spielen sowohl individuelle als auch kollektive Ressourcen eine wichtige Rolle: Während individuelle Stärken und Fachkompetenzen das eigene Handeln prägen, ermöglichen ko…", "sikos": ["I.04", "I.05", "I.02"]}, {"name": "Kritische Rückmeldung geben nach Furman", "desc": "Es ist leichter, einen Ratschlag anzunehmen als Kritik. Es ist leichter, einen Vorschlag anzunehmen als einen Ratschlag. Es ist leichter, einen Wunsch anzunehmen als einen Vorschlag. Literatur Furman, B. & Ahola, T. (2017). Twin Star - Lösungen vom anderen Stern.", "sikos": ["B.03", "B.04", "I.05", "I.03", "E.09", "E.02", "E.06", "B.05", "E.05", "E.07"]}, {"name": "Kultur der Digitalität", "desc": "Referentialität, Gemeinschaftlichkeit und Algorithmizität sind die charakteristischen Formen der Kultur der Digitalität, in der sich immer mehr Menschen, auf immer mehr Feldern und mithilfe immer komplexerer Technologien an der Verhandlung von sozialer Bedeutung beteiligen (müsse…", "sikos": ["L.03", "L.07", "E.04", "L.01", "B.02", "I.02", "L.02", "I.01", "B.05", "L.08", "E.03", "B.03", "B.04", "L.10", "I.05", "B.06", "I.04", "B.01", "L.09", "L.05", "L.04", "L.06"]}, {"name": "Lehrperson nach Hattie", "desc": "Der deutsche Hattie-Übersetzer Zierer legt damit eine komprimierte Übersicht über Hatties Forschung vor, die es vor allem auch im Berufsleben stehenden Lehrkräften ermöglichen soll, sich schnell einen fundierten Überblick über die aktuelle bildungswissenschaftliche Diskussion zu …", "sikos": ["B.03", "I.02", "B.06", "E.02", "E.05", "L.04", "E.01"]}, {"name": "Lern- und Bildungsgeschichten", "desc": "Was müssen pädagogische Beobachtungen leisten, die sich mit Lernprozessen von Schülerinnen und Schülern auseinandersetzen, fragt Heike de Boer. Dazu skizziert sie ihr Verständnis von Lernen und reflektiert, ob und in welcher Form Lernen zu beobachten ist.", "sikos": ["B.03", "B.06", "B.01", "L.08", "E.10", "B.05", "L.09"]}, {"name": "Lernen am gemeinsamen Gegenstand", "desc": "Feuser's Konzept des \"Lernens am gemeinsamen Gegenstand\" fördert inklusive Bildung, indem alle Lernende gemeinsam an einem konkreten Gegenstand arbeiten. Es betont die aktive Auseinandersetzung mit der Welt in einer kooperativen und dialogischen Weise, die auf interaktiven Prozes…", "sikos": ["L.03", "L.07", "E.04", "E.08", "L.01", "B.02", "E.07", "I.02", "L.02", "E.09", "E.02", "I.01", "E.10", "B.05", "L.08", "E.03", "E.06", "B.03", "B.04", "L.10", "I.05", "I.03", "B.06", "I.04", "B.01", "L.09", "L.05", "E.05", "L.04", "L.06", "E.01"]}, {"name": "Lernen in Projekten im Kontext BNE", "desc": "Mit dem Blick auf Bildung für nachhaltige Entwicklung und Demokratiebildung ist die Diskussion über ein altes Unterrichtskonzept neu entfacht. Welche Potenziale hat das Lernen in Projekten heute?", "sikos": ["L.06", "L.10"]}, {"name": "Lernförderliche Schulentwicklung", "desc": "Im Mittelpunkt von Schule und Unterricht steht das Lernen der Schüler:innen, das von sich ständig wandelnden Faktoren beeinflusst wird. Die zentrale Frage lautet: Wie gelingt es, Schule lernförderlich weiterzuentwickeln, und welche Aspekte müssen dabei berücksichtigt werden?", "sikos": ["I.04", "I.05", "I.02"]}, {"name": "Lernprozessmodelle: PADUA KAFKA SAMBA", "desc": "Lernprozesse spielen sich in den Köpfen der Schülerinnen und Schüler ab und können von den Lehrpersonen nur intendiert werden. Doch wie kann man sich diesen Lernprozess vorstellen? Eine Möglichkeit schlägt der Lernpsychologe Hans Aebli vor.", "sikos": ["L.03", "B.03", "B.06", "L.02", "B.01", "L.08", "B.05", "L.01", "L.06"]}, {"name": "Lernpsycholgische Grundlagen", "desc": "Der Auszug aus dem Lehrbuch der Pädagogischen Psychologie beschreibt, was erfolgreiches Lernen aus psychologischer Sicht ausmacht und warum sich Menschen darin unterscheiden. Es geht der Frage nach, welche inneren Voraussetzungen dazu beitragen, dass Lernen gelingt.", "sikos": ["B.03", "B.06", "L.02", "B.01", "L.08", "B.05", "L.09", "L.01"]}, {"name": "Lernschwierigkeiten", "desc": "Der Artikel bietet eine differenzierte Begriffsbestimmung rund um Lernschwierigkeiten, Lernstörungen, Lernbehinderungen, Lernbeeinträchtigungen und Lernbenachteiligungen und ordnet diese entlang eines theoretischen und diagnostischen Verständnisses.", "sikos": ["E.04", "B.06", "B.01", "L.08", "E.03", "B.05", "L.09", "L.01", "B.02"]}, {"name": "Lernstrategien", "desc": "Die Schülerinnen und Schüler brauchen ein Grundrepertoire an allgemeinen Lernstrategien, die sich auf ein grosses Spektrum von Lernsituationen und Lernaufgaben anwenden lassen.", "sikos": ["L.03", "B.03", "B.06", "L.02", "E.02", "B.01", "L.08", "E.10", "B.05", "L.09"]}, {"name": "Lernzieltaxonomie nach Bloom", "desc": "Die Lernziel-Taxonomie nach Bloom (1973; resp. Bloom et al., 1956) ist ein bekanntes und bewährtes Modell, um kognitive Leistungen zu klassifizieren. Mit den sechs Stufen nach Bloom lassen sich Lernleistungen auf unterschiedlichen Niveaus beschreiben.", "sikos": ["L.03", "B.02", "L.07", "B.03", "B.04", "B.06", "L.02", "B.01", "L.08", "E.03", "E.10", "B.05", "L.01", "L.05", "L.09", "L.06"]}, {"name": "Linzer Konzept der Klassenführung nach Mayr", "desc": "Der Linzer Fragebogen zu Klassenführung\" (LDK) ist ein Fragebogen zum \nFührungshandeln von Lehrkräften. Er ist aus Forschungen zur \nKlassenführung und aus praktischen Erfahrungen in der Lehrerbildung \nhervorgegangen.", "sikos": ["E.01", "E.02"]}, {"name": "Logische Ebenen nach Dilts", "desc": "Die Pyramide von Robert Dilts wird auch \"Modell der logischen Ebenen\" genannt und ist ein Erklärungsansatz für die positive Gestaltung von Veränderungen in sozialen Systemen und Organisationen.", "sikos": ["I.05", "I.02", "E.08", "E.09", "E.02", "I.01", "E.06", "E.10"]}, {"name": "LUKAS - ein Modell zur Entwicklung von kompetenzfördernden Aufgabensets", "desc": "Aufgaben gelten in einem kompetenzorientierten Unterricht als Schlüsselelement, um Lernen zu gestalten und zu arrangieren. Vollständige Lernpfade ergeben sich durch die geschickte Verbindung von verschiedenen Lernaufgaben mit je unterschiedlichen Funktionen für das Lernen.", "sikos": ["L.03", "B.03", "L.02", "B.01", "L.01", "B.02"]}, {"name": "Migration", "desc": "Der Beitrag führt in grundlegende Diskussionen über den schulpädagogischen Umgang mit Migration ein. Im ersten Teil wird ein Überblick über die herrschenden Diskurse im Umgang mit Migration gegeben: die Ausländerpädagogik, die Interkulturelle Pädagogik, neue Defizit-und Problemdi…", "sikos": ["E.04", "E.08", "B.01", "I.01", "E.03", "E.06", "E.07"]}, {"name": "Motivation", "desc": "Motivation, das ist ein grosses und bedeutsames Wort, untrennbar verknüpft mit Lernen. Nach der Intelligenz ist die Motivation eine der wichtigsten Variablen bei der Bestimmung schulischer Leistungen, behaupten Steinbayr und Spinath (2008) ihre Bedeutung bei allen anderen Unterne…", "sikos": ["L.03", "B.03", "B.04", "I.02", "B.06", "E.08", "I.03", "E.09", "E.02", "L.08", "E.10", "B.05", "L.01", "L.05", "L.09", "E.01"]}, {"name": "Multiprofessionelle Zusammenarbeit an inklusiven Schulen", "desc": "Multiprofessionelle Zusammenarbeit zeigt sich als komplexer Forschungs- und Praxisgegenstand. Auf die Klärung der Begriffe multiprofessionelle, inter- und intraprofessionelle Kooperation folgt eine Darlegung empirischer Befunde und theoretischer Bezüge zur Kooperation von Lehr- u…", "sikos": ["E.10", "B.05", "I.05", "L.08"]}, {"name": "Natürliche Differenzierung", "desc": "Die natürliche Differenzierung beschreibt eine ganzheitliche Erarbeitung von Themen, bei der sich Aufgaben unterschiedlichen Schwierigkeitsniveuas in natürlicher Weise ergeben.", "sikos": ["L.03", "L.02", "B.01", "L.08", "B.05"]}, {"name": "Neue Autorität nach Omer", "desc": "Als Antwort auf Autoritätsprobleme in der heutigen Erziehung entwickelte Haim Omer gemeinsam mit Arist von Schlippe ein Konzept elterlicher Autorität durch Beziehung und ohne Gewalt.", "sikos": ["I.05", "E.09", "E.02", "E.06", "E.10", "E.05", "E.01"]}, {"name": "Neue Beurteilungsformen nach Winter", "desc": "Noten sind umstritten, unter anderem, weil sie nicht den objektiven Leistungsstand von Schüler:innen widerspiegeln, sondern nur die Rangfolge innerhalb der Klasse. Oft fehlen einheitliche Standards, und auch die soziale Herkunft wirkt sich auf die Schulnote aus.", "sikos": ["B.03", "B.04", "B.06", "L.02", "I.04", "E.09", "B.01", "L.08", "I.01", "B.05", "L.09", "B.02"]}, {"name": "Neue Beurteilungskultur nach Winter", "desc": "Die schulische Leistungsbewertung und die Lernkultur bedingen einander wechselseitig. Das, was geprüft und beurteilt wird, bestimmt in hohem Maße das, was gelernt wird. Darüber hinaus bestimmt aber auch die Art, wie geprüft und beurteilt wird, die Lernkultur.", "sikos": ["B.03", "B.04", "B.06", "L.02", "I.04", "L.08", "I.01", "B.05", "L.09", "B.02"]}, {"name": "No Blame Approach", "desc": "Der NO BLAME APPROACH (Ansatz ohne Schuldzuweisung) hat enormen Bekanntheitsgrad erreicht und auf einfachen, unkomplizierten Wegen Einzug in die Schullandschaft gehalten.", "sikos": ["E.04", "E.09", "E.02", "E.06", "E.05"]}, {"name": "Nähe und Distanz in pädagogischen Beziehungen", "desc": "Seit Bekanntwerden der vielen Fälle sexueller Gewalt und emotionalen Missbrauchs in pädagogischen Institutionen steht die Pädagogik vor der Herausforderung, die Distanz- und Näheverhältnisse pädagogischer Beziehungen neu zu thematisieren.", "sikos": ["I.02", "E.09", "E.02", "E.06", "E.05", "E.01"]}, {"name": "Orientierungsraster Zusammenarbeit mit Eltern", "desc": "Ein guter Kontakt zum Elternhaus (zu Eltern und andern Erziehungsberechtigten) ist heute ein unbestrittener Anspruch, dem die Schule gerecht werden muss Optimale Förderbedingungen für die Kinder und Jugendlichen lassen sich nur herstellen, wenn die Erziehungs- und Bildungsbemühun…", "sikos": ["E.08", "E.10", "E.09", "E.07"]}, {"name": "Othering", "desc": "Gesellschaftliche Dominanzverhältnisse fordern die Pädagogik heraus und konfrontieren sie mit der Gefahr ihrer Reproduktion. In theoretischen und empirischen Studien untersucht Christine Riegel Prozesse des Othering und deren Folgen für Bildungsprozesse: Inwiefern kommt es in Sch…", "sikos": ["E.04", "I.02", "B.06", "E.02", "B.01", "E.03", "E.10", "E.06"]}, {"name": "Partizipation (Stufenmodell)", "desc": "Oser warnt vor dem inflationären Gebrauch des Begriffs Partizipation in Schulen und betont, dass echte Partizipation Verantwortung und Wissen erfordert. Er unterscheidet zwischen vollumfänglicher Partizipation, bei der Verantwortung übernommen wird, und Pseudopartizipation, bei d…", "sikos": ["I.05", "B.04", "E.04", "E.03", "L.09"]}, {"name": "Phasenmodell der Teamentwicklung nach Tuckman", "desc": "Das Phasenmodell der Teamentwicklung (auch \"Teamuhr\") genannt wurde von Bruce Tuckman in den 1960er-Jahren entwickelt und beschreibt unterschiedliche Phasen, die ein Team im Laufe der Zusammenarbeit durchläuft.", "sikos": ["I.05", "B.06", "E.02", "B.01", "E.06", "E.01"]}, {"name": "Plan- und Simulationsspiele", "desc": "Planspiele gelten als wirkungsvolle Methode, um komplexe Inhalte und soziale Kompetenzen erfahrungsorientiert zu vermitteln.  Der erste Teil von Capaul & Ulrichs Planspiele führt in die theoretischen Grundlagen der Methode ein.", "sikos": ["L.06", "L.05"]}, {"name": "Planspiele", "desc": "Planspiele, auch Simulationsspiele genannt, dienen dazu, komplexe Handlungssituationen in der vereinfachten Form einer Spielsituation mit modellhafter Anlehnung an die Wirklichkeit gefahrlos erproben zu können.", "sikos": ["L.03", "L.07", "L.10", "E.04", "E.08", "E.02", "E.06", "L.05", "E.05", "L.06", "E.01"]}, {"name": "Planspiele im Unterricht (Klippert)", "desc": "Planspiele fördern selbstständiges, kreatives Arbeiten und soziales Lernen, indem Teilnehmende reale Problem- und Entscheidungssituationen handlungsorientiert erleben. Klippert erläutert didaktische Grundlagen offener Lernformen und zeigt, wie gesellschaftliche, ökologische und w…", "sikos": ["L.06", "L.05"]}, {"name": "Planspielmethodik", "desc": "Markus Ulrich untersucht in die gemeinsamen Kernpunkte unterschiedlicher Planspiele – von kurzen, einfachen bis zu komplexen, umfangreichen Szenarien. Anhand von drei Planspielen verschiedener Komplexität zeigt er, wie sich zentrale Elemente der Methode in der Praxis umsetzen las…", "sikos": ["L.06", "L.05"]}, {"name": "Planung einer Unterrichtseinheit nach Fraefel", "desc": "Fraefel rückt in der Planung von Unterrichtseinheiten die Ziele ins Zentrum. Sie legen fest, welche Kompetenzen die Lernenden am Ende erreichen sollen, und geben damit Richtung für Inhalte, Methoden und Lernaufgaben.", "sikos": ["L.03", "L.02", "L.01", "B.02", "L.04"]}, {"name": "Planungsprozess: wie Unterricht planen?", "desc": "Unterricht planen erfolgt meist in Form eines Dreischritts von der Jahresplanung über eine Grobplanung/Wochenplanung zur Feinplanung. Dabei können verschiedene Planungsinstrumente zur Anwendung kommen.", "sikos": ["L.03", "L.07", "L.10", "E.04", "L.02", "B.01", "L.08", "E.03", "L.01", "L.05", "L.09", "L.04", "L.06"]}, {"name": "Professionelle Reflexivität", "desc": "Lehrpersonen sind in ihrem Alltag auf Routinen angewiesen. Um nicht nur Erfahrungen zu reproduzieren, bedarf es einer professionellen Reflexivität, welche je nach professionstheoretischer Perspektive unterschiedlich konkretisiert wird. Literatur Idel, T., Schütz, A.", "sikos": ["I.02"]}, {"name": "Projektunterricht", "desc": "In Epochen zu unterrichten, ist eine konstruktive Antwort auf die Frage, wie Unterricht über den herkömmlichen 45-Minuten-Takt gedacht werden kann. Beispielsweise kann der Projektunterricht diese Zerstückelung des Unterrichts aufheben und ganzheitliches Lernen an einem Thema ermö…", "sikos": ["L.07", "L.10", "L.02", "E.02", "B.01", "L.08", "L.09", "L.06"]}, {"name": "Prüfungsangst", "desc": "Schulstress und Prüfungsängste können das Lernpotenzial erheblich beeinträchtigen. Lehrpersonen und Coaches erhalten mit diesem Buch verständliche und sofort anwendbare Konzepte zur Erklärung und Beratung bei Schulängsten.", "sikos": ["B.03", "B.06", "B.01", "L.08", "B.05"]}, {"name": "Pädagogische Professionalität", "desc": "Der Lehrberuf gilt als Profession. Profession, Professionalisierung, Professionalität sowie professionelles Handeln sind theoretische Begriffe und damit verbundene Konzepte, die im Handlungsfeld Schule seit den 70er Jahren diskutiert werden.", "sikos": ["I.02"]}, {"name": "Qualitätsmerkmale schulische Elternarbeit", "desc": "Der \"Kompass für die partnerschaftliche Zusammenarbeit von Schule und Elternhaus\" nennt umfassend verschiedene Qualitätsmerkmale der Zusammenarbeit mit den Eltern auf Ebene der Schule.", "sikos": ["I.04", "I.05", "E.07"]}, {"name": "Reflexion im Portfolio", "desc": "Reflexion im Portfolio ist ein zentrales Instrument, um Lernprozesse bewusst zu gestalten und zu dokumentieren. Durch die systematische Auseinandersetzung mit eigenen Erfahrungen und Lernfortschritten können Lernende Kompetenzen entwickeln, Selbstwirksamkeit erleben und Lernziele…", "sikos": ["I.04", "I.02", "I.01"]}, {"name": "Reteaming & Meisterklasse nach Furman", "desc": "Ein Ziel ins Auge fassen und erreichen, die eigene Motivation stärken, Veränderungsprozesse steuern und erfolgreich sein - wer möchte das nicht? Das lösungsfokussierte Programm von Ben Furman und Tapani Ahola führt in logisch aufeinander aufbauenden Schritten durch Veränderungspr…", "sikos": ["E.04", "E.08", "E.07", "L.02", "E.09", "E.02", "I.01", "E.10", "B.05", "L.08", "E.03", "E.06", "B.03", "I.05", "I.03", "I.04", "B.01", "L.09", "E.05", "E.01"]}, {"name": "Rolle der Lehrperson", "desc": "Peter Larisch beschreibt in seinem Artikel, wie vielfältig die Rolle als Lehrperson sein kann und wie persönliche Vorstellungen von diesem Berufsbild aussehen. Wer Lehrerin werden will, hat oftmals konkrete persönliche Vorstellungen von diesem Berufsbild.", "sikos": ["I.05", "I.03", "I.02", "I.04", "I.01"]}, {"name": "Rückwärtsplanung nach Fraefel", "desc": "Fraefel versteht unter Rückwärtsplanung, dass Unterricht konsequent von den angestrebten Kompetenzen und Lernergebnissen her gedacht wird. Statt Inhalte oder Methoden an den Anfang zu stellen, fragt die Planung zuerst: Was sollen die Lernenden am Ende können?", "sikos": ["L.02", "B.01", "L.01", "B.02", "L.04"]}, {"name": "Sachanalyse", "desc": "Was sollen die Schülerinnen und Schüler inhaltlich lernen, oder: Um welche\nLerninhalte/Themen soll es im Unterricht gehen? Auch in einem an\nKompetenzen orientierten Unterricht ist die Frage nach dem Unterrichtsinhalt\nbei der Planung nach wie vor zentral, denn es gilt: Kompetenzen…", "sikos": ["L.03", "B.06", "L.02", "B.01", "L.01", "B.02"]}, {"name": "Salutogenese", "desc": "Das Modell der Salutogenese wurde vom Gesundheitswissenschaftler Aaron Antonovsky als Alternative zur Pathogenese eingeführt und ist eines der wichtigsten Modelle zur Erklärung von Gesundheit.", "sikos": ["I.03", "I.02"]}, {"name": "Schulentwicklung kompakt", "desc": "Schulen stehen unter wachsendem Entwicklungsdruck durch veränderte Schüler:innen und Umfeldbedingungen. Das Buch nimmt diese Erfahrungen auf, systematisiert sie und gliedert sich in theoretische Grundlagen, Verfahren und Instrumente sowie Perspektiven für die Zukunft.", "sikos": ["I.04", "I.05"]}, {"name": "selbstgesteuert lernen in Projekten", "desc": "Lernen in Projekten setzt voraus, dass die Schüler:innen ihr Lernen weitestgehend selbst steuern. In der Schule können sie das in der Regel nicht von selbst. Vielmehr müssen Selbststeuerung und das Lernen in Projekten gelernt, also gelehrt werden. Wie kann das gelingen?", "sikos": ["L.06", "L.09"]}, {"name": "Selbstkonzept", "desc": "Hier geht es um schulbezogene und ausserschulische Selbstkonzepte. Es soll dargestellt werden, wie sich schulbezogene Selbstkonzepte entwickeln, wodurch sie beeinflusst werden und welche Auswirkungen sie auf das Erleben und Verhalten von Personen haben.", "sikos": ["B.03", "E.04", "B.06", "E.08", "I.04", "E.02", "B.01", "I.01", "E.03", "E.10", "B.05", "L.09", "E.05"]}, {"name": "Selbstwirksamkeitserwartung", "desc": "Der vorliegende Artikel zeigt auf, was die\nSelbstwirksamkeitserwartung einer Lehrkraft\nbzw. einer Schülerin oder eines Schülers für das\nAufgreifen und die Bewältigung von Aufgaben\nim schulischen Kontext bedeuten kann.", "sikos": ["B.03", "B.04", "B.06", "E.08", "B.01", "I.01", "E.10", "L.09", "E.05"]}, {"name": "Single Point Rubric", "desc": "Ein Single Point Rubric nach Fluckiger ist ein vereinfachtes Bewertungsinstrument, das nur eine Spalte mit den Kriterien für eine akzeptable Leistung darstellt. Neben dieser Mittelspalte gibt es Platz für individuelles Feedback zu Stärken und Verbesserungsmöglichkeiten.", "sikos": ["B.04", "B.06", "L.08", "B.05", "L.09", "B.02"]}, {"name": "Soziale Herkunft", "desc": "Sturm (2024) thematisiert im Kapitel 4.2, wie unterschiedliche milieuspezifische Erfahrungen von Schüler:innen zu ungleichen Bildungschancen führen. Dabei wird insbesondere die schulische Leistung als zentrale Differenzkategorie analysiert, die soziale Ungleichheiten reproduziert…", "sikos": ["E.03", "E.04", "B.01"]}, {"name": "Soziale Perspektivenübernahme", "desc": "Auf Basis von Piagets Theorie der kognitiven Entwicklung und im Hinblick auf Kohlbergs Theorie der\nMoralentwicklung zeigt Selman empirisch, wie ein Kind soziales Verstehen erlernt: In vier Entwicklungsschritten\nerwirbt es grundlegende Fähigkeiten, in unterschiedlichen Handlungsf…", "sikos": ["I.05", "E.04", "B.06", "E.02", "B.01", "E.03", "E.06", "E.10", "B.05", "E.05"]}, {"name": "Soziale Wahrnehmung", "desc": "Mit der sozialen Wahrnehmung wird der Einschätzungsprozess beschrieben, dem wir unterliegen, wenn wir uns ein Bild von anderen Personen machen. Eine Vielzahl von Faktoren beeinflussen und verzerren unsere Wahrnehmung und führen dazu, dass verschiedene Leute die gleiche Person unt…", "sikos": ["E.03", "E.08", "I.02", "B.01"]}, {"name": "Spiel in Kindheit und Jugend", "desc": "Was Kinder und Jugendliche im Spiel lernen, lernen sie leichter. Aber erst auf dem Boden tragender Beziehungen zu Erwachsenen und Gleichaltrigen ist Lernen im Spiel ertragreich.", "sikos": ["E.05", "L.07", "E.02", "L.05"]}, {"name": "Systemisch-Lösungsorientierte Beratung", "desc": "Lösungssuche statt Problemanalyse: Die lösungsorientierte Beratung findet immer größere Resonanz, sei es in der Arbeit mit Einzelnen, in Gruppen, in Beratungsstellen oder im Coaching.", "sikos": ["B.03", "I.05", "E.04", "E.08", "E.09", "E.02", "E.06", "E.10", "B.05", "L.09", "E.05", "E.01", "E.07"]}, {"name": "Systemische Biografiearbeit nach Röhrbein", "desc": "Das 21. Jahrhundert bietet für viele Menschen unzählige Möglichkeiten, ihr Leben zu gestalten. Gleichzeitig hält es reichlich Unsicherheiten bereit: Ausbildungen halten nicht mehr ein Leben lang, Zeitverträge führen zu Patchwork-Biografien, Lebensplanung wird zum Lotteriespiel.", "sikos": ["I.03", "E.08", "E.09", "E.02", "I.01", "E.03", "E.10"]}, {"name": "Systemische Pädagogik", "desc": "Die systemische Pädagogik zeichnet sich dadurch aus,\ndass sie das Verhalten und Lernen von Menschen nicht\nisoliert anhand persönlicher Eigenschaften beschreibt,\nsondern vor allem in seinen sozialen Beziehungen\nbeobachtet.", "sikos": ["I.05", "I.02", "B.06", "E.09", "B.01", "L.09", "E.05", "E.07"]}, {"name": "Systemische Schul- und Unterrichtsentwicklung", "desc": "Systemische Schul- und Unterrichtsentwicklung betrachtet Schule als vernetztes System, in dem Unterricht, Kollegium und Organisationsstrukturen wechselseitig aufeinander wirken.", "sikos": ["I.04", "I.05", "I.02"]}, {"name": "Theoretischer Bezugsrahmen für Schulentwicklung", "desc": "Das Feld der Schulentwicklung ist unübersichtlich und häufig theorielos, da es stark von praktischen Erfahrungen und normativen Empfehlungen geprägt ist. Empirische Generalisierungen oder eklektische Theoriebezüge ersetzen bislang einen konsistenten Bezugsrahmen.", "sikos": ["I.04", "I.05"]}, {"name": "Universal Design for Learning (UDL)", "desc": "Beim Universal Design for Learning handelt es sich um ein Konzept, das das Lehren und Lernen verbessern soll. Es basiert auf neuen Erkenntnissen der Lehr-Lernforschung und nutzt die digitalen Technologien.", "sikos": ["L.03", "B.02", "L.07", "E.04", "B.06", "L.02", "E.02", "B.01", "L.08", "E.03", "E.10", "B.05", "L.01", "L.05", "L.09", "L.04", "L.06", "E.01"]}, {"name": "Unterricht reflektieren", "desc": "Unterricht ist das Kerngeschäft von Lehrpersonen. Für eine gezielte Weiterentwicklung und Differenzierung ist eine systematische, datengestützte Reflexion unerlässlich. Literatur Schnack, J. (2024). Unterricht reflektieren Pädagogik , 08-2024, S. 6-10.", "sikos": ["I.04", "I.05", "I.02"]}, {"name": "Unterrichtssetting", "desc": "Mit Unterrichtssetting ist die bewusst gestaltete Umgebung gemeint, in der schulische Lernprozesse ablaufen. Diese Umgebung wird von allen am Unterricht Beteiligten mitgestaltet, in besonderem Masse ist sie aber geprägt durch Entscheide, die die Lehrperson darüber trifft, wie das…", "sikos": ["L.03", "B.02", "B.04", "I.05", "B.06", "L.02", "B.01", "L.08", "B.05", "L.01", "L.05", "L.09", "L.04", "L.06"]}, {"name": "Unterrichtsstörungen händeln", "desc": "Eine positive, respektvolle und störungsfreie Lernumgebung unterstützt das Lernen der Schülerinnen und Schüler. Störungen im Unterricht wirken sich ungünstig auf deren Entwicklung wie auch auf die Gesundheit der Lehrpersonen aus.\nBis heute werden Störungen nahezu ausschlie…", "sikos": ["I.02", "I.03", "E.02", "B.01", "E.06", "E.05", "L.04", "E.01"]}, {"name": "Wirksamer Projektunterricht", "desc": "Das Buch Wirksamer Projektunterricht geht der Frage nach, wie Projektunterricht gestaltet werden kann, um selbstgesteuertes Lernen und Kompetenzentwicklung bei Lernenden zu fördern.", "sikos": ["L.06"]}, {"name": "WOWW-Ansatz nach Berg", "desc": "Kinder wollen lernen. Lehrpersonen wollen lehren. Und dennoch treten manchmal Schwierigkeiten auf. Lösungsorientierte Vorgehensweisen haben sich in solchen \"herausfordernden Situationen\" gleichermassen als hilfreich wie auch praktikabel erwiesen.", "sikos": ["B.03", "I.05", "E.04", "E.09", "E.02", "E.06", "L.01", "L.09", "E.05", "L.04", "E.01"]}, {"name": "Zone der nächstmöglichen Entwicklung nach Wygotski", "desc": "Die Zone der proximalen oder nächstmöglichen Entwicklung ist ein Konzept des Entwicklungspsychologen Lew Wygotski. Sie beschreibt den Bereich zwischen dem aktuellen Entwicklungsstand einer Person und dem Niveau, das sie mit Hilfe einer unterstützenden Person oder eines Experten e…", "sikos": ["B.03", "B.04", "B.06", "L.02", "B.01", "L.08", "E.10", "B.05", "L.01"]}, {"name": "Zusammenarbeit in der integrativen Schule", "desc": "Das Kapitel zur multiprofessionellen Zusammenarbeit betont, dass Kooperation zwischen Lehrkräften und weiteren Professionen eine zentrale Voraussetzung für gelingende schulische Inklusion ist.", "sikos": ["E.10", "B.05", "I.05", "L.08"]}], "s": [{"code": "B.01", "domain": "Beurteilen", "name": "Lernvoraussetzungen berücksichtigen"}, {"code": "B.02", "domain": "Beurteilen", "name": "Kriterienorientiert beurteilen"}, {"code": "B.03", "domain": "Beurteilen", "name": "Lerngespräche führen"}, {"code": "B.04", "domain": "Beurteilen", "name": "Lernende in Beurteilungsprozesse involvieren"}, {"code": "B.05", "domain": "Beurteilen", "name": "Lernprozesse individuell begleiten"}, {"code": "B.06", "domain": "Beurteilen", "name": "Lernen analysieren"}, {"code": "E.01", "domain": "Erziehen & Begleiten", "name": "Klassen / Gruppen leiten"}, {"code": "E.02", "domain": "Erziehen & Begleiten", "name": "Lernfreundliches Klima aufbauen"}, {"code": "E.03", "domain": "Erziehen & Begleiten", "name": "Diversity berücksichtigen"}, {"code": "E.04", "domain": "Erziehen & Begleiten", "name": "Partizipation ermöglichen"}, {"code": "E.05", "domain": "Erziehen & Begleiten", "name": "Beziehung aufbauen"}, {"code": "E.06", "domain": "Erziehen & Begleiten", "name": "Konflikte lösen"}, {"code": "E.07", "domain": "Erziehen & Begleiten", "name": "Elternkontakte gestalten"}, {"code": "E.08", "domain": "Erziehen & Begleiten", "name": "Berufswahl begleiten"}, {"code": "E.09", "domain": "Erziehen & Begleiten", "name": "Gespräche führen"}, {"code": "E.10", "domain": "Erziehen & Begleiten", "name": "Entwicklungsprozesse begleiten"}, {"code": "I.01", "domain": "Innovieren & Kooperieren", "name": "Umgang mit eigener Bildungsbiografie weiterentwickeln"}, {"code": "I.02", "domain": "Innovieren & Kooperieren", "name": "Sich reflektiert weiterentwickeln"}, {"code": "I.03", "domain": "Innovieren & Kooperieren", "name": "Sich gesund halten"}, {"code": "I.04", "domain": "Innovieren & Kooperieren", "name": "An Schul- und Unterrichtsentwicklung beteiligen"}, {"code": "I.05", "domain": "Innovieren & Kooperieren", "name": "Zusammenarbeiten und kooperieren"}, {"code": "L.01", "domain": "Lernen gestalten", "name": "Lernziele formulieren"}, {"code": "L.02", "domain": "Lernen gestalten", "name": "Lernaufgaben entwickeln"}, {"code": "L.03", "domain": "Lernen gestalten", "name": "Passende Inhalte aufbereiten"}, {"code": "L.04", "domain": "Lernen gestalten", "name": "Basistechniken situativ einsetzen"}, {"code": "L.05", "domain": "Lernen gestalten", "name": "Spielsituationen gestalten"}, {"code": "L.06", "domain": "Lernen gestalten", "name": "Lernen in Epochen gestalten"}, {"code": "L.07", "domain": "Lernen gestalten", "name": "Lernen und Digitalität verbinden"}, {"code": "L.08", "domain": "Lernen gestalten", "name": "Lernsettings individualisieren"}, {"code": "L.09", "domain": "Lernen gestalten", "name": "Eigenständiges Lernen fördern"}, {"code": "L.10", "domain": "Lernen gestalten", "name": "BNE integrieren"}]}
+</script>
+
+<!-- Passwort-Overlay -->
+<div id="pw-overlay">
+  <div class="pw-logo"><span class="ph">ph</span><span class="gr">GR</span></div>
+  <h2>Konzeptothek</h2>
+  <p>Master SEK I &amp; II &middot; Zugangscode eingeben</p>
+  <div class="pw-box">
+    <input type="password" id="pw-input" placeholder="Zugangscode …" autocomplete="off" />
+    <button id="pw-btn">WEITER &rarr;</button>
+  </div>
+  <div id="pw-error"></div>
+</div>
+
+<header>
+  <a href="https://spechtur.github.io/tool-box/" class="back-btn">&larr; ToolBox</a>
+  <div class="phgr-logo"><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="header-title-block">
+    <div class="header-title">Konzeptothek</div>
+    <div class="header-subtitle">Master SEK I &amp; II &middot; konzeptueller Provokateur</div>
+  </div>
+  <div class="badge">147 Konzepte &middot; 31 SiKos</div>
+</header>
+
+<div id="chat-container"></div>
+
+<div id="input-wrap">
+  <div id="input-col">
+    <textarea id="user-input" placeholder="Schreib hier …" rows="1"></textarea>
+    <div class="input-hint">Enter &rarr; Senden &nbsp;&middot;&nbsp; Shift+Enter &rarr; Zeilenumbruch</div>
+  </div>
+  <button id="send-btn" title="Senden">&#8594;</button>
+</div>
+
+<script>
+const WORKER_URL = 'https://konzeptothek-bot.david-halser.workers.dev';
+const MODEL      = 'claude-sonnet-4-20250514';
+
+// KB sicher aus dem Script-Tag laden – keine Backtick/Escaping-Probleme
+const KB = JSON.parse(document.getElementById('kb-data').textContent);
+
+// ═══════════════════════════════════════════════════════════════════
+//  SYSTEM PROMPT
+// ═══════════════════════════════════════════════════════════════════
+const SYSTEM_PROMPT = [
+  "Du bist der Konzeptothek-Bot des Masterstudiengangs SEK I & II der Pädagogischen Hochschule Graubünden (PHGR).",
+  "",
+  "## DEINE IDENTITÄT",
+  "Du bist kein digitaler Bibliothekar und kein Suchsystem. Du bist ein konzeptueller Provokateur. Deine Aufgabe ist nicht Information – sondern produktive Irritation: Du erzeugst Reibung zwischen Konzepten, die zum Positionieren zwingt. Du arbeitest mit dem, was die studierende Person schon weiss – und machst sichtbar, was sie noch nicht denkt.",
+  "",
+  "## DEINE KERNAUFGABE (4 Phasen)",
+  "1. ERKUNDEN – Erforsche die theoretische Landschaft: Welche Konzepte nutzen sie? Aus welchen SiKos? Seit wann? Wofür?",
+  "2. KARTOGRAFIEREN (intern, nie aussprechen) – Welche SiKo-Domänen (B/E/I/L) fehlen? Welche Theoriecluster dominieren? Lösungsorientiert? Konstruktivistisch? Normativ-kritisch? Empirisch?",
+  "3. KOLLISION ERZEUGEN – Wähle ZWEI Konzepte, die sich produktiv reiben – genau am blinden Fleck. Ein Konzept aus ihrem Habitat, eines von aussen. Oder zwei vertraute, die sie nie zusammengedacht haben. Beschreibe die Spannung als echten Widerspruch, nicht als neutrale Gegenüberstellung.",
+  "4. EINE FRAGE – Stelle EINE einzige Frage. Die richtige. Keine Antwort, keine Auflösung. Die Frage soll zum Positionieren zwingen.",
+  "",
+  "## LERNVERSTÄNDNIS DES MASTERSTUDIENGANGS",
+  "Der Bot kennt das Lernverständnis des Studiengangs und weiss präzise, wo er darin steht.",
+  "",
+  "DREI EBENEN, ZWEI SCHWELLEN:",
+  "Ebene 1 – Konzeptothek (Referenz-Layer): 'So sagen es meine Vordenker:innen.' Theorien, Konzepte, Professionsstandards. Noch keine Konstruktion.",
+  "▼ ANEIGNUNGSSCHWELLE ▼ – Das ist der Ort des Bots. Grösste Herausforderung: Übergang vom Referenzieren zum Eigenen.",
+  "Ebene 2 – Persönliche professionelle Konstruktion (EW-Layer): 'So werde ich es machen.' Eigene, begründete Position – normativ ('Was ist für mich gute Meisterung dieser SiKo?') und prozedural ('Wie werde ich das angehen?').",
+  "▼ UMSETZUNGSSCHWELLE ▼ – Übergang von der Konstruktion zur gelebten Praxis.",
+  "Ebene 3 – Performanz (BPA-Layer): 'So habe ich das gemacht.' In konkreten Situationen zeigen, dass die Konstruktion situativ abrufbar ist.",
+  "",
+  "Der Bot arbeitet ausschliesslich an der ANEIGNUNGSSCHWELLE. Die Performanz ist der stille Horizont – er kennt ihn, erwähnt ihn aber nur wenn es wirklich trägt.",
+  "",
+  "## NIVEAUS DER PERSÖNLICHEN PROFESSIONELLEN KONSTRUKTION",
+  "Nicht zum Bewerten – als Orientierungswissen für Gesprächsführung:",
+  "UNDER CONSTRUCTION (Vorstufe): Die Konzepte sind noch unbearbeitet. Lehm, Sand, Holz. Kein Haus in Sicht.",
+  "BASIC (Baumaterial): Kennt grundlegende Konzepte und kann sie wiedergeben. Ziegelsteine vorhanden – aber noch kein Haus. Schlüsselwort fehlt: 'allgemeingültig'.",
+  "INTERMEDIATE – Grundanforderung (Fertighaus): Verfügt über eine GRUNDLEGENDE, allgemeingültige, persönliche Konstruktion. Kann Standardsituationen konzeptuell bearbeiten. Stehendes Haus, nach Plan gebaut.",
+  "ADVANCED (Architektenhaus): ELABORIERTE, allgemeingültige, persönliche Konstruktion. Denkt in Optionen, vernetzt, gestaltet selbständig komplexe Situationen.",
+  "EXPERT (Wohnen 4.0): KOMPLEXE, allgemeingültige, persönliche Konstruktion. Hinterfragt kritisch, entwickelt Konzepte weiter, leitet andere an.",
+  "Entscheidende Pointe: 'Allgemeingültig' ist das Schlüsselwort, das unter INTERMEDIATE fehlt. Erst ab Intermediate liegt eine echte pers. prof. Konstruktion vor.",
+  "",
+  "## ZWEI-STUFEN-INTERVENTION",
+  "Wenn du ein Theorie-Habitat oder einen blinden Fleck erkennst:",
+  "Stufe 1 – Rhetorische Frage: Gib der Person die Chance, selbst zu merken und umzuschalten. Subtil, einladend.",
+  "Stufe 2 – Explizite Vermutung (nur wenn Stufe 1 wirkungslos bleibt): Benenne das Muster direkt, aber als Hypothese: 'Ich habe den Eindruck, dass...' / 'Mir fällt auf, dass...' – nie als Urteil, immer als Einladung.",
+  "",
+  "## WÄRME OHNE LOBHUDELEI",
+  "Wärme entsteht durch inhaltliche Präzision, nicht durch generische Zustimmung. Nie: 'Guter Punkt!', 'Super!', 'Interessant!' – das ist Kundenservice, keine Begleitung. Stattdessen: das Gesagte aufgreifen und weiterdenken. 'Du bringst Konstruktivismus und Ermöglichungsdidaktik zusammen – interessant, dass du Antinomien noch nicht erwähnt hast...' Das zeigt echtes Zuhören.",
+  "",
+  "## BEISPIEL-VERHALTENSREGEL",
+  "Beispiele können Verstehen ermöglichen – aber sie können auch im Konkreten einschliessen. Regel: Ein Beispiel pro Intervention, danach sofort zurück zur Abstraktion. Nie zwei Beispiele hintereinander. Wer im Beispiel verweilt, driftet in Richtung BPA – weg von der Konzeptarbeit.",
+  "",
+  "## STRIKTE VERHALTENSREGELN",
+  "- NIEMALS Konzeptlisten aufzählen",
+  "- NIEMALS ein Konzept definieren – in Spannung bringen",
+  "- Immer nur EINE Frage stellen",
+  "- Keine Antworten vorwegnehmen, keine Auflösungen",
+  "- Du-Form, direkt, präzise, manchmal unbequem – nie herablassend",
+  "- Kurze Antworten: Qualität schlägt Länge",
+  "",
+  "## SECHS DENKFIGUREN (situativ einsetzen)",
+  "1. INVERSION: 'Was wäre, wenn das Gegenteil stimmt?' – aufbrechen, was als selbstverständlich gilt",
+  "2. SKALENWECHSEL: Vom Einzelfall zum Systemischen, oder umgekehrt – 'Was bedeutet das für alle Lernenden?'",
+  "3. ZEITACHSE: 'Was denkst du, wie das in 10 Jahren aussieht?' – kurzfristiges Denken aufbrechen",
+  "4. PERSPEKTIVWECHSEL: Lernende, Eltern, Schulleitung, Gesellschaft – 'Wie würde das X sehen?'",
+  "5. WIDERSPRUCHSDIAGNOSE: Zwei Aussagen der Person gegenüberstellen, die sich nicht gleichzeitig halten lassen",
+  "6. KONZEPTUELLE LÜCKE: 'Du hast X und Y genannt – was verbindet die beiden, und fehlt da noch etwas?'",
+  "",
+  "## REASONING-HINWEISE",
+  "",
+  "THEORIE-HABITATE ERKENNEN:",
+  "Nur lösungsorientiert (Reteaming, WOWW, Ich schaffs, SLB): Kollision mit strukturkritischen/machtanalytischen Konzepten (Othering, Doing Difference, Chancengerechtigkeit).",
+  "Nur konstruktivistisch: Kollision mit empirisch-evidenzbasiert (Hattie, Meyer, Helmke) oder normativ-kritisch (Demokratiepädagogik, Just Community).",
+  "Nur L-Bereich: In E-Bereich führen – Beziehung, Macht, Klima.",
+  "Nur E-Bereich: In L-Bereich oder I-Bereich führen – Professionsentwicklung, Systemebene.",
+  "",
+  "UNIVERSALKONZEPT-ALARM:",
+  "KONSTRUKTIVISMUS (27/31 SiKos), LERNEN AM GEMEINSAMEN GEGENSTAND (31/31), BNE IM LEHRPLAN 21 (31/31) – letztere zwei sind curriculare Setzungen der PHGR, keine theoretischen Positionierungen. Bei Erwähnung sofort hinterfragen: 'Was genau meinst du damit – und welcher konkrete Lerntheoretiker oder welche Studie steckt dahinter?'",
+  "",
+  "KONZEPTCLUSTER FÜR KOLLISIONEN:",
+  "- Klassenführung: Kounin/Evertson (Struktur/Technik) vs. Beziehungskonzepte (Gleichwürdigkeit, Neue Autorität) – Struktur vs. Beziehung",
+  "- Beurteilung: Kriterienorientierung vs. Dialogische Beurteilung nach Winter – Messen vs. Aushandeln",
+  "- Professionalität: Antinomien (Widerspruch ist Beruf) vs. Rollenklarheit/Professionelle Reflexivität (Widerspruch ist zu bearbeiten)",
+  "- Macht & Diversität: Othering / Doing Difference / Intersektionalität – werden oft gemieden, genau deshalb wichtig",
+  "- Gesundheit: Salutogenese (Ressource) vs. Burnout-Prävention (Risiko) – Kraft vs. Schutz",
+  "- Lösungsorientierung: WOWW / Reteaming vs. No Blame Approach – Stärke vs. Verantwortung",
+  "",
+  "## DATENBASIS",
+  "Du kennst 147 vollständig beschriebene Konzepte und 31 SiKos. Nutze die Konzeptbeschreibungen für inhaltlich präzise Kollisionen – nie als Definitionen, immer als Argumentationsmaterial.",
+  "",
+  JSON.stringify(KB)
+].join("\n");
+
+// ═══════════════════════════════════════════════════════════════════
+//  MARKDOWN → HTML
+// ═══════════════════════════════════════════════════════════════════
+function renderBot(text) {
+  // [KOLLISION] Block
+  text = text.replace(/\[KOLLISION\]:?\s*([\s\S]*?)(?=\[FRAGE\]|$)/gi, function(_, body) {
+    return '<div class="collision-block"><span class="collision-label">Kollision</span>' + body.trim().replace(/\n/g,'<br>') + '</div>';
+  });
+  // [FRAGE] Block
+  text = text.replace(/\[FRAGE\]:?\s*([\s\S]*)/gi, function(_, body) {
+    return '<div class="question-block"><span class="question-label">Frage</span>' + body.trim().replace(/\n/g,'<br>') + '</div>';
+  });
+  // **bold** → gelb
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // *italic*
+  text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Zeilenumbrüche
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PASSWORT-OVERLAY
+// ═══════════════════════════════════════════════════════════════════
+const pwOverlay = document.getElementById('pw-overlay');
+const pwInput   = document.getElementById('pw-input');
+const pwBtn     = document.getElementById('pw-btn');
+const pwError   = document.getElementById('pw-error');
+let   accessPassword = '';
+
+async function tryPassword() {
+  const pw = pwInput.value.trim();
+  if (!pw) return;
+  pwBtn.textContent = '…';
+  pwBtn.disabled = true;
+  // Passwort gegen Worker validieren mit einem Mini-Ping
+  try {
+    const r = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_password: pw,
+        model: MODEL,
+        max_tokens: 10,
+        system: 'Respond only: OK',
+        messages: [{ role: 'user', content: 'ping' }]
+      })
+    });
+    if (r.status === 401) {
+      pwError.textContent = 'Falscher Zugangscode – bitte erneut versuchen.';
+      pwInput.value = ''; pwInput.focus();
+    } else if (!r.ok) {
+      pwError.textContent = 'Verbindungsfehler – Worker nicht erreichbar.';
+    } else {
+      accessPassword = pw;
+      pwOverlay.style.display = 'none';
+      initChat();
+    }
+  } catch(e) {
+    pwError.textContent = 'Verbindungsfehler: ' + e.message;
+  }
+  pwBtn.textContent = 'WEITER →';
+  pwBtn.disabled = false;
+}
+
+pwBtn.addEventListener('click', tryPassword);
+pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryPassword(); });
+
+// ═══════════════════════════════════════════════════════════════════
+//  CHAT
+// ═══════════════════════════════════════════════════════════════════
+const chatEl  = document.getElementById('chat-container');
+const input   = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+let history   = [];
+let busy      = false;
+
+function append(role, content, isHTML) {
+  const wrap = document.createElement('div');
+  wrap.className = 'message ' + role;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'bot' ? 'Konzeptothek' : 'Du';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  if (isHTML) bubble.innerHTML = content;
+  else bubble.innerHTML = esc(content).replace(/\n/g, '<br>');
+  wrap.appendChild(label);
+  wrap.appendChild(bubble);
+  chatEl.appendChild(wrap);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function showTyping() {
+  const w = document.createElement('div');
+  w.className = 'typing-wrap'; w.id = 'typing';
+  w.innerHTML = '<div class="msg-label">Konzeptothek</div><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  chatEl.appendChild(w); chatEl.scrollTop = chatEl.scrollHeight;
+}
+function rmTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+async function callAPI(msgs, maxTokens) {
+  const r = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      access_password: accessPassword,
+      model: MODEL,
+      max_tokens: maxTokens || 900,
+      system: SYSTEM_PROMPT,
+      messages: msgs
+    })
+  });
+  if (r.status === 401) throw new Error('401');
+  if (!r.ok) throw new Error('API ' + r.status + ': ' + await r.text());
+  return (await r.json()).content[0].text;
+}
+
+async function send() {
+  const txt = input.value.trim();
+  if (!txt || busy) return;
+  input.value = ''; input.style.height = 'auto';
+  busy = true; sendBtn.disabled = true;
+  append('user', txt, false);
+  history.push({ role: 'user', content: txt });
+  showTyping();
+  try {
+    const reply = await callAPI(history);
+    rmTyping();
+    append('bot', renderBot(reply), true);
+    history.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    rmTyping();
+    if (e.message === '401') {
+      pwOverlay.style.display = 'flex';
+      pwError.textContent = 'Sitzung abgelaufen – bitte erneut einloggen.';
+      pwInput.value = ''; pwInput.focus();
+    } else {
+      const w = document.createElement('div');
+      w.className = 'message bot';
+      w.innerHTML = '<div class="msg-label">System</div><div class="error-bubble">&#9888; ' + esc(e.message) + '<br><br>Worker-URL oder Zugangscode prüfen.</div>';
+      chatEl.appendChild(w);
+    }
+  }
+  busy = false; sendBtn.disabled = false; input.focus();
+}
+
+input.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 130) + 'px';
+});
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+sendBtn.addEventListener('click', send);
+
+// ═══════════════════════════════════════════════════════════════════
+//  CHAT INITIALISIEREN (nach PW-Eingabe)
+// ═══════════════════════════════════════════════════════════════════
+async function initChat() {
+  input.focus();
+  showTyping();
+  try {
+    const opening = await callAPI([{
+      role: 'user',
+      content: '[SYSTEM-INIT] Eröffne das Gespräch. Direkt, ohne Begrüssung oder Kundenservice-Ton. 2-3 Sätze die deine Rolle als konzeptueller Provokateur etablieren. Dann eine einzige Frage, die die Person einlädt, ihre theoretische Landschaft zu beschreiben – konkret, einladend, nicht abstrakt.'
+    }], 350);
+    rmTyping();
+    append('bot', renderBot(opening), true);
+    history.push({ role: 'assistant', content: opening });
+  } catch(e) {
+    rmTyping();
+    if (e.message === '401') {
+      pwOverlay.style.display = 'flex';
+      pwError.textContent = 'Falscher Zugangscode – bitte erneut versuchen.';
+      pwInput.value = ''; pwInput.focus();
+    } else {
+      const fb = 'Hier werden keine Konzepte erklärt. Hier entstehen Kollisionen.\n\nMit welchen Theorien oder Konzepten arbeitest du gerade – und in welchem SiKo?';
+      append('bot', renderBot(fb), true);
+      history.push({ role: 'assistant', content: fb });
+    }
+  }
+}
+</script>
+</body>
+</html>
