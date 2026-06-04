@@ -93,7 +93,7 @@
     .mode-btn.on { border-color: var(--tuerkis); background: var(--tuerkis); color: white; }
 
     /* Action buttons */
-    .action-btn { width: 100%; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; font-family: Arial; margin-bottom: 7px; }
+    .action-btn-sb { width: 100%; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; font-family: Arial; margin-bottom: 7px; }
     .ab-gelb   { background: var(--gelb); color: #111; }
     .ab-violet { background: var(--violett); color: white; }
 
@@ -139,6 +139,69 @@
     .gs-row-meta { font-size: 11px; color: var(--mg); margin-top: 4px; display: flex; gap: 12px; align-items: center; }
     .gs-hide-btn { font-size: 11px; font-weight: 700; background: none; border: none; cursor: pointer; color: var(--dg); padding: 0; }
     .gs-hide-btn:hover { color: var(--rot); }
+
+    /* ── Auswertungs-Sektion in Sidebar ── */
+    .auswertung-typ-row { display: flex; gap: 5px; margin-bottom: 8px; }
+    .typ-btn { flex: 1; padding: 7px 4px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 2px solid var(--mg); background: var(--bg); color: var(--dg); cursor: pointer; font-family: Arial; transition: all .15s; text-align: center; }
+    .typ-btn.on { border-color: #3a3a3a; background: #3a3a3a; color: white; }
+    .auswerten-btn {
+      width: 100%; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; font-family: Arial;
+      background: #3a3a3a; color: white; transition: background .15s;
+    }
+    .auswerten-btn:hover:not(:disabled) { background: var(--tuerkis); }
+    .auswerten-btn:disabled { background: var(--mg); cursor: not-allowed; }
+
+    /* ── Auswertungs-Modal ── */
+    #auswertung-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 1000;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    #auswertung-modal.open { display: flex; }
+    .aw-modal-inner {
+      background: white; border-radius: 14px;
+      width: 100%; max-width: 1100px; max-height: 90vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    /* Ladezustand */
+    #aw-lade {
+      padding: 56px 40px; text-align: center;
+    }
+    .aw-ring-wrap { margin: 0 auto 22px; width: 56px; height: 56px; }
+    .aw-ring {
+      width: 56px; height: 56px;
+      border: 4px solid #ececec;
+      border-top-color: var(--gelb);
+      border-right-color: var(--tuerkis);
+      border-radius: 50%;
+      animation: aw-spin 0.9s linear infinite;
+    }
+    @keyframes aw-spin { to { transform: rotate(360deg); } }
+    #aw-status { font-size: 1.05rem; font-weight: 700; color: #3a3a3a; margin-bottom: 18px; }
+    .aw-progress-track { width: 280px; height: 4px; background: #ececec; border-radius: 2px; margin: 0 auto 10px; overflow: hidden; }
+    #aw-bar { height: 100%; background: linear-gradient(90deg, var(--gelb), var(--tuerkis)); border-radius: 2px; width: 0%; transition: width .6s ease; }
+    #aw-detail { font-size: 0.75rem; color: #aaa; min-height: 16px; }
+    .aw-abbruch-btn { margin-top: 22px; background: none; border: 1px solid #ddd; padding: 6px 16px; border-radius: 6px; color: #999; font-size: 0.8rem; cursor: pointer; }
+
+    /* Ergebnis-Zustand */
+    #aw-ergebnis { display: none; flex-direction: column; height: 100%; }
+    .aw-ergebnis-bar {
+      padding: 13px 18px; background: #f5f5f5; border-bottom: 1px solid #eee;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    .aw-ergebnis-titel { font-weight: 800; color: #3a3a3a; font-size: 0.9rem; }
+    .aw-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+    .aw-btn { padding: 7px 13px; border-radius: 7px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: none; font-family: Arial; transition: all .15s; }
+    .aw-btn-gelb { background: var(--gelb); color: #1a1a1a; }
+    .aw-btn-gelb:hover { background: #b0bb00; }
+    .aw-btn-tuerkis { background: var(--tuerkis); color: white; }
+    .aw-btn-tuerkis:hover { background: #1a9aac; }
+    .aw-btn-ghost { background: #ececec; color: #555; }
+    .aw-btn-ghost:hover { background: #ddd; }
+    #aw-frame { flex: 1; border: none; min-height: 480px; }
   </style>
 </head>
 <body>
@@ -149,9 +212,9 @@
   <div class="topbar-right">
     <span class="stats-pill" id="stats">0 Beiträge</span>
     <span class="stats-pill" id="session-badge">Session: –</span>
-    <button class="btn-reset" onclick="confirmReset()">↺ Reset</button>
-    <button class="btn-icon"  onclick="toggleFullscreen()">⛶</button>
-    <a href="../index.html" style="font-size:13px;font-weight:700;color:#333;text-decoration:none;background:rgba(0,0,0,.13);padding:9px 14px;border-radius:8px;white-space:nowrap">← tool-box</a>
+    <button class="btn-reset" onclick="confirmReset()">&#x21BA; Reset</button>
+    <button class="btn-icon"  onclick="toggleFullscreen()">&#x26F6;</button>
+    <a href="../index.html" style="font-size:13px;font-weight:700;color:#333;text-decoration:none;background:rgba(0,0,0,.13);padding:9px 14px;border-radius:8px;white-space:nowrap">&#x2190; tool-box</a>
   </div>
 </div>
 
@@ -165,15 +228,15 @@
 
 <!-- SPOTLIGHT -->
 <div id="spotlight">
-  <button class="sp-close" onclick="closeSpotlight()">✕</button>
+  <button class="sp-close" onclick="closeSpotlight()">&#x2715;</button>
   <div class="sp-counter" id="sp-counter">1 / 1</div>
   <div class="sp-card" id="sp-card">
     <div class="sp-name" id="sp-name"></div>
     <div class="sp-msg"  id="sp-msg"></div>
   </div>
   <div class="sp-nav">
-    <button class="sp-btn" id="sp-prev" onclick="spNav(-1)">← Zurück</button>
-    <button class="sp-btn" id="sp-next" onclick="spNav(1)">Weiter →</button>
+    <button class="sp-btn" id="sp-prev" onclick="spNav(-1)">&#x2190; Zurück</button>
+    <button class="sp-btn" id="sp-next" onclick="spNav(1)">Weiter &#x2192;</button>
   </div>
 </div>
 
@@ -182,9 +245,38 @@
   <div class="gs-card" onclick="event.stopPropagation()">
     <div class="gs-header">
       <span class="gs-title">Alle Rückmeldungen</span>
-      <button class="gs-close" onclick="closeGesamtschau()">Schliessen ✕</button>
+      <button class="gs-close" onclick="closeGesamtschau()">Schliessen &#x2715;</button>
     </div>
     <div id="gs-list"></div>
+  </div>
+</div>
+
+<!-- AUSWERTUNGS-MODAL -->
+<div id="auswertung-modal">
+  <div class="aw-modal-inner">
+
+    <!-- Ladezustand -->
+    <div id="aw-lade">
+      <div class="aw-ring-wrap"><div class="aw-ring"></div></div>
+      <div id="aw-status">Feedbacks werden vorbereitet&#x2026;</div>
+      <div class="aw-progress-track"><div id="aw-bar"></div></div>
+      <div id="aw-detail"></div>
+      <button class="aw-abbruch-btn" onclick="schliesseAwModal()">Abbrechen</button>
+    </div>
+
+    <!-- Ergebnis -->
+    <div id="aw-ergebnis">
+      <div class="aw-ergebnis-bar">
+        <span class="aw-ergebnis-titel" id="aw-ergebnis-titel">&#x2713; Auswertung fertig</span>
+        <div class="aw-actions">
+          <button class="aw-btn aw-btn-gelb"    onclick="awOeffneTab()">&#x1F5A5; Im Browser öffnen</button>
+          <button class="aw-btn aw-btn-tuerkis" onclick="awDownload()">&#x2193; Herunterladen</button>
+          <button class="aw-btn aw-btn-ghost"   onclick="schliesseAwModal()">Schliessen</button>
+        </div>
+      </div>
+      <iframe id="aw-frame"></iframe>
+    </div>
+
   </div>
 </div>
 
@@ -193,8 +285,8 @@
   <!-- Canvas -->
   <div id="canvas">
     <div id="empty">
-      <div class="empty-icon">💬</div>
-      <div class="empty-text">Warte auf Rückmeldungen…</div>
+      <div class="empty-icon">&#x1F4AC;</div>
+      <div class="empty-text">Warte auf Rückmeldungen&#x2026;</div>
     </div>
   </div>
 
@@ -218,9 +310,9 @@
     <div class="s-sec">
       <span class="s-label">Teilnahme-QR-Code</span>
       <div class="qr-wrap" onclick="openQROverlay()" title="Klick zum Vergrössern">
-        <div id="qrcode"><span style="color:var(--dg);font-size:11px;text-align:center;padding:8px;line-height:1.6">Session + Frage<br>eingeben →<br>QR erscheint</span></div>
+        <div id="qrcode"><span style="color:var(--dg);font-size:11px;text-align:center;padding:8px;line-height:1.6">Session + Frage<br>eingeben &#x2192;<br>QR erscheint</span></div>
       </div>
-      <div style="text-align:center;margin-top:6px;font-size:11px;color:var(--mg)">▲ Klick zum Vergrössern</div>
+      <div style="text-align:center;margin-top:6px;font-size:11px;color:var(--mg)">&#x25B2; Klick zum Vergrössern</div>
       <div class="s-hint" style="margin-top:4px;word-break:break-all" id="join-url-text"></div>
     </div>
 
@@ -255,11 +347,31 @@
         <button class="mode-btn"    data-m="gesamt"  onclick="openGesamtschau()">Gesamt</button>
         <button class="mode-btn"    data-m="spot"    onclick="startSpotlight()">Spotlight</button>
       </div>
-      <button class="action-btn ab-gelb" onclick="downloadCSV()">↓ CSV herunterladen</button>
+      <button class="action-btn-sb ab-gelb" onclick="downloadCSV()">&#x2193; CSV herunterladen</button>
+    </div>
+
+    <!-- ── NEU: Auswertung ── -->
+    <div class="s-sec">
+      <span class="s-label">KI-Auswertung</span>
+      <div class="auswertung-typ-row">
+        <button class="typ-btn on" id="typ-mayring" onclick="setTyp('mayring')">&#x1F4CA; Mayring</button>
+        <button class="typ-btn"    id="typ-swot"    onclick="setTyp('swot')">&#x1F532; SWOT</button>
+      </div>
+      <input
+        type="text"
+        id="aw-kontext"
+        placeholder="Kontext (optional): z.B. Modul Didaktik FS25"
+        class="s-input"
+        style="margin-bottom:8px"
+      />
+      <button class="auswerten-btn" id="auswerten-btn" onclick="starteAuswertung()">
+        &#x2726; Auswertung starten
+      </button>
+      <div class="s-hint" style="margin-top:7px">Analysiert alle sichtbaren Rückmeldungen mit KI und erstellt eine beamertaugliche HTML-Vorlage.</div>
     </div>
 
     <div id="fs-hint">
-      <button class="fs-btn" onclick="toggleFullscreen()">⛶ Vollbild (F11)</button>
+      <button class="fs-btn" onclick="toggleFullscreen()">&#x26F6; Vollbild (F11)</button>
     </div>
   </div>
 </div>
@@ -341,7 +453,7 @@ function renderCanvas() {
     const time = new Date(s.created_at).toLocaleTimeString('de-CH', {hour:'2-digit',minute:'2-digit'});
     el.innerHTML = `
       <button class="hide-btn" onclick="toggleHide(event,'${s.id}')" title="${hidden.has(s.id)?'Einblenden':'Ausblenden'}">
-        ${hidden.has(s.id) ? '👁' : '🚫'}
+        ${hidden.has(s.id) ? '\u{1F441}' : '\u{1F6AB}'}
       </button>
       ${s.name ? `<div class="bubble-name">${esc(s.name)}</div>` : ''}
       <div class="bubble-msg">${esc(s.message)}</div>
@@ -372,7 +484,7 @@ function esc(str) {
 // ── Reset ─────────────────────────────────────────────────────────────────
 async function confirmReset() {
   if (!sessionId || !submissions.length) return;
-  if (!confirm(`Session „${sessionId}" wirklich zurücksetzen?\n\nAlle Beiträge werden gelöscht.`)) return;
+  if (!confirm(`Session \u201E${sessionId}\u201C wirklich zurücksetzen?\n\nAlle Beiträge werden gelöscht.`)) return;
   const { error } = await sb.from('feedback_submissions').delete().eq('session_id', sessionId);
   if (error) { alert('Fehler: ' + error.message); return; }
   submissions = []; hidden = new Set();
@@ -387,7 +499,7 @@ function refreshQR() {
     const container = document.getElementById('qrcode');
     container.innerHTML = '';
     if (!sessionId) {
-      container.innerHTML = '<span style="color:var(--dg);font-size:11px;text-align:center;padding:8px;line-height:1.6">Session + Frage<br>eingeben →<br>QR erscheint</span>';
+      container.innerHTML = '<span style="color:var(--dg);font-size:11px;text-align:center;padding:8px;line-height:1.6">Session + Frage<br>eingeben \u2192<br>QR erscheint</span>';
       document.getElementById('join-url-text').textContent = '';
       return;
     }
@@ -415,7 +527,6 @@ function closeQROverlay() { document.getElementById('qr-overlay').classList.remo
 function startSpotlight() {
   const vis = submissions.filter(s => !hidden.has(s.id));
   if (!vis.length) return;
-  // Shuffle
   spItems = [...vis].sort(() => Math.random() - .5);
   spIdx = 0;
   renderSpotlight();
@@ -531,11 +642,165 @@ function toggleFullscreen() {
 
 // ── Keyboard ──────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape')      { closeQROverlay(); closeSpotlight(); closeGesamtschau(); }
+  if (e.key==='Escape')      { closeQROverlay(); closeSpotlight(); closeGesamtschau(); schliesseAwModal(); }
   if (e.key==='ArrowRight' && document.getElementById('spotlight').classList.contains('open')) spNav(1);
   if (e.key==='ArrowLeft'  && document.getElementById('spotlight').classList.contains('open')) spNav(-1);
   if (e.key==='F11') { e.preventDefault(); toggleFullscreen(); }
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── KI-AUSWERTUNG ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════
+
+// ⚠️  WORKER_URL anpassen nach dem Deploy in Cloudflare:
+const WORKER_URL = 'https://feedback-auswertung.DEIN-SUBDOMAIN.workers.dev';
+
+let awTyp = 'mayring';
+let awHtml = '';
+let awAbort = null;
+
+function setTyp(typ) {
+  awTyp = typ;
+  document.getElementById('typ-mayring').classList.toggle('on', typ === 'mayring');
+  document.getElementById('typ-swot').classList.toggle('on', typ === 'swot');
+}
+
+async function starteAuswertung() {
+  // Nur sichtbare Feedbacks verwenden (ausgeblendete raus)
+  const feedbacks = submissions
+    .filter(s => !hidden.has(s.id))
+    .map(s => s.message)
+    .filter(m => m && m.trim().length > 0);
+
+  if (feedbacks.length === 0) {
+    alert('Keine sichtbaren Rückmeldungen vorhanden.');
+    return;
+  }
+
+  const kontext = document.getElementById('aw-kontext').value.trim();
+
+  // Modal öffnen
+  awHtml = '';
+  document.getElementById('auswertung-modal').classList.add('open');
+  document.getElementById('aw-lade').style.display = 'block';
+  document.getElementById('aw-ergebnis').style.display = 'none';
+  document.getElementById('auswerten-btn').disabled = true;
+  setAwStatus('Feedbacks werden vorbereitet\u2026', 5);
+  document.getElementById('aw-detail').textContent = `${feedbacks.length} Rückmeldungen werden analysiert`;
+
+  awAbort = new AbortController();
+
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ typ: awTyp, kontext, feedbacks }),
+      signal: awAbort.signal,
+    });
+
+    if (!response.ok) {
+      let msg = `HTTP ${response.status}`;
+      try { const j = await response.json(); msg = j.error || msg; } catch {}
+      throw new Error(msg);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let charCount = 0;
+
+    setAwStatus('Analyse l\u00E4uft\u2026', 15);
+
+    const phasen = [
+      { bei: 300,  text: 'Kategorien werden gebildet\u2026',      p: 30 },
+      { bei: 1200, text: 'Muster werden identifiziert\u2026',     p: 55 },
+      { bei: 2800, text: 'HTML-Vorlage wird generiert\u2026',     p: 75 },
+      { bei: 5000, text: 'Fast fertig\u2026',                     p: 90 },
+    ];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (data.error) throw new Error(data.error);
+
+        if (data.chunk) {
+          awHtml += data.chunk;
+          charCount += data.chunk.length;
+          for (const ph of phasen) {
+            if (charCount >= ph.bei) {
+              setAwStatus(ph.text, ph.p);
+              document.getElementById('aw-detail').textContent =
+                `${charCount.toLocaleString('de-CH')} Zeichen generiert\u2026`;
+            }
+          }
+        }
+
+        if (data.done) {
+          setAwStatus('Fertig \u2713', 100);
+          setTimeout(() => zeigeAwErgebnis(), 350);
+        }
+      }
+    }
+
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    schliesseAwModal();
+    alert('Fehler bei der Auswertung:\n' + err.message);
+    console.error(err);
+  }
+}
+
+function setAwStatus(text, progress) {
+  document.getElementById('aw-status').textContent = text;
+  document.getElementById('aw-bar').style.width = progress + '%';
+}
+
+function zeigeAwErgebnis() {
+  document.getElementById('aw-lade').style.display = 'none';
+  document.getElementById('aw-ergebnis').style.display = 'flex';
+  document.getElementById('auswerten-btn').disabled = false;
+
+  const typLabel = awTyp === 'mayring' ? 'Mayring-Analyse' : 'SWOT-Analyse';
+  const n = submissions.filter(s => !hidden.has(s.id)).length;
+  document.getElementById('aw-ergebnis-titel').textContent =
+    `\u2713 ${typLabel} fertig \u2014 N=${n}`;
+
+  const blob = new Blob([awHtml], { type: 'text/html' });
+  document.getElementById('aw-frame').src = URL.createObjectURL(blob);
+}
+
+function schliesseAwModal() {
+  document.getElementById('auswertung-modal').classList.remove('open');
+  document.getElementById('auswerten-btn').disabled = false;
+  if (awAbort) awAbort.abort();
+}
+
+function awOeffneTab() {
+  const blob = new Blob([awHtml], { type: 'text/html' });
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+
+function awDownload() {
+  const datum = new Date().toLocaleDateString('de-CH').replace(/\./g, '-');
+  const name = awTyp === 'mayring'
+    ? `diskussionsvorlage_${datum}.html`
+    : `swot_${datum}.html`;
+  const blob = new Blob([awHtml], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
 </script>
 </body>
 </html>
