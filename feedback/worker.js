@@ -670,6 +670,207 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFocus()
 ${outputAnweisung}`;
   }
 
+  if (typ === 'ideen') {
+    const titel = kontext || 'Ideensammlung';
+    const n = feedbacks.length;
+    return `Du bist Experte für kreative Ideensynthese und partizipative Zukunftsgestaltung. Analysiere folgende Ideen und Vorschläge aus einer Gruppe und entwickle daraus sechs Zukunftsoptionen.
+
+Kontext / Leitfrage: ${titel}
+
+Eingereichte Ideen (${n} Einträge):
+${feedbackText}
+
+Fülle das folgende HTML-Template mit den synthetisierten Optionen. Ersetze NUR die Platzhalterstellen (in GROSSBUCHSTABEN in eckigen Klammern). Behalte CSS und JavaScript unverändert.
+
+Syntheseregeln:
+- Verwende KEINE Namen aus den Eingaben — konsequent anonymisiert.
+- Jede Option hat: einen prägnanten Titel (1 Satz, max. 90 Zeichen) und einen Kommentar (2–3 Sätze, der anonym auf konkrete Ideen aus den Eingaben Bezug nimmt und erklärt, warum diese Option so aussieht).
+- Die 6 Optionen sind:
+  1. MINIMALER KONSENS: Was alle (oder fast alle) erwähnt haben — der kleinste gemeinsame Nenner, sofort umsetzbar, kein Widerstand zu erwarten.
+  2. GRUNDSOLIDER KOMPROMISS: Balanciert unterschiedliche Positionen pragmatisch; realistisch in Aufwand und Akzeptanz.
+  3. MUTIGE OPTION: Nimmt die ambitioniertesten Ideen ernst, geht weiter als die Mehrheit — mit Begründung warum das sinnvoll wäre.
+  4–6. ÜBERRASCHUNGSVORSCHLAG #1, #2, #3: Je eine kreative Synthese, die niemand explizit so formuliert hat, aber sich aus der Gesamtheit der Ideen ergibt. Alle drei sollen sich klar voneinander unterscheiden.
+
+HTML-Template:
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ideensynthese – [TITEL]</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gelb:    #c7d200;
+    --tuerkis: #23b2c6;
+    --rot:     #ed6a69;
+    --dunkel:  #3a3a3a;
+    --bg:      #e8e8e8;
+    --weiss:   #ffffff;
+    --text:    #1a1a1a;
+    --sub:     rgba(58,58,58,0.72);
+    --font:    'DejaVu Sans', 'Verdana', 'Tahoma', sans-serif;
+  }
+  html, body { height: 100vh; overflow: hidden; font-family: var(--font); background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  header { flex-shrink: 0; background: var(--tuerkis); padding: 10px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 3px solid rgba(0,0,0,0.1); }
+  .logo { display: flex; align-items: baseline; gap: 3px; flex-shrink: 0; }
+  .logo .ph { font-family: Georgia, serif; font-style: italic; font-size: 28px; font-weight: 400; color: var(--weiss); letter-spacing: -1px; }
+  .logo .gr { font-size: 22px; font-weight: 800; text-transform: uppercase; color: var(--weiss); letter-spacing: 2px; }
+  .header-center { flex: 1; text-align: center; }
+  .header-title { font-size: clamp(0.8rem, 1.4vw, 1.05rem); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--weiss); }
+  .header-sub { font-size: clamp(0.65rem, 1vw, 0.82rem); color: rgba(255,255,255,0.78); margin-top: 2px; }
+  .header-badge { background: rgba(0,0,0,0.18); color: var(--weiss); font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+
+  /* ── MAIN ── */
+  main { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; overflow: hidden; }
+  .row-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(58,58,58,0.45); flex-shrink: 0; }
+  .cards-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+
+  /* ── KARTE ── */
+  .card { background: var(--weiss); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.09); padding: clamp(10px,1.4vh,18px) clamp(12px,1.4vw,18px); border-left: 6px solid var(--tuerkis); display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; }
+  .card.gelb   { border-left-color: var(--gelb); }
+  .card.dunkel { border-left-color: var(--dunkel); }
+  .card.rot    { border-left-color: var(--rot); }
+  .card.tuerkis { border-left-color: var(--tuerkis); }
+  .card-label   { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.42; flex-shrink: 0; }
+  .card-title   { font-size: clamp(0.9rem, 1.55vw, 1.25rem); font-weight: 800; line-height: 1.25; color: var(--text); flex-shrink: 0; }
+  .card-comment { font-size: clamp(0.75rem, 1.1vw, 0.95rem); color: var(--sub); line-height: 1.5; flex: 1; overflow: hidden; }
+
+  /* ── FOKUS-BUTTON ── */
+  .box-focus-btn { position: absolute; top: 7px; right: 7px; background: rgba(255,255,255,0.8); border: none; border-radius: 4px; font-size: 12px; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; z-index: 5; color: var(--dunkel); }
+  .card:hover .box-focus-btn { opacity: 1; }
+
+  /* ── FOKUS-OVERLAY ── */
+  #focus-overlay { display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(20,20,20,0.88); align-items: center; justify-content: center; cursor: pointer; }
+  #focus-overlay.active { display: flex; }
+  #focus-inner { width: 88vw; max-height: 88vh; overflow-y: auto; border-radius: 12px; cursor: default; }
+  #focus-inner .card { border-radius: 12px; box-shadow: none; padding: 44px 52px; gap: 16px; }
+  #focus-inner .card-label   { font-size: 13px; }
+  #focus-inner .card-title   { font-size: clamp(1.6rem, 3vw, 2.4rem); line-height: 1.2; }
+  #focus-inner .card-comment { font-size: clamp(1rem, 1.8vw, 1.4rem); line-height: 1.6; }
+  #focus-inner .box-focus-btn { display: none; }
+
+  /* ── VOLLBILD-BUTTON ── */
+  #fs-btn { position: fixed; top: 10px; right: 12px; z-index: 9999; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: var(--weiss); font-size: 18px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.4s; opacity: 0.7; }
+  #fs-btn:hover { opacity: 1; background: rgba(255,255,255,0.35); }
+  #fs-btn.hidden { opacity: 0; pointer-events: none; }
+
+  /* ── FOOTER ── */
+  footer { flex-shrink: 0; background: var(--dunkel); color: rgba(255,255,255,0.45); font-size: 11px; text-align: center; padding: 6px 20px; letter-spacing: 0.3px; }
+  footer span { color: rgba(255,255,255,0.7); font-weight: 700; }
+</style>
+</head>
+<body>
+<button id="fs-btn" title="Vollbild">⛶</button>
+<div id="focus-overlay"><div id="focus-inner"></div></div>
+
+<header>
+  <div class="logo"><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="header-center">
+    <div class="header-title">[TITEL DER LEITFRAGE]</div>
+    <div class="header-sub">Ideensynthese · ${today}</div>
+  </div>
+  <div class="header-badge">N = ${n} Ideen</div>
+</header>
+
+<main>
+  <div class="row-label">Hauptoptionen</div>
+  <div class="cards-row">
+
+    <div class="card tuerkis">
+      <div class="card-label">Minimaler Konsens</div>
+      <div class="card-title">[OPTION ALS SATZ]</div>
+      <div class="card-comment">[KOMMENTAR MIT BEZUG ZU DEN EINGABEN]</div>
+    </div>
+
+    <div class="card gelb">
+      <div class="card-label">Grundsolider Kompromiss</div>
+      <div class="card-title">[OPTION ALS SATZ]</div>
+      <div class="card-comment">[KOMMENTAR MIT BEZUG ZU DEN EINGABEN]</div>
+    </div>
+
+    <div class="card dunkel">
+      <div class="card-label">Mutige Option</div>
+      <div class="card-title">[OPTION ALS SATZ]</div>
+      <div class="card-comment">[KOMMENTAR MIT BEZUG ZU DEN EINGABEN]</div>
+    </div>
+
+  </div>
+
+  <div class="row-label">Überraschungsvorschläge</div>
+  <div class="cards-row">
+
+    <div class="card rot">
+      <div class="card-label">Überraschung #1</div>
+      <div class="card-title">[OPTION ALS SATZ]</div>
+      <div class="card-comment">[KOMMENTAR MIT BEZUG ZU DEN EINGABEN]</div>
+    </div>
+
+    <div class="card rot">
+      <div class="card-label">Überraschung #2</div>
+      <div class="card-title">[OPTION ALS SATZ]</div>
+      <div class="card-comment">[KOMMENTAR MIT BEZUG ZU DEN EINGABEN]</div>
+    </div>
+
+    <div class="card rot">
+      <div class="card-label">Überraschung #3</div>
+      <div class="card-title">[OPTION ALS SATZ]</div>
+      <div class="card-comment">[KOMMENTAR MIT BEZUG ZU DEN EINGABEN]</div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <span>Ideensynthese</span> · Generiert aus ${n} Eingaben · PHGR Weiterbildung · ${today}
+</footer>
+
+<script>
+  // ── FOKUS-MODUS ──────────────────────────────────────────
+  const overlay   = document.getElementById('focus-overlay');
+  const focusInner = document.getElementById('focus-inner');
+
+  document.querySelectorAll('.card').forEach(card => {
+    const btn = document.createElement('button');
+    btn.className = 'box-focus-btn';
+    btn.textContent = '⛶';
+    btn.title = 'Fokus-Ansicht';
+    btn.addEventListener('click', e => { e.stopPropagation(); openFocus(card); });
+    card.appendChild(btn);
+    card.addEventListener('click', () => openFocus(card));
+  });
+
+  function openFocus(card) {
+    const clone = card.cloneNode(true);
+    clone.querySelector('.box-focus-btn')?.remove();
+    focusInner.innerHTML = '';
+    focusInner.appendChild(clone);
+    overlay.classList.add('active');
+  }
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('active'); });
+
+  // ── VOLLBILD ──────────────────────────────────────────────
+  const fsBtn = document.getElementById('fs-btn');
+  let hideTimer;
+  fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); fsBtn.textContent = '✕'; }
+    else { document.exitFullscreen(); fsBtn.textContent = '⛶'; }
+  });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) fsBtn.textContent = '⛶'; });
+  function showFs() { fsBtn.classList.remove('hidden'); clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (document.fullscreenElement) fsBtn.classList.add('hidden'); }, 3000); }
+  document.addEventListener('mousemove', showFs);
+  showFs();
+</script>
+</body>
+</html>
+${outputAnweisung}`;
+  }
+
   // Fallback
   return `Analysiere folgende Rückmeldungen und erstelle eine strukturierte Auswertung:\n${feedbackText}`;
 }

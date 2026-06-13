@@ -372,6 +372,7 @@
       <div class="auswertung-typ-row">
         <button class="typ-btn on" id="typ-mayring" onclick="setTyp('mayring')">&#x1F4CA; Mayring</button>
         <button class="typ-btn"    id="typ-swot"    onclick="setTyp('swot')">&#x1F532; SWOT</button>
+        <button class="typ-btn"    id="typ-ideen"   onclick="setTyp('ideen')">&#x1F4A1; Ideen</button>
       </div>
       <input
         type="text"
@@ -765,6 +766,7 @@ function setTyp(typ) {
   awTyp = typ;
   document.getElementById('typ-mayring').classList.toggle('on', typ === 'mayring');
   document.getElementById('typ-swot').classList.toggle('on', typ === 'swot');
+  document.getElementById('typ-ideen').classList.toggle('on', typ === 'ideen');
 }
 
 async function starteAuswertung() {
@@ -872,7 +874,7 @@ function zeigeAwErgebnis() {
   document.getElementById('aw-ergebnis').style.display = 'flex';
   document.getElementById('auswerten-btn').disabled = false;
 
-  const typLabel = awTyp === 'mayring' ? 'Mayring-Analyse' : 'SWOT-Analyse';
+  const typLabel = awTyp === 'mayring' ? 'Mayring-Analyse' : awTyp === 'swot' ? 'SWOT-Analyse' : 'Ideensynthese';
   const n = submissions.filter(s => !hidden.has(s.id)).length;
   document.getElementById('aw-ergebnis-titel').textContent =
     `\u2713 ${typLabel} fertig \u2014 N=${n}`;
@@ -896,7 +898,9 @@ function awDownload() {
   const datum = new Date().toLocaleDateString('de-CH').replace(/\./g, '-');
   const name = awTyp === 'mayring'
     ? `diskussionsvorlage_${datum}.html`
-    : `swot_${datum}.html`;
+    : awTyp === 'swot'
+    ? `swot_${datum}.html`
+    : `ideensynthese_${datum}.html`;
   const blob = new Blob([awHtml], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
