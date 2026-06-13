@@ -82,6 +82,20 @@
     .s-hint  { font-size: 11px; color: var(--dg); line-height: 1.4; }
     textarea.s-input { resize: vertical; min-height: 60px; font-family: Arial; }
 
+    /* Session-Verlauf */
+    .s-hist-toggle { background:none; border:none; color:var(--tuerkis); font-size:10.5px; font-weight:700; cursor:pointer; padding:0; letter-spacing:.5px; text-transform:uppercase; margin-top:4px; display:inline-block; }
+    .s-hist-toggle:hover { text-decoration:underline; }
+    .s-hist-list { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
+    .s-hist-item { background:var(--bg); border-radius:6px; padding:7px 9px; cursor:pointer; border:1px solid transparent; display:flex; align-items:center; gap:6px; transition:border-color .15s; }
+    .s-hist-item:hover { border-color:var(--tuerkis); }
+    .s-hist-item.active { border-color:var(--tuerkis); background:rgba(35,178,198,.1); }
+    .s-hist-label { font-size:12px; font-weight:700; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .s-hist-meta  { font-size:10px; color:var(--dg); margin-top:1px; }
+    .s-hist-btns  { display:flex; gap:3px; opacity:0; transition:opacity .15s; flex-shrink:0; }
+    .s-hist-item:hover .s-hist-btns { opacity:1; }
+    .s-hist-btn   { background:none; border:none; cursor:pointer; font-size:12px; padding:2px 5px; border-radius:3px; color:var(--mg); line-height:1; }
+    .s-hist-btn:hover { background:rgba(0,0,0,.1); }
+
     /* QR */
     .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 160px; cursor: pointer; }
     #qrcode  { width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; }
@@ -297,6 +311,8 @@
       <span class="s-label">Session</span>
       <input class="s-input" id="session-input" placeholder="z.B. feedback-2026-09" oninput="onSessionChange()">
       <div class="s-hint">Neue Session-ID = leere Ansicht.</div>
+      <button class="s-hist-toggle" onclick="toggleHistoryPanel()">▾ Gespeicherte Sessions</button>
+      <div id="history-list" class="s-hist-list" style="display:none"></div>
     </div>
 
     <!-- Leitfrage -->
@@ -429,6 +445,7 @@ async function load() {
   const prev = new Set(submissions.map(s=>s.id));
   submissions = data || [];
   submissions.forEach(s => { if (!prev.has(s.id)) s._new = true; });
+  if (submissions.length > 0) addToHistory(sessionId, submissions.length);
   renderCanvas();
   updateStats();
 }
@@ -481,12 +498,97 @@ function esc(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Session-Verlauf ───────────────────────────────────────────────────────
+const HIST_KEY = 'phgr-fb-history';
+const HIST_MAX = 12;
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
+  catch { return []; }
+}
+function saveHistory(arr) { localStorage.setItem(HIST_KEY, JSON.stringify(arr)); }
+
+function addToHistory(id, count) {
+  if (!id) return;
+  let hist = getHistory();
+  const today = new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const idx = hist.findIndex(h => h.id === id);
+  if (idx >= 0) {
+    const [item] = hist.splice(idx, 1);
+    item.count = count; item.lastUsed = today;
+    hist.unshift(item);
+  } else {
+    hist.unshift({ id, label: '', count, lastUsed: today });
+    if (hist.length > HIST_MAX) hist = hist.slice(0, HIST_MAX);
+  }
+  saveHistory(hist);
+  renderHistoryPanel();
+}
+
+function removeFromHistory(e, id) {
+  if (e) e.stopPropagation();
+  saveHistory(getHistory().filter(h => h.id !== id));
+  renderHistoryPanel();
+}
+
+function renameSession(e, id) {
+  e.stopPropagation();
+  const hist = getHistory();
+  const item = hist.find(h => h.id === id);
+  if (!item) return;
+  const newLabel = prompt('Session umbenennen:', item.label || item.id);
+  if (newLabel === null) return;
+  item.label = newLabel.trim();
+  saveHistory(hist);
+  renderHistoryPanel();
+}
+
+function switchSession(id) {
+  document.getElementById('session-input').value = id;
+  onSessionChange();
+}
+
+function toggleHistoryPanel() {
+  const list = document.getElementById('history-list');
+  const btn  = document.querySelector('.s-hist-toggle');
+  if (list.style.display === 'none') {
+    list.style.display = 'flex';
+    btn.textContent = '\u25b4 Gespeicherte Sessions';
+    renderHistoryPanel();
+  } else {
+    list.style.display = 'none';
+    btn.textContent = '\u25be Gespeicherte Sessions';
+  }
+}
+
+function renderHistoryPanel() {
+  const list = document.getElementById('history-list');
+  if (list.style.display === 'none') return;
+  const hist = getHistory();
+  if (!hist.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--dg);padding:4px 2px">Noch keine gespeicherten Sessions.</div>';
+    return;
+  }
+  list.innerHTML = hist.map(h => `
+    <div class="s-hist-item${h.id === sessionId ? ' active' : ''}" onclick="switchSession('${esc(h.id)}')">
+      <div style="flex:1;min-width:0">
+        <div class="s-hist-label">${esc(h.label || h.id)}</div>
+        <div class="s-hist-meta">${h.count} Eintr. \u00b7 ${h.lastUsed}</div>
+      </div>
+      <div class="s-hist-btns">
+        <button class="s-hist-btn" onclick="renameSession(event,'${esc(h.id)}')" title="Umbenennen">\u270f\ufe0f</button>
+        <button class="s-hist-btn" onclick="removeFromHistory(event,'${esc(h.id)}')" title="Aus Verlauf entfernen">\u2715</button>
+      </div>
+    </div>`).join('');
+}
+
 // ── Reset ─────────────────────────────────────────────────────────────────
 async function confirmReset() {
   if (!sessionId || !submissions.length) return;
   if (!confirm(`Session \u201E${sessionId}\u201C wirklich zurücksetzen?\n\nAlle Beiträge werden gelöscht.`)) return;
   const { error } = await sb.from('feedback_submissions').delete().eq('session_id', sessionId);
   if (error) { alert('Fehler: ' + error.message); return; }
+  removeFromHistory(null, sessionId);
   submissions = []; hidden = new Set();
   renderCanvas(); updateStats();
 }
@@ -653,7 +755,7 @@ document.addEventListener('keydown', e => {
 // ══════════════════════════════════════════════════════════════════════════
 
 // ⚠️  WORKER_URL anpassen nach dem Deploy in Cloudflare:
-const WORKER_URL = 'https://feedback-auswertung.DEIN-SUBDOMAIN.workers.dev';
+const WORKER_URL = 'https://feedback-auswertung.david-halser.workers.dev';
 
 let awTyp = 'mayring';
 let awHtml = '';
