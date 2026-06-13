@@ -14,7 +14,7 @@ Graubünden (PHGR), eingebettet in Moodle.
   Anthropic-Claude-API, Antwort per SSE-Streaming. Modell: `claude-haiku-4-5`,
   max_tokens: 8192. Live-URL: `https://feedback-auswertung.david-halser.workers.dev`
 - **Anzeigemodi:** Bubble-Canvas, Spotlight, Gesamtschau.
-- **Auswertung:** Qualitative Analyse nach Mayring sowie SWOT. Ausgeblendete
+- **Auswertung:** Drei KI-Modi — Mayring, SWOT, Ideensynthese. Ausgeblendete
   («hidden») Karten werden von der Analyse ausgeschlossen.
 
 ## Verbindliche Konventionen
@@ -40,7 +40,15 @@ Graubünden (PHGR), eingebettet in Moodle.
 
 ## KI-Auswertungs-Modi (worker.js)
 
+Die drei Modi folgen einer klaren didaktischen Logik:
+- **Mayring und SWOT** blicken *zurück* — sie werten ab, was war (Evaluation).
+- **Ideensynthese** blickt *vorwärts* — sie synthetisiert, was sein könnte (Partizipation).
+
 ### Mayring (`typ: "mayring"`)
+**Zweck:** Qualitative Inhaltsanalyse nach Mayring für die Auswertung vergangener
+Lehrveranstaltungen oder Module. Geeignet wenn die Leitfrage lautet: *«Was haben
+die TN erlebt, was hat gut/weniger gut funktioniert?»*
+
 Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
 - Gelbem Header (phGR-Logo, Titel, N-Badge)
 - 4 Kernbefund-Karten im 2×2 Grid (Kategorie, These, Erklärung, Häufigkeit)
@@ -49,15 +57,46 @@ Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
 - Vollbild-Button mit Auto-Hide
 
 ### SWOT (`typ: "swot"`)
+**Zweck:** Strukturierte Stärken-Schwächen-Analyse für die Reflexion eines Moduls,
+einer Veranstaltung oder eines Projekts. Geeignet wenn die Leitfrage lautet:
+*«Was sind unsere Stärken, Schwächen, Chancen und Risiken?»*
+
 Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
 - 4-Quadranten-Grid (S/W/O/T), je 5–8 Einträge
-- Dot-Voting (5 Punkte pro Eintrag, klickbar)
+- Dot-Voting (5 Punkte pro Eintrag, klickbar) zur Priorisierung im Plenum
 - Sort-Button (erscheint sobald Punkte vergeben)
 - Fokus-Overlay: Quadrant per Klick auf Header gross einblendbar (88vw × 88vh)
   → Move/Restore-Mechanik, damit Dots und Sort im Fokus weiterhin funktionieren
 - Vollbild-Button mit Auto-Hide
 
-### Worker-Konfiguration
+### Ideensynthese (`typ: "ideen"`)
+**Zweck:** Partizipative Zukunftsgestaltung — die TN reichen Ideen und Vorschläge
+ein (nicht Bewertungen), und die KI synthetisiert daraus konkrete Zukunftsoptionen
+für die Diskussion im Plenum. Geeignet wenn die Leitfrage lautet: *«Wie soll es
+weitergehen? Welche Ideen könnten wir gemeinsam umsetzen?»*
+
+Die KI entwickelt aus den Eingaben **6 unterschiedliche Optionen**:
+- **Minimaler Konsens** — kleinster gemeinsamer Nenner, sofort umsetzbar,
+  kein Widerstand zu erwarten
+- **Grundsolider Kompromiss** — balanciert unterschiedliche Positionen,
+  pragmatisch und realistisch im Aufwand
+- **Mutige Option** — nimmt die ambitioniertesten Ideen ernst, geht weiter
+  als die Mehrheit, mit Begründung
+- **Überraschung #1–3** — drei kreative Synthesen, die niemand explizit so
+  formuliert hat, aber sich aus der Gesamtheit der Ideen ergeben; bewusst
+  divers, weil «Zukunft hat immer Optionen»
+
+Jede Option hat einen **Titel** (prägnanter Satz) und einen **Kommentar**
+(anonym, mit direktem Bezug zu konkreten Eingaben der TN).
+
+Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
+- Türkisem Header (phGR-Logo, Leitfrage als Titel, N-Badge)
+- 2×3 Karten-Grid: Reihe 1 = Hauptoptionen, Reihe 2 = Überraschungen
+- Fokus-Overlay auf allen 6 Karten (Clone-Mechanik, 88vw × 88vh)
+- Vollbild-Button mit Auto-Hide
+- Download als `ideensynthese_TT-MM-JJJJ.html`
+
+### Worker-Konfiguration (alle Modi)
 - Prompt enthält das vollständige HTML-Template; Claude füllt nur Inhalt ein
 - `WICHTIG`-Präfix im Prompt verhindert Markdown/Backtick-Umrahmung
 - Keine Namen aus Rückmeldungen verwenden (explizite Anonymisierungsregel)
@@ -71,18 +110,6 @@ Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
 - Umbenennen per `prompt()`, Entfernen per ✕-Button
 - Bei Reset: Eintrag wird aus dem Verlauf entfernt (Daten in Supabase gelöscht)
 - Persistiert über Browser- und Mac-Neustarts (solange GitHub-Pages-URL gleich bleibt)
-
-## KI-Auswertungs-Modus: Ideensynthese (`typ: "ideen"`)
-Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
-- Türkisem Header (phGR-Logo, Leitfrage als Titel, N-Badge)
-- **Reihe 1** — 3 Hauptoptionen nebeneinander:
-  - Minimaler Konsens (türkis), Grundsolider Kompromiss (gelb), Mutige Option (dunkel)
-- **Reihe 2** — 3 Überraschungsvorschläge nebeneinander (alle rot)
-- Jede Karte: Kategorie-Label, Titel (max. 90 Zeichen), Kommentar (anonym,
-  mit Bezug zu den Eingaben)
-- Fokus-Overlay auf allen 6 Karten (Clone-Mechanik, 88vw × 88vh)
-- Vollbild-Button mit Auto-Hide
-- Download als `ideensynthese_TT-MM-JJJJ.html`
 
 ## Zeichenlimit-Slider
 - Bereich: 100–1000 Zeichen (vorher max. 500)
