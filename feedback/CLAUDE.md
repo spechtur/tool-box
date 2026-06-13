@@ -72,23 +72,34 @@ Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
 - Bei Reset: Eintrag wird aus dem Verlauf entfernt (Daten in Supabase gelöscht)
 - Persistiert über Browser- und Mac-Neustarts (solange GitHub-Pages-URL gleich bleibt)
 
+## KI-Auswertungs-Modus: Ideensynthese (`typ: "ideen"`)
+Ausgabe: vollständiges HTML-Dokument im PHGR-Design mit:
+- Türkisem Header (phGR-Logo, Leitfrage als Titel, N-Badge)
+- **Reihe 1** — 3 Hauptoptionen nebeneinander:
+  - Minimaler Konsens (türkis), Grundsolider Kompromiss (gelb), Mutige Option (dunkel)
+- **Reihe 2** — 3 Überraschungsvorschläge nebeneinander (alle rot)
+- Jede Karte: Kategorie-Label, Titel (max. 90 Zeichen), Kommentar (anonym,
+  mit Bezug zu den Eingaben)
+- Fokus-Overlay auf allen 6 Karten (Clone-Mechanik, 88vw × 88vh)
+- Vollbild-Button mit Auto-Hide
+- Download als `ideensynthese_TT-MM-JJJJ.html`
+
+## Zeichenlimit-Slider
+- Bereich: 100–1000 Zeichen (vorher max. 500)
+- Dreifarbig: Gelb `#c7d200` ≤ 500 · Türkis `#23b2c6` 501–800 · Rot `#ed6a69` 801–1000
+- Farbe gilt für Slider-Thumb und Zahlanzeige gleichermassen
+- Rein visuell (kein Einfluss auf Funktionalität) — signalisiert Token-Verbrauch
+
 ## Aktueller Stand
 - Worker deployed: `https://feedback-auswertung.david-halser.workers.dev`
 - `WORKER_URL` in `presenter.html` zeigt auf diese URL
 - Session-Verlauf implementiert und live (Stufe 1 abgeschlossen)
-- Beide KI-Modi (Mayring, SWOT) produktiv getestet und für gut befunden
+- Alle drei KI-Modi (Mayring, SWOT, Ideensynthese) implementiert
+- Zeichenlimit auf 1000 erhöht, Slider dreifarbig
 
-## Offene Punkte / nächste Schritte
+## Offene Punkte
 - Session-Eingabe ggf. von `oninput` auf `onchange` / Enter umstellen
   (verhindert vorzeitiges Auslösen bei langer Session-ID-Eingabe)
-- Neue Idee von David (noch nicht umgesetzt — folgt im nächsten Schritt)
-
-## Geplante Erweiterungen (Rückstand)
-- **Stufe 2: Nutzer-Identifikation** — echte Trennung pro Person, damit beim
-  Teilen an der PH jede Person nur ihre eigenen Sessions sieht.
-  - Erfordert Authentifizierung **plus** Row-Level-Security in Supabase.
-  - Reines Filtern im Frontend ist *keine* Zugriffskontrolle — der anonyme
-    Key könnte sonst die ganze Tabelle lesen.
 
 ## Deployment
 - **Frontend:** Push ins Repo → GitHub Pages (automatisch).
