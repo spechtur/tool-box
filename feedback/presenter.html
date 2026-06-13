@@ -347,12 +347,12 @@
     <div class="s-sec">
       <span class="s-label">Zeichenlimit</span>
       <div style="display:flex;align-items:center;gap:12px">
-        <input type="range" id="chars-slider" min="100" max="500" step="50" value="400"
+        <input type="range" id="chars-slider" min="100" max="1000" step="50" value="400"
           oninput="updateCharsDisplay()"
-          style="flex:1;accent-color:var(--tuerkis);cursor:pointer">
-        <span id="chars-display" style="font-size:18px;font-weight:800;color:var(--tuerkis);min-width:42px;text-align:right">400</span>
+          style="flex:1;cursor:pointer">
+        <span id="chars-display" style="font-size:18px;font-weight:800;min-width:48px;text-align:right;color:var(--tuerkis)">400</span>
       </div>
-      <div class="s-hint" style="margin-top:6px">Maximale Anzahl Zeichen pro Rückmeldung (100–500).</div>
+      <div class="s-hint" style="margin-top:6px">Maximale Anzahl Zeichen pro Rückmeldung (100–1000).</div>
     </div>
 
     <!-- Ansicht -->
@@ -412,6 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('session-input').value = saved;
   sessionId = saved;
   updateBadge();
+  updateCharsDisplay();
   refreshQR();
   startPolling();
 });
@@ -704,8 +705,13 @@ function setNameMode(mode) {
 }
 
 function updateCharsDisplay() {
-  const val = document.getElementById('chars-slider').value;
-  document.getElementById('chars-display').textContent = val;
+  const val = parseInt(document.getElementById('chars-slider').value);
+  const color = val <= 500 ? '#c7d200' : val <= 800 ? '#23b2c6' : '#ed6a69';
+  const slider = document.getElementById('chars-slider');
+  const display = document.getElementById('chars-display');
+  slider.style.accentColor = color;
+  display.textContent = val;
+  display.style.color = color;
   refreshQR();
 }
 
