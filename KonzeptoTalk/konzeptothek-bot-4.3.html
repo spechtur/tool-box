@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Konzeptothek-Bot | PHGR Master SEK I & II</title>
+  <title>KonzeptoTalk | PHGR Master SEK I & II</title>
   <style>
     :root {
       --phgr-gelb: #c7d200;
@@ -32,19 +33,19 @@
     header {
       background: var(--surface);
       border-bottom: 2px solid var(--phgr-gelb);
-      padding: 11px 20px;
+      padding: 14px 24px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 18px;
       flex-shrink: 0;
       user-select: none;
     }
-    .phgr-logo { font-size: 1.35em; line-height: 1; letter-spacing: -0.01em; }
+    .phgr-logo { font-size: 1.6em; line-height: 1; letter-spacing: -0.01em; }
     .phgr-logo .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; color: var(--phgr-gelb); }
     .phgr-logo .gr { font-family: Georgia, serif; font-variant: small-caps; font-weight: 300; font-style: normal; color: var(--text); letter-spacing: 0.05em; }
     .header-title-block { flex: 1; }
-    .header-title { font-family: 'Georgia', serif; font-size: 1em; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
-    .header-subtitle { font-size: 0.68em; color: var(--text-muted); font-style: italic; margin-top: 1px; letter-spacing: 0.03em; }
+    .header-title { font-family: 'Georgia', serif; font-size: 1.6em; font-weight: bold; letter-spacing: 0.12em; color: var(--text); }
+    .header-subtitle { font-size: 0.72em; color: var(--text-muted); font-style: italic; margin-top: 3px; letter-spacing: 0.03em; }
     .proto-badge { font-family: monospace; font-size: 0.62em; font-weight: bold; letter-spacing: 0.06em; background: var(--phgr-gelb); color: #1a1a1a; padding: 3px 7px 2px; }
 
     /* ── PASSWORT-OVERLAY ── */
@@ -79,7 +80,7 @@
     .message.user .msg-label { text-align: right; }
     .msg-bubble { padding: 13px 17px; line-height: 1.7; font-size: 0.93em; }
     .message.bot .msg-bubble { background: var(--surface2); border-left: 3px solid var(--phgr-gelb); color: var(--text); border-radius: 2px 10px 10px 2px; }
-    .message.user .msg-bubble { background: var(--phgr-gelb); color: #111; font-family: Georgia, serif; border-radius: 10px 10px 2px 10px; }
+    .message.user .msg-bubble { background: var(--phgr-tuerkis); color: #fff; font-family: Georgia, serif; border-radius: 10px 10px 2px 10px; }
     .typing-wrap { align-self: flex-start; animation: msgIn 0.25s ease both; }
     .typing-dots { display: flex; gap: 5px; padding: 13px 17px; background: var(--surface2); border-left: 3px solid var(--phgr-gelb); border-radius: 2px 10px 10px 2px; }
     .dot { width: 7px; height: 7px; background: var(--phgr-gelb); border-radius: 50%; opacity: 0.4; animation: dotBounce 1.3s infinite; }
@@ -90,13 +91,22 @@
     .input-inner { max-width: 800px; margin: 0 auto; padding: 14px 20px; display: flex; gap: 10px; align-items: flex-end; }
     #input-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
     #user-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 11px 15px; font-family: Georgia, serif; font-size: 0.92em; resize: none; min-height: 46px; max-height: 130px; line-height: 1.55; transition: border-color 0.2s; outline: none; }
-    #user-input:focus { border-color: var(--phgr-gelb); }
+    #user-input:focus { border-color: var(--phgr-tuerkis); }
     #user-input::placeholder { color: var(--text-dim); font-style: italic; }
     .input-hint { font-family: monospace; font-size: 0.6em; color: var(--text-dim); letter-spacing: 0.04em; }
-    #send-btn { background: var(--phgr-gelb); color: #111; border: none; width: 46px; height: 46px; font-size: 1.25em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s, transform 0.1s; }
+    #send-btn { background: var(--phgr-tuerkis); color: #fff; border: none; width: 46px; height: 46px; font-size: 1.25em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s, transform 0.1s; }
     #send-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(1.04); }
     #send-btn:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
     .error-bubble { background: #2a1515; border-left: 3px solid var(--phgr-rot); color: #e8a0a0; padding: 12px 16px; font-size: 0.85em; font-family: monospace; line-height: 1.5; }
+    .conv-btn { font-family: monospace; font-size: 0.7em; color: var(--phgr-tuerkis); background: none; border: 1px solid var(--phgr-tuerkis); cursor: pointer; padding: 4px 8px; letter-spacing: 0.06em; transition: color 0.15s, border-color 0.15s; flex-shrink: 0; }
+    .conv-btn:hover:not(:disabled) { color: var(--phgr-gelb); border-color: var(--phgr-gelb); }
+    .conv-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    #chat-scroll.drag-over { outline: 2px dashed var(--phgr-gelb); outline-offset: -6px; background: rgba(199,210,0,0.03); }
+    .restore-sep { text-align: center; font-family: monospace; font-size: 0.65em; color: var(--text-dim); padding: 10px 0; letter-spacing: 0.08em; }
+    .msg-bubble code { background: var(--surface3); padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 0.87em; }
+    #app-footer { background: var(--surface); border-top: 1px solid var(--border); padding: 7px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .footer-info { font-family: monospace; font-size: 0.6em; color: var(--phgr-gelb); letter-spacing: 0.06em; }
+    .footer-btns { display: flex; gap: 8px; align-items: center; }
   </style>
 </head>
 <body>
@@ -105,7 +115,7 @@
 <div id="pw-overlay">
   <div id="pw-card">
     <div id="pw-logo"><span class="ph">ph</span><span class="gr">GR</span></div>
-    <div id="pw-title">Konzeptothek</div>
+    <div id="pw-title">KonzeptoTalk</div>
     <div id="pw-subtitle">Master SEK I &amp; II</div>
     <div id="pw-divider"></div>
     <input type="password" id="pw-input" placeholder="Zugangscode eingeben …" autocomplete="off" />
@@ -115,13 +125,11 @@
 </div>
 
 <header>
-  <a href="https://spechtur.github.io/tool-box/" class="back-btn">&larr; ToolBox</a>
   <div class="phgr-logo"><span class="ph">ph</span><span class="gr">GR</span></div>
   <div class="header-title-block">
-    <div class="header-title">Konzeptothek</div>
-    <div class="header-subtitle">Master SEK I &amp; II &middot; konzeptueller Provokateur</div>
+    <div class="header-title">KonzeptoTALK</div>
+    <div class="header-subtitle">Master SEK I &amp; II &middot; dein Gesprächspartner beim Konstruieren</div>
   </div>
-  <div class="proto-badge">PROTOTYP &middot; 148 Konzepte beschrieben</div>
 </header>
 
 <div id="chat-scroll">
@@ -137,6 +145,14 @@
     <button id="send-btn" title="Senden">&#8594;</button>
   </div>
 </div>
+<footer id="app-footer">
+  <span class="footer-info">PROTOTYP &middot; 148 Konzepte &middot; 31 situierte Kompetenzen</span>
+  <div class="footer-btns">
+    <input type="file" id="file-input" accept=".md" style="display:none">
+    <button class="conv-btn" id="import-btn" title="Gesprächsverlauf aus .md laden" onclick="document.getElementById('file-input').click()">&#8593; Laden</button>
+    <button class="conv-btn" id="dl-btn" title="Gespräch als .md speichern" onclick="downloadMd()" disabled>&#8595; .md</button>
+  </div>
+</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -223,7 +239,7 @@ const KB = {
 // ═══════════════════════════════════════════════════════════
 //  SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════════
-const SYSTEM_PROMPT = `Du bist der Konzeptothek-Bot des Masterstudiengangs SEK I & II der Pädagogischen Hochschule Graubünden (PHGR).
+const SYSTEM_PROMPT = `Du bist der Konzeptothek-Bot - KonzeptoTalk genannt - des Masterstudiengangs SEK I & II der Pädagogischen Hochschule Graubünden (PHGR).
 
 DEINE IDENTITÄT:
 Du bist kein digitaler Bibliothekar und kein Suchsystem. Du bist ein konzeptueller Provokateur – und ein Insider des Masterstudiengangs. Du kennst nicht nur die Konzepte, sondern das Lernverständnis dahinter. Du weisst, wofür das alles ist und was hier eigentlich gefordert wird.
@@ -408,6 +424,64 @@ function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
+function renderMd(raw) {
+  let s = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s = s.replace(/`([^`\n]+)`/g,'<code>$1</code>');
+  s = s.replace(/^#{1,3} (.+)$/gm,'<strong style="display:block;margin:.4em 0 .1em;font-family:monospace;letter-spacing:.05em;font-size:.9em">$1</strong>');
+  s = s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  s = s.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
+  s = s.replace(/^[ \t]*[-*] (.+)$/gm,'&nbsp;&nbsp;• $1');
+  s = s.replace(/\n/g,'<br>');
+  return s;
+}
+
+function downloadMd() {
+  if (!history.length) return;
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  const stamp = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  let md = `# KonzeptoTalk – Gesprächsverlauf\n_Exportiert: ${stamp} · ${p(d.getHours())}:${p(d.getMinutes())}_\n`;
+  for (const m of history) {
+    md += `\n\n---\n\n**${m.role==='assistant'?'Konzeptothek':'Du'}:**\n\n${m.content}\n`;
+  }
+  const url = URL.createObjectURL(new Blob([md],{type:'text/markdown;charset=utf-8'}));
+  const a = Object.assign(document.createElement('a'),{href:url,download:`konzeptotalk-${stamp}.md`});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parseMdHistory(text) {
+  const parts = text.split('\n\n---\n\n');
+  const msgs = [];
+  for (let i = 1; i < parts.length; i++) {
+    const b = parts[i].trimStart();
+    if (b.startsWith('**Konzeptothek:**')) {
+      msgs.push({role:'assistant', content:b.replace(/^\*\*Konzeptothek:\*\*\n+/,'').trim()});
+    } else if (b.startsWith('**Du:**')) {
+      msgs.push({role:'user', content:b.replace(/^\*\*Du:\*\*\n+/,'').trim()});
+    }
+  }
+  return msgs;
+}
+
+function loadMdFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const msgs = parseMdHistory(e.target.result);
+    if (!msgs.length) return;
+    history = msgs;
+    chat.innerHTML = '';
+    msgs.forEach(m => append(m.role==='assistant'?'bot':'user',
+      m.role==='assistant' ? renderMd(m.content) : esc(m.content)));
+    const sep = document.createElement('div');
+    sep.className = 'restore-sep';
+    sep.textContent = `── ${msgs.length} Nachrichten aus „${file.name}" geladen ──`;
+    chat.appendChild(sep);
+    chatScroll.scrollTop = chatScroll.scrollHeight;
+    document.getElementById('dl-btn').disabled = false;
+  };
+  reader.readAsText(file);
+}
+
 async function callAPI(msgs, maxTokens) {
   const r = await fetch(WORKER_URL, {
     method: 'POST',
@@ -429,8 +503,9 @@ async function send() {
   showTyping();
   try {
     const reply = await callAPI(history);
-    rmTyping(); append('bot', esc(reply));
+    rmTyping(); append('bot', renderMd(reply));
     history.push({ role:'assistant', content:reply });
+    document.getElementById('dl-btn').disabled = false;
   } catch(e) {
     rmTyping();
     if (e.message === '401') {
@@ -451,13 +526,30 @@ input.addEventListener('input', function() { this.style.height='auto'; this.styl
 input.addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } });
 sendBtn.addEventListener('click', send);
 
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadMdFile(e.target.files[0]);
+  e.target.value = '';
+});
+chatScroll.addEventListener('dragover', e => {
+  e.preventDefault();
+  if ([...e.dataTransfer.types].includes('Files')) chatScroll.classList.add('drag-over');
+});
+chatScroll.addEventListener('dragleave', () => chatScroll.classList.remove('drag-over'));
+chatScroll.addEventListener('drop', e => {
+  e.preventDefault();
+  chatScroll.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) loadMdFile(f);
+});
+
 // ── Chat initialisieren (nach Passwort-Eingabe) ──
 async function initChat() {
   showTyping();
   try {
     const opening = await callAPI([{ role:'user', content:'[SYSTEM-INIT: Eröffne das Gespräch. Max. 3 Sätze + eine einzige Frage. Kein Kundenservice-Ton. Direkt, provokativ, einladend. Ziel: Die Person beschreibt ihre theoretische Landschaft.]' }], 300);
-    rmTyping(); append('bot', esc(opening));
+    rmTyping(); append('bot', renderMd(opening));
     history.push({ role:'assistant', content:opening });
+    document.getElementById('dl-btn').disabled = false;
   } catch(e) {
     rmTyping();
     if (e.message === '401') {
@@ -466,7 +558,7 @@ async function initChat() {
       pwInput.value = ''; pwInput.focus();
     } else {
       const fb = 'Du bist in der Konzeptothek. 147 Konzepte, 31 SiKos – und die Verbindungen, auch die widersprüchlichen.\n\nMit welchen Theorien oder Konzepten bist du gerade unterwegs?';
-      append('bot', esc(fb));
+      append('bot', renderMd(fb));
       history.push({ role:'assistant', content:fb });
     }
   }
