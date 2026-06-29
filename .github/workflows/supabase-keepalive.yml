@@ -1,0 +1,18 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: '0 6 */5 * *'  # alle 5 Tage um 06:00 UTC
+  workflow_dispatch:         # manuell auslösbar im GitHub-Dashboard
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Supabase anpingen
+        run: |
+          curl --silent --fail \
+            "https://vslukenxtwllvrejkjav.supabase.co/rest/v1/feedback_submissions?limit=1" \
+            -H "apikey: sb_publishable_4Fo-JBYFiYXzQgo70BHnMA_-Ysy7E5k" \
+            -H "Authorization: Bearer sb_publishable_4Fo-JBYFiYXzQgo70BHnMA_-Ysy7E5k"
+          echo "Supabase erfolgreich angepingt."
