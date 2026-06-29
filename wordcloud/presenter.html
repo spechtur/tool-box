@@ -7,7 +7,6 @@
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
-    /* ---- Reset & Tokens ---- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --gelb:    #c7d200;
@@ -25,16 +24,16 @@
     html, body { height: 100%; overflow: hidden; }
     body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
 
-    /* ---- PHGR Logo ---- */
     .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 22px; color: #111; }
     .gr { font-variant: small-caps; font-weight: 300; font-size: 22px; color: #111; letter-spacing: .04em; }
 
-    /* ---- Topbar ---- */
     #topbar {
       background: var(--gelb); padding: 14px 24px;
       display: flex; align-items: center; justify-content: space-between;
       flex-shrink: 0; gap: 20px;
+      transition: opacity .5s ease;
     }
+    #topbar.autohide { opacity: 0; pointer-events: none; }
     .topbar-right { display: flex; align-items: center; gap: 16px; }
     .stats-pill { background: rgba(0,0,0,.13); border-radius: 24px; padding: 8px 18px; font-size: 15px; color: #222; font-weight: 700; white-space: nowrap; }
     button { font-family: Arial; cursor: pointer; }
@@ -43,26 +42,43 @@
     .btn-icon  { background: rgba(0,0,0,.13); border: none; border-radius: 8px; padding: 10px 16px; font-size: 16px; font-weight: 700; color: #222; }
     .btn-icon:hover { background: rgba(0,0,0,.22); }
 
-    /* ---- Body layout ---- */
     #body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 
-    /* ---- Word cloud area ---- */
+    /* Cloud area – position:relative for spiral layout */
     #cloud-area {
-      flex: 1; display: flex; flex-wrap: wrap; align-content: center;
-      align-items: center; justify-content: center;
-      gap: 10px 18px; padding: 32px 40px; overflow: hidden; min-height: 0;
-      background: var(--hg);
+      flex: 1; position: relative; overflow: hidden;
+      min-height: 0; background: var(--hg);
     }
-    #empty-state { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    #cloud-area:fullscreen { background: #ececec; }
+
+    /* Leitfrage display */
+    #leitfrage-display {
+      position: absolute; top: 0; left: 0; right: 0;
+      text-align: center; padding: 18px 48px 32px;
+      font-size: 24px; font-weight: 800; color: #3a3a3a;
+      background: linear-gradient(to bottom, rgba(236,236,236,1) 65%, rgba(236,236,236,0));
+      pointer-events: none; z-index: 2;
+      display: none; line-height: 1.3;
+    }
+
+    #empty-state {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
     .empty-icon { font-size: 64px; color: var(--mg); }
     .empty-text  { color: var(--dg); font-size: 16px; text-align: center; }
     .empty-hint  { color: var(--mg); font-size: 12px; }
-    .w-item { display: inline-block; line-height: 1.15; user-select: none; cursor: default; transition: font-size .5s ease; }
-    #cloud-area:fullscreen { background: #ececec; padding: 40px; }
+
+    /* Word items */
+    .w-item {
+      position: absolute; visibility: hidden;
+      white-space: nowrap; line-height: 1.15;
+      user-select: none; cursor: default;
+    }
     @keyframes wordin { 0% { opacity: 0; transform: scale(.65); } 100% { opacity: 1; transform: scale(1); } }
     .w-item.new { animation: wordin .4s ease forwards; }
 
-    /* ---- Sidebar ---- */
+    /* Sidebar */
     #sidebar {
       width: 256px; flex-shrink: 0; background: var(--sidebar);
       border-left: 1px solid var(--mg);
@@ -77,9 +93,24 @@
     }
     .s-input:focus { border-color: var(--tuerkis); }
     .s-hint { font-size: 11px; color: var(--dg); line-height: 1.4; }
+    textarea.s-input { resize: vertical; min-height: 58px; font-family: Arial; }
 
-    /* QR code container */
-    .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 172px; }
+    /* Session-Verlauf */
+    .s-hist-toggle { background:none; border:none; color:var(--tuerkis); font-size:10.5px; font-weight:700; cursor:pointer; padding:0; letter-spacing:.5px; text-transform:uppercase; margin-top:4px; display:inline-block; }
+    .s-hist-toggle:hover { text-decoration:underline; }
+    .s-hist-list { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
+    .s-hist-item { background:var(--bg); border-radius:6px; padding:7px 9px; cursor:pointer; border:1px solid transparent; display:flex; align-items:center; gap:6px; transition:border-color .15s; }
+    .s-hist-item:hover { border-color:var(--tuerkis); }
+    .s-hist-item.active { border-color:var(--tuerkis); background:rgba(35,178,198,.1); }
+    .s-hist-label { font-size:12px; font-weight:700; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .s-hist-meta  { font-size:10px; color:var(--dg); margin-top:1px; }
+    .s-hist-btns  { display:flex; gap:3px; opacity:0; transition:opacity .15s; flex-shrink:0; }
+    .s-hist-item:hover .s-hist-btns { opacity:1; }
+    .s-hist-btn   { background:none; border:none; cursor:pointer; font-size:12px; padding:2px 5px; border-radius:3px; color:var(--mg); line-height:1; }
+    .s-hist-btn:hover { background:rgba(0,0,0,.1); }
+
+    /* QR code */
+    .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 172px; cursor: pointer; }
     #qrcode { width: 156px; height: 156px; display: flex; align-items: center; justify-content: center; }
     #qrcode img { display: block !important; }
 
@@ -92,15 +123,13 @@
     }
     .mw-btn.on { border-color: var(--gelb); background: var(--gelb); color: #111; }
 
-    /* Top words list */
+    /* Top words */
     .top-row { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; min-width: 0; }
     .top-dot  { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
     .top-word { flex: 1; font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .top-bar  { height: 3px; border-radius: 2px; flex-shrink: 0; min-width: 3px; }
     .top-cnt  { font-size: 10px; color: var(--dg); width: 14px; text-align: right; flex-shrink: 0; }
 
-
-    /* Fullscreen hint */
     #fs-hint { padding: 12px 18px; border-top: 1px solid var(--hg); margin-top: auto; }
     .fs-btn { width: 100%; background: var(--hg); border: 1px solid var(--mg); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: var(--dg); cursor: pointer; }
     .fs-btn:hover { background: var(--mg); color: #333; }
@@ -108,7 +137,6 @@
 </head>
 <body>
 
-<!-- ======== TOPBAR ======== -->
 <div id="topbar">
   <div><span class="ph">ph</span><span class="gr">GR</span></div>
   <div class="topbar-right">
@@ -120,7 +148,7 @@
   </div>
 </div>
 
-<!-- ======== QR OVERLAY ======== -->
+<!-- QR OVERLAY -->
 <div id="qr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center;cursor:pointer" onclick="closeQROverlay()">
   <div onclick="event.stopPropagation()" style="background:white;border-radius:24px;padding:28px 32px;border:8px solid #c7d200;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4)">
     <div id="qr-overlay-img" style="width:480px;height:480px;display:flex;align-items:center;justify-content:center"></div>
@@ -128,20 +156,18 @@
   </div>
 </div>
 
-<!-- ======== TOP WORDS OVERLAY ======== -->
+<!-- TOP WORDS OVERLAY -->
 <div id="tw-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center;cursor:pointer" onclick="closeTWOverlay()">
   <div onclick="event.stopPropagation()" style="background:white;border-radius:24px;padding:32px 40px;border:8px solid #c7d200;min-width:380px;max-width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.4);">
-    <h2 style="font-family:Arial;font-size:22px;font-weight:800;color:#1a1a1a;margin-bottom:20px;letter-spacing:-.01em">Top-Begriffe</h2>
+    <h2 style="font-family:Arial;font-size:22px;font-weight:800;color:#1a1a1a;margin-bottom:20px">Top-Begriffe</h2>
     <div id="tw-overlay-list" style="overflow-y:auto;flex:1;min-height:0;padding-right:6px"></div>
     <p style="margin-top:20px;color:#878787;font-size:13px;font-family:Arial;text-align:center">Klick zum Schliessen · Esc</p>
   </div>
 </div>
 
-<!-- ======== BODY ======== -->
 <div id="body">
-
-  <!-- Word cloud -->
   <div id="cloud-area">
+    <div id="leitfrage-display"></div>
     <div id="empty-state">
       <div class="empty-icon">☁</div>
       <div class="empty-text">Warte auf Beiträge…</div>
@@ -149,26 +175,30 @@
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div id="sidebar">
 
-    <!-- Session -->
     <div class="s-sec">
       <span class="s-label">Session</span>
-      <input class="s-input" id="session-input" placeholder="z.B. cas-2026-01" oninput="onSessionChange()">
-      <div class="s-hint">Für jede Weiterbildung eine neue Session-ID → frische Wortwolke.</div>
+      <input class="s-input" id="session-input" placeholder="z.B. wc-2026-01" oninput="onSessionChange()">
+      <div class="s-hint">Für jede Veranstaltung eine neue Session-ID.</div>
+      <button class="s-hist-toggle" onclick="toggleHistoryPanel()">▾ Gespeicherte Sessions</button>
+      <div id="history-list" class="s-hist-list" style="display:none"></div>
     </div>
 
-    <!-- QR Code -->
+    <div class="s-sec">
+      <span class="s-label">Leitfrage</span>
+      <textarea class="s-input" id="leitfrage-input" rows="3" placeholder="z.B. Was nimmst du mit?" oninput="updateLeitfrage()"></textarea>
+      <div class="s-hint">Wird gross über der Wolke angezeigt.</div>
+    </div>
+
     <div class="s-sec">
       <span class="s-label">Teilnahme-QR-Code</span>
-      <div class="qr-wrap" onclick="openQROverlay()" title="Klick zum Vergrössern" style="cursor:pointer">
+      <div class="qr-wrap" onclick="openQROverlay()" title="Klick zum Vergrössern">
         <div id="qrcode"><span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span></div>
       </div>
       <div class="s-hint" style="margin-top:8px" id="join-url-text"></div>
     </div>
 
-    <!-- Max words -->
     <div class="s-sec">
       <span class="s-label">Stichwörter pro Person</span>
       <div class="mw-row">
@@ -180,13 +210,17 @@
       </div>
     </div>
 
-    <!-- Top words (dynamisch) -->
     <div class="s-sec" id="top-sec" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span class="s-label" style="margin-bottom:0">Top-Begriffe</span><div style="display:flex;gap:5px"><button onclick="openTWOverlay()" style="background:var(--tuerkis);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">Gross &#8599;</button><button onclick="downloadStats()" title="Als CSV herunterladen" style="background:var(--gelb);color:#111;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">&#8595; CSV</button></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="s-label" style="margin-bottom:0">Top-Begriffe</span>
+        <div style="display:flex;gap:5px">
+          <button onclick="openTWOverlay()" style="background:var(--tuerkis);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">Gross ↗</button>
+          <button onclick="downloadStats()" style="background:var(--gelb);color:#111;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Arial">↓ CSV</button>
+        </div>
+      </div>
       <div id="top-list"></div>
     </div>
 
-    <!-- Fullscreen / help -->
     <div id="fs-hint">
       <button class="fs-btn" onclick="toggleFullscreen()">⛶ Vollbild (F11 oder Klick)</button>
     </div>
@@ -195,20 +229,33 @@
 </div>
 
 <script>
-// =========================================================
-// State
-// =========================================================
-const WC      = ['#23b2c6','#6169af','#ed6a69','#fbb900','#878787'];
+const WC = ['#23b2c6','#6169af','#ed6a69','#fbb900','#878787'];
+
+const STOP_WORDS = new Set([
+  'der','die','das','den','dem','des','ein','eine','einer','einem','einen','eines',
+  'und','oder','aber','denn','doch','auch','noch','so','wie','was','wer','wo',
+  'ich','du','er','sie','es','wir','ihr','mich','dich','sich','uns','euch',
+  'ist','bin','bist','sind','war','waren','hat','haben','wird','werden','wurde',
+  'in','an','auf','bei','durch','für','gegen','mit','nach','ohne','um','von','vor','zu',
+  'nicht','kein','keine','mehr','immer','nie','sehr','viel','wenig',
+  'hier','da','dort','alle','alles','jeder','jede','jedes',
+  'als','wenn','weil','dass','ob','damit','obwohl','während',
+  'kann','muss','soll','will','darf','mag','sein','zu'
+]);
+
+const HIST_KEY = 'phgr-wc-history';
+const HIST_MAX = 12;
+
 let sb        = null;
 let sessionId = '';
 let maxN      = 1;
-let words     = {};     // { word: count }
-let prevWords = {};     // für Animation neuer Wörter
+let words     = {};
+let prevWords = {};
 let pollTimer = null;
+let lastHash  = '';
+let layoutRaf = null;
+let hideTimer = null;
 
-// =========================================================
-// Init
-// =========================================================
 document.addEventListener('DOMContentLoaded', () => {
   try {
     sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -216,31 +263,32 @@ document.addEventListener('DOMContentLoaded', () => {
     alert('Supabase konnte nicht initialisiert werden. Bitte config.js prüfen.');
     return;
   }
-
-  // Gespeicherte Session laden oder Default
   const saved = localStorage.getItem('phgr-wc-session') || todayId();
   document.getElementById('session-input').value = saved;
   sessionId = saved;
   updateSessionBadge();
   refreshQR();
-
   startPolling();
+  initAutoHide();
+
+  const area = document.getElementById('cloud-area');
+  new ResizeObserver(() => {
+    if (Object.keys(words).length > 0) scheduleLayout(area);
+  }).observe(area);
 });
 
 function todayId() {
-  return 'session-' + new Date().toISOString().slice(0,10);
+  return 'wc-' + new Date().toISOString().slice(0,10);
 }
 
-// =========================================================
-// Session
-// =========================================================
+// ── Session ───────────────────────────────────────────────
 function onSessionChange() {
   const val = document.getElementById('session-input').value.trim().toLowerCase().replace(/\s+/g,'-');
   sessionId = val;
   localStorage.setItem('phgr-wc-session', val);
   updateSessionBadge();
   refreshQR();
-  words = {}; prevWords = {};
+  words = {}; prevWords = {}; lastHash = '';
   renderCloud();
 }
 
@@ -248,18 +296,108 @@ function updateSessionBadge() {
   document.getElementById('session-badge').textContent = sessionId ? `Session: ${sessionId}` : 'Session: –';
 }
 
-// =========================================================
-// Max words
-// =========================================================
+// ── Leitfrage ─────────────────────────────────────────────
+function updateLeitfrage() {
+  const q  = document.getElementById('leitfrage-input').value.trim();
+  const el = document.getElementById('leitfrage-display');
+  el.textContent = q;
+  el.style.display = q ? 'block' : 'none';
+  if (Object.keys(words).length > 0) scheduleLayout(document.getElementById('cloud-area'));
+}
+
+// ── Session-Verlauf ───────────────────────────────────────
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
+  catch { return []; }
+}
+function saveHistory(arr) { localStorage.setItem(HIST_KEY, JSON.stringify(arr)); }
+
+function addToHistory(id, count) {
+  if (!id) return;
+  let hist = getHistory();
+  const today = new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const idx = hist.findIndex(h => h.id === id);
+  if (idx >= 0) {
+    const [item] = hist.splice(idx, 1);
+    item.count = count; item.lastUsed = today;
+    hist.unshift(item);
+  } else {
+    hist.unshift({ id, label: '', count, lastUsed: today });
+    if (hist.length > HIST_MAX) hist = hist.slice(0, HIST_MAX);
+  }
+  saveHistory(hist);
+  renderHistoryPanel();
+}
+
+function removeFromHistory(e, id) {
+  if (e) e.stopPropagation();
+  saveHistory(getHistory().filter(h => h.id !== id));
+  renderHistoryPanel();
+}
+
+function renameSession(e, id) {
+  e.stopPropagation();
+  const hist = getHistory();
+  const item = hist.find(h => h.id === id);
+  if (!item) return;
+  const newLabel = prompt('Session umbenennen:', item.label || item.id);
+  if (newLabel === null) return;
+  item.label = newLabel.trim();
+  saveHistory(hist);
+  renderHistoryPanel();
+}
+
+function switchSession(id) {
+  document.getElementById('session-input').value = id;
+  onSessionChange();
+}
+
+function toggleHistoryPanel() {
+  const list = document.getElementById('history-list');
+  const btn  = document.querySelector('.s-hist-toggle');
+  if (list.style.display === 'none') {
+    list.style.display = 'flex';
+    btn.textContent = '▴ Gespeicherte Sessions';
+    renderHistoryPanel();
+  } else {
+    list.style.display = 'none';
+    btn.textContent = '▾ Gespeicherte Sessions';
+  }
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderHistoryPanel() {
+  const list = document.getElementById('history-list');
+  if (list.style.display === 'none') return;
+  const hist = getHistory();
+  if (!hist.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--dg);padding:4px 2px">Noch keine gespeicherten Sessions.</div>';
+    return;
+  }
+  list.innerHTML = hist.map(h => `
+    <div class="s-hist-item${h.id === sessionId ? ' active' : ''}" onclick="switchSession('${esc(h.id)}')">
+      <div style="flex:1;min-width:0">
+        <div class="s-hist-label">${esc(h.label || h.id)}</div>
+        <div class="s-hist-meta">${h.count} Begriffe · ${h.lastUsed}</div>
+      </div>
+      <div class="s-hist-btns">
+        <button class="s-hist-btn" onclick="renameSession(event,'${esc(h.id)}')" title="Umbenennen">✏️</button>
+        <button class="s-hist-btn" onclick="removeFromHistory(event,'${esc(h.id)}')" title="Entfernen">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── Max words ─────────────────────────────────────────────
 function setMax(n) {
   maxN = n;
   document.querySelectorAll('.mw-btn').forEach(b => b.classList.toggle('on', parseInt(b.dataset.n) === n));
   refreshQR();
 }
 
-// =========================================================
-// QR Code
-// =========================================================
+// ── QR Code ───────────────────────────────────────────────
 let qrTimer = null;
 
 function refreshQR() {
@@ -267,7 +405,7 @@ function refreshQR() {
   qrTimer = setTimeout(() => {
     const container = document.getElementById('qrcode');
     if (!sessionId) {
-      container.innerHTML = '<span style="color:#878787;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span>';
+      container.innerHTML = '<span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span>';
       document.getElementById('join-url-text').textContent = '';
       return;
     }
@@ -278,9 +416,7 @@ function refreshQR() {
   }, 400);
 }
 
-// =========================================================
-// Polling Supabase
-// =========================================================
+// ── Polling ───────────────────────────────────────────────
 function startPolling() {
   load();
   pollTimer = setInterval(load, 2500);
@@ -295,82 +431,133 @@ async function load() {
       .eq('session_id', sessionId);
     if (error) { console.warn('Supabase-Fehler:', error.message); return; }
 
-    // Aggregieren
     const agg = {};
     (data || []).forEach(row => {
       const w = (row.word || '').trim().toLowerCase();
-      if (w) agg[w] = (agg[w] || 0) + 1;
+      if (w.length < 2) return;
+      if (STOP_WORDS.has(w)) return;
+      agg[w] = (agg[w] || 0) + 1;
     });
-    prevWords = words;
-    words = agg;
-    renderCloud();
+
+    const newHash = JSON.stringify(Object.entries(agg).sort());
+    if (newHash !== lastHash) {
+      prevWords = words;
+      words     = agg;
+      lastHash  = newHash;
+      if (Object.keys(agg).length > 0) addToHistory(sessionId, Object.keys(agg).length);
+      renderCloud();
+    }
   } catch(e) { console.warn('Netzwerkfehler:', e); }
 }
 
-// =========================================================
-// Reset
-// =========================================================
+// ── Reset ─────────────────────────────────────────────────
 async function confirmReset() {
   if (!sessionId) return;
   if (!confirm(`Session „${sessionId}" wirklich zurücksetzen?\n\nAlle Beiträge werden gelöscht.`)) return;
   try {
     const { error } = await sb.from('wordcloud_submissions').delete().eq('session_id', sessionId);
     if (error) { alert('Fehler beim Zurücksetzen: ' + error.message); return; }
-    prevWords = {}; words = {};
+    removeFromHistory(null, sessionId);
+    prevWords = {}; words = {}; lastHash = '';
     renderCloud();
   } catch(e) { alert('Netzwerkfehler beim Zurücksetzen.'); }
 }
 
-// =========================================================
-// Word cloud rendering
-// =========================================================
-
+// ── Word cloud rendering (Spiral) ─────────────────────────
 function renderCloud() {
   const area  = document.getElementById('cloud-area');
   const empty = document.getElementById('empty-state');
-  const entries = Object.entries(words).sort((a,b) => b[1] - a[1]);
+  const entries = Object.entries(words).sort((a,b) => b[1]-a[1]);
 
-  // Alle Word-Items entfernen (nicht den empty-state)
   area.querySelectorAll('.w-item').forEach(el => el.remove());
 
   if (!entries.length) {
     empty.style.display = 'flex';
-    updateStats();
-    renderTop();
+    updateStats(); renderTop();
     return;
   }
   empty.style.display = 'none';
 
-  const n    = entries.length;
-  const mx   = entries[0][1];
-  const mn   = entries[entries.length - 1][1];
-  const rng  = mx - mn || 1;
+  const n   = entries.length;
+  const mx  = entries[0][1];
+  const mn  = entries[entries.length-1][1];
+  const rng = mx - mn || 1;
 
-  // Base size is purely about number of unique words — all words start here
   const baseS = n <= 2 ? 110 : n <= 4 ? 85 : n <= 7 ? 68 : n <= 12 ? 52 : n <= 20 ? 40 : n <= 35 ? 30 : 22;
-  // Top word can be up to 2.8× the base; more dramatic spread
-  const bonus = Math.round(baseS * 1.8 * Math.min(1, (mx - 1) / 4));
-
-  // Dynamic gap
-  area.style.gap = n <= 4 ? '20px 32px' : n <= 10 ? '14px 22px' : n <= 20 ? '10px 16px' : '7px 12px';
+  const bonus = Math.round(baseS * 1.8 * Math.min(1, (mx-1)/4));
 
   entries.forEach(([w, c], i) => {
     const ratio  = rng > 0 ? (c - mn) / rng : 0;
     const size   = Math.round(baseS + ratio * bonus);
-    const weight = c === mx ? 900 : c > mx * .5 ? 800 : c > mx * .25 ? 600 : 400;
+    const weight = c === mx ? 900 : c > mx*.5 ? 800 : c > mx*.25 ? 600 : 400;
     const color  = WC[i % WC.length];
     const isNew  = !prevWords[w] || prevWords[w] < c;
 
     const el = document.createElement('span');
-    el.className = 'w-item' + (isNew ? ' new' : '');
+    el.className   = 'w-item' + (isNew ? ' new' : '');
     el.textContent = w;
-    el.title = `${w}: ${c}×`;
+    el.title       = `${w}: ${c}×`;
     el.style.cssText = `font-size:${size}px;color:${color};font-weight:${weight};`;
     area.appendChild(el);
   });
 
+  scheduleLayout(area);
   updateStats();
   renderTop();
+}
+
+function scheduleLayout(area) {
+  if (layoutRaf) cancelAnimationFrame(layoutRaf);
+  layoutRaf = requestAnimationFrame(() => { layoutWords(area); layoutRaf = null; });
+}
+
+function layoutWords(area) {
+  const W = area.clientWidth;
+  const H = area.clientHeight;
+
+  const lqEl     = document.getElementById('leitfrage-display');
+  const topOffset = lqEl.style.display !== 'none' ? lqEl.offsetHeight + 4 : 12;
+
+  const cx = W / 2;
+  const cy = topOffset + (H - topOffset) / 2;
+
+  const placed = [];
+  const els    = Array.from(area.querySelectorAll('.w-item'));
+
+  els.forEach(el => {
+    const bw = el.offsetWidth  + 12;
+    const bh = el.offsetHeight + 8;
+    let found = false;
+
+    for (let t = 0; t < 1500; t++) {
+      const r     = 3.5 * t / (2 * Math.PI);
+      const angle = t * 0.42;
+      const px    = cx + r * Math.cos(angle) - bw / 2;
+      const py    = cy + r * Math.sin(angle) - bh / 2;
+
+      if (px < 8 || py < topOffset || px + bw > W - 8 || py + bh > H - 8) continue;
+
+      const overlaps = placed.some(p =>
+        px < p.x + p.w && px + bw > p.x &&
+        py < p.y + p.h && py + bh > p.y
+      );
+
+      if (!overlaps) {
+        el.style.left       = px + 'px';
+        el.style.top        = py + 'px';
+        el.style.visibility = 'visible';
+        placed.push({ x: px, y: py, w: bw, h: bh });
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      el.style.left       = Math.max(8, Math.min(W - el.offsetWidth - 8, Math.random() * W)) + 'px';
+      el.style.top        = Math.max(topOffset, Math.min(H - el.offsetHeight - 8, topOffset + Math.random() * (H - topOffset))) + 'px';
+      el.style.visibility = 'visible';
+    }
+  });
 }
 
 function updateStats() {
@@ -396,78 +583,86 @@ function renderTop() {
   `).join('');
 }
 
-// =========================================================
-// Top Words Overlay
-// =========================================================
+// ── Top Words Overlay ─────────────────────────────────────
 function openTWOverlay() {
   const entries = Object.entries(words).sort((a,b) => b[1]-a[1]);
   if (!entries.length) return;
-  const mx = entries[0][1];
+  const mx   = entries[0][1];
   const list = document.getElementById('tw-overlay-list');
   list.innerHTML = entries.map(([w,c],i) => `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
       <span style="font-size:13px;font-weight:700;color:#878787;width:20px;text-align:right">${i+1}</span>
       <span style="width:12px;height:12px;border-radius:3px;background:${WC[i%WC.length]};flex-shrink:0"></span>
-      <span style="flex:1;font-size:${Math.round(18 + (c/mx)*14)}px;font-weight:${c===mx?800:600};color:#1a1a1a;font-family:Arial">${w}</span>
+      <span style="flex:1;font-size:${Math.round(18+(c/mx)*14)}px;font-weight:${c===mx?800:600};color:#1a1a1a;font-family:Arial">${w}</span>
       <span style="font-size:13px;color:#878787;font-family:Arial;font-weight:600">${c}×</span>
     </div>
   `).join('');
   document.getElementById('tw-overlay').style.display = 'flex';
 }
-function closeTWOverlay() {
-  document.getElementById('tw-overlay').style.display = 'none';
-}
+function closeTWOverlay() { document.getElementById('tw-overlay').style.display = 'none'; }
 
-// =========================================================
-// Download Stats as CSV
-// =========================================================
+// ── CSV Download ──────────────────────────────────────────
 function downloadStats() {
   const entries = Object.entries(words).sort((a,b) => b[1]-a[1]);
   if (!entries.length) return;
   const lines = ['Begriff,Nennungen', ...entries.map(([w,c]) => `${w},${c}`)];
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `wortwolke-${sessionId || 'export'}-${new Date().toISOString().slice(0,10)}.csv`;
+  const blob  = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href      = url;
+  a.download  = `wortwolke-${sessionId || 'export'}-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-// =========================================================
-// QR Overlay
-// =========================================================
+// ── QR Overlay ────────────────────────────────────────────
 function openQROverlay() {
   const url = document.getElementById('join-url-text').textContent;
   if (!url) return;
-  const overlay = document.getElementById('qr-overlay');
-  const imgBox  = document.getElementById('qr-overlay-img');
-  imgBox.innerHTML = '';
-  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=480x480&qzone=2&data=${encodeURIComponent(url)}`;
-  imgBox.innerHTML = `<img src="${apiUrl}" width="480" height="480" alt="QR-Code" style="display:block;border-radius:4px">`;
-  overlay.style.display = 'flex';
+  const imgBox = document.getElementById('qr-overlay-img');
+  imgBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=480x480&qzone=2&data=${encodeURIComponent(url)}" width="480" height="480" alt="QR-Code" style="display:block;border-radius:4px">`;
+  document.getElementById('qr-overlay').style.display = 'flex';
 }
-function closeQROverlay() {
-  document.getElementById('qr-overlay').style.display = 'none';
-}
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeQROverlay(); closeTWOverlay(); }
-});
+function closeQROverlay() { document.getElementById('qr-overlay').style.display = 'none'; }
 
-// =========================================================
-// Fullscreen
-// =========================================================
+// ── Auto-Hide Topbar ──────────────────────────────────────
+function initAutoHide() {
+  document.addEventListener('mousemove', revealTopbar);
+  document.addEventListener('click',     revealTopbar);
+  scheduleHide();
+}
+
+function revealTopbar() {
+  document.getElementById('topbar').classList.remove('autohide');
+  scheduleHide();
+}
+
+function scheduleHide() {
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    document.getElementById('topbar').classList.add('autohide');
+  }, 4000);
+}
+
+// ── Fullscreen ────────────────────────────────────────────
 function toggleFullscreen() {
   const cloud = document.getElementById('cloud-area');
   if (!document.fullscreenElement) {
-    cloud.requestFullscreen().catch(() => {
-      document.documentElement.requestFullscreen().catch(() => {});
-    });
+    cloud.requestFullscreen().catch(() => document.documentElement.requestFullscreen().catch(() => {}));
   } else {
     document.exitFullscreen().catch(() => {});
   }
 }
-document.addEventListener('keydown', e => { if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); } });
+
+document.addEventListener('fullscreenchange', () => {
+  if (Object.keys(words).length > 0) setTimeout(() => scheduleLayout(document.getElementById('cloud-area')), 80);
+});
+
+// ── Keyboard ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeQROverlay(); closeTWOverlay(); }
+  if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
+});
 </script>
 </body>
 </html>
