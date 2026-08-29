@@ -21,9 +21,31 @@
     .center { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 22px 20px 40px; gap: 15px; }
     .wrap { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
 
-    .aufgabe { background: white; border-left: 5px solid var(--gelb); border-radius: 10px; padding: 14px 16px; }
-    .aufgabe-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 6px; }
-    .aufgabe-text { font-size: 15px; line-height: 1.5; color: #1a1a1a; white-space: pre-wrap; }
+    /* Kontextband — sagt immer, wo man gelandet ist */
+    .kontext { background: white; border-left: 6px solid var(--gelb); border-radius: 12px; padding: 15px 17px 17px; }
+    .kontext.fehlt { border-left-color: var(--rot); background: #fff6f6; }
+    .kontext.demo  { border-left-color: var(--mg); }
+    .k-sess {
+      font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+      color: var(--tuerkis); margin-bottom: 7px;
+    }
+    .kontext.fehlt .k-sess { color: var(--rot); }
+    .kontext.demo  .k-sess { color: var(--dg); }
+    .k-titel   { font-size: 23px; font-weight: 800; color: #1a1a1a; line-height: 1.2; margin-bottom: 9px; }
+    .k-aufgabe { font-size: 14px; line-height: 1.55; color: #3a3a3a; white-space: pre-wrap; }
+    .k-aufgabe.leer { color: var(--dg); font-style: italic; }
+    .k-aufgabe code { background: var(--bg); padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+
+    /* Beim Scrollen bleibt die Aufgabe als schmale Zeile oben stehen */
+    .kontext-slim {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: var(--gelb); color: #111; padding: 10px 16px;
+      font-size: 13px; font-weight: 700; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+      transform: translateY(-100%); transition: transform .22s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+    .kontext-slim.an { transform: translateY(0); }
 
     h1 { color: #1a1a1a; font-size: 20px; font-weight: 700; text-align: center; }
     .sub { color: var(--dg); font-size: 13px; text-align: center; line-height: 1.5; }
@@ -57,9 +79,11 @@
     }
     .kat-btn.on { color: #111; }
 
-    .geo-row { display: flex; align-items: center; gap: 10px; background: white; border-radius: 12px; padding: 12px 14px; }
-    .geo-txt { flex: 1; font-size: 12px; color: var(--dg); line-height: 1.4; }
-    .geo-ok { color: #5a8a2a; font-weight: 700; }
+    .geo-box { background: white; border-left: 5px solid var(--tuerkis); border-radius: 12px; padding: 13px 15px 15px; }
+    .geo-box.ok { border-left-color: #7ba428; }
+    .geo-kopf { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+    .geo-txt  { font-size: 12.5px; color: var(--dg); line-height: 1.5; }
+    .geo-btn  { margin-top: 11px; padding: 12px; font-size: 15px; }
 
     .err { color: var(--rot); font-size: 13px; text-align: center; background: #fff0f0; padding: 11px 16px; border-radius: 10px; line-height: 1.45; }
 
@@ -69,13 +93,13 @@
 </head>
 <body>
   <div class="topbar"><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="kontext-slim" id="kontext-slim" onclick="nachObenScrollen()"><span id="slim-text"></span></div>
 
   <div class="center" id="form-view">
     <div class="wrap">
 
-      <div class="aufgabe" id="aufgabe-box" style="display:none">
-        <div class="aufgabe-label">Aufgabe</div>
-        <div class="aufgabe-text" id="aufgabe-text"></div>
+      <div class="kontext" id="kontext">
+        <div class="k-sess">wird geladen…</div>
       </div>
 
       <h1 id="titel">Dein Foto</h1>
@@ -119,10 +143,10 @@
           <input type="text" id="autor" autocomplete="off" placeholder="Bleibt leer, wenn du willst">
         </div>
 
-        <div class="geo-row" id="geo-row">
-          <span style="font-size:20px">📍</span>
-          <span class="geo-txt" id="geo-txt">Kein Ort im Foto gespeichert.</span>
-          <button class="link-btn" id="geo-btn" onclick="standortHolen()">Hinzufügen</button>
+        <div class="geo-box" id="geo-box">
+          <div class="geo-kopf"><span style="font-size:18px">📍</span><span id="geo-titel">Standort mitschicken?</span></div>
+          <div class="geo-txt" id="geo-txt"></div>
+          <button class="btn tuerkis geo-btn" id="geo-btn" onclick="standortHolen()">Standort jetzt hinzufügen</button>
         </div>
 
       </div>
@@ -142,14 +166,18 @@
 
 <script>
 // ── Parameter und Zustand ─────────────────────────────────
-const params  = new URLSearchParams(window.location.search);
-const session = (params.get('session') || 'default').trim().toLowerCase();
+const params      = new URLSearchParams(window.location.search);
+const hatSession  = params.has('session') && params.get('session').trim() !== '';
+const session     = (params.get('session') || 'default').trim().toLowerCase();
 
 const PALETTE = ['#c7d200','#23b2c6','#ed6a69','#fbb900','#6169af','#878787'];
 const MAX_KANTE = 1600;
 const JPEG_Q    = 0.82;
 
 let sb          = null;
+let kontextZustand = 'laedt';    // laedt | ok | fehlt | demo
+let titel       = '';
+let aufgabe     = '';
 let kategorien  = [];
 let katGewaehlt = null;
 let bildBlob    = null;   // verkleinertes JPEG
@@ -165,27 +193,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
   await ladeSession();
+  initKlebstreifen();
 });
 
 async function ladeSession() {
+  if (!hatSession) {                       // ohne ?session= = Demo-Ansicht
+    kontextZustand = 'demo';
+    renderKontext();
+    return;
+  }
   try {
-    const { data } = await sb.from('fotowand_sessions')
-      .select('aufgabenstellung, kategorien')
+    // select('*') statt einzelner Spalten: so bricht nichts, falls die
+    // Titel-Spalte in einem Projekt noch nicht angelegt ist.
+    const { data, error } = await sb.from('fotowand_sessions')
+      .select('*')
       .eq('session_id', session)
       .maybeSingle();
-    if (!data) return;
+    if (error) throw error;
 
-    const auf = (data.aufgabenstellung || '').trim();
-    if (auf) {
-      document.getElementById('aufgabe-text').textContent = auf;
-      document.getElementById('aufgabe-box').style.display = 'block';
-    }
+    if (!data) { kontextZustand = 'fehlt'; renderKontext(); return; }
+
+    kontextZustand = 'ok';
+    titel      = (data.titel || '').trim();
+    aufgabe    = (data.aufgabenstellung || '').trim();
     kategorien = Array.isArray(data.kategorien) ? data.kategorien : [];
+    renderKontext();
     baueKategorien();
   } catch (e) {
-    // Ohne Session-Zeile geht es trotzdem: dann eben ohne Aufgabe und Rubriken.
     console.warn('Session konnte nicht geladen werden:', e);
+    kontextZustand = 'fehlt';
+    renderKontext();
   }
+}
+
+// ── Kontextband ───────────────────────────────────────────
+function renderKontext() {
+  const box  = document.getElementById('kontext');
+  const slim = document.getElementById('slim-text');
+
+  if (kontextZustand === 'demo') {
+    box.className = 'kontext demo';
+    box.innerHTML = `<div class="k-sess">Demo-Ansicht</div>
+      <div class="k-titel">Ohne Veranstaltung</div>
+      <div class="k-aufgabe">Diese Seite gehört zu keiner Session. Zum Mitmachen den
+      QR-Code der Kursleitung scannen — Beiträge von hier landen in einer Übungssammlung.</div>`;
+    slim.textContent = 'Demo-Ansicht — ohne Veranstaltung';
+    return;
+  }
+
+  if (kontextZustand === 'fehlt') {
+    box.className = 'kontext fehlt';
+    box.innerHTML = `<div class="k-sess">Session nicht gefunden</div>
+      <div class="k-titel">Hier ist noch nichts eingerichtet</div>
+      <div class="k-aufgabe">Gesucht wurde <code>${esc(session)}</code>. Bitte den QR-Code
+      nochmals scannen oder bei der Kursleitung nachfragen — sonst sieht niemand,
+      was du hochlädst.</div>`;
+    slim.textContent = 'Session nicht gefunden';
+    return;
+  }
+
+  box.className = 'kontext';
+  box.innerHTML = `<div class="k-sess">${esc(session)}</div>
+    ${titel ? `<div class="k-titel">${esc(titel)}</div>` : ''}
+    ${aufgabe
+      ? `<div class="k-aufgabe">${esc(aufgabe)}</div>`
+      : `<div class="k-aufgabe leer">Für diese Session ist noch keine Aufgabe hinterlegt —
+         du bist trotzdem richtig hier.</div>`}`;
+  slim.textContent = aufgabe || titel || session;
+}
+
+// Sobald das Band nach oben aus dem Bild wandert, klebt die Aufgabe
+// als schmale Zeile oben fest — man liest sie beim Ausfüllen weiter.
+function initKlebstreifen() {
+  const box  = document.getElementById('kontext');
+  const slim = document.getElementById('kontext-slim');
+  if (!box || !slim || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(
+    ([eintrag]) => slim.classList.toggle('an', !eintrag.isIntersecting),
+    { threshold: 0 }
+  ).observe(box);
+}
+
+function nachObenScrollen() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function esc(t) {
+  return String(t == null ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function baueKategorien() {
@@ -387,6 +483,7 @@ function gpsAusTiff(dv, base) {
 function standortHolen() {
   if (!navigator.geolocation) {
     document.getElementById('geo-txt').textContent = 'Dieses Gerät kennt keine Ortung.';
+    document.getElementById('geo-btn').style.display = 'none';
     return;
   }
   const btn = document.getElementById('geo-btn');
@@ -400,29 +497,41 @@ function standortHolen() {
       aktualisiereGeoZeile();
     },
     () => {
-      btn.textContent = 'Nochmal';
+      btn.textContent = 'Nochmal versuchen';
       btn.disabled = false;
       document.getElementById('geo-txt').textContent =
-        'Ortung nicht möglich. Geht auch ohne — das Foto erscheint dann ohne Ortsangabe.';
+        'Ortung nicht möglich — vielleicht wurde sie abgelehnt oder der Empfang ist zu schwach. ' +
+        'Es geht auch ohne: das Foto erscheint dann ohne Ortsangabe.';
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
 }
 
 function aktualisiereGeoZeile() {
-  const txt = document.getElementById('geo-txt');
-  const btn = document.getElementById('geo-btn');
-  if (koord && koordQuelle === 'exif') {
-    txt.innerHTML = '<span class="geo-ok">Ort aus dem Foto übernommen.</span>';
+  const box   = document.getElementById('geo-box');
+  const kopf  = document.getElementById('geo-titel');
+  const txt   = document.getElementById('geo-txt');
+  const btn   = document.getElementById('geo-btn');
+
+  if (koord) {
+    box.className = 'geo-box ok';
+    kopf.textContent = koordQuelle === 'exif' ? 'Ort aus dem Foto übernommen' : 'Standort übernommen';
+    txt.textContent  = `${koord.lat.toFixed(5)}, ${koord.lon.toFixed(5)} — das Foto erscheint später auf der Karte.`;
     btn.style.display = 'none';
-  } else if (koord) {
-    txt.innerHTML = '<span class="geo-ok">Standort übernommen.</span>';
-    btn.style.display = 'none';
-  } else {
-    txt.textContent = 'Kein Ort im Foto gespeichert. Ohne geht es auch.';
-    btn.style.display = 'inline';
-    btn.textContent = 'Hinzufügen';
+    return;
   }
+
+  box.className = 'geo-box';
+  kopf.textContent = 'Standort mitschicken?';
+  // Frisch aufgenommene Fotos tragen keine Ortsangabe in sich: das iPhone
+  // reicht sie an die Webseite nicht weiter. Deshalb ist die Ortung hier
+  // der Hauptweg und nicht die Ausnahme.
+  txt.textContent = 'Dieses Foto trägt keine Ortsangabe in sich — bei frisch aufgenommenen '
+                  + 'Bildern ist das normal. Ein Tipp genügt, und dein Foto erscheint später '
+                  + 'auf der Karte. Du kannst auch darauf verzichten.';
+  btn.style.display = 'block';
+  btn.disabled = false;
+  btn.textContent = 'Standort jetzt hinzufügen';
 }
 
 // ── Absenden ──────────────────────────────────────────────

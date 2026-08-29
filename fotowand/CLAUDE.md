@@ -8,6 +8,9 @@
 iPhone über Mobilfunk. Bis dahin gilt: Verkleinerung, HEIC-Umwandlung und
 EXIF-Drehung sind nach Lehrbuch gebaut, aber **nicht am Gerät bewiesen**.
 
+*Nachtrag 29.08.2026, erster Feldtest am iPhone:* Upload, Verkleinerung und
+Bilddrehung funktionieren. Zum Standort siehe «Offene Punkte».
+
 Belegt sind dagegen die zwei Teile, die sich am Schreibtisch prüfen liessen:
 der selbst geschriebene ZIP-Schreiber (CRC und UTF-8-Dateinamen gegen `unzip`
 und Pythons `zipfile` geprüft) und der EXIF-GPS-Parser (gegen ein von Hand
@@ -170,7 +173,8 @@ Kategorienbildung wird selbst zum Lerngegenstand.
 | Feld | Zweck |
 |---|---|
 | `session_id` | frei wählbar, z.B. `bne-blocktage-2026-09` — neue ID = frische Sammlung |
-| `aufgabenstellung` | Freitext; erscheint als Canvas-Header **und** auf jedem Handy |
+| `titel` | frei gestaltet, z.B. «CityWalk BNE»; steht gross auf dem Handy. Nachgerüstet am 29.08.2026, weil ein technischer Schlüssel kein guter Titel ist |
+| `aufgabenstellung` | Freitext; erscheint als Canvas-Header **und** auf dem Handy unter dem Titel, etwas kleiner — sie darf lang werden |
 | `kategorien` | JSON-Liste aus `{ id, label, farbe }`; leer erlaubt |
 | `erstellt` | Zeitstempel |
 
@@ -325,10 +329,14 @@ neue Tool automatisch mit.
   `imageOrientation: 'from-image'` unterstützt. Der Code fällt sonst auf den
   Aufruf ohne Option zurück, bei dem Safari die EXIF-Drehung nach eigener
   Rechnung anwendet — das kann stimmen, muss aber gesehen werden.
-- **HEIC und GPS.** Wandelt iOS die Datei beim Hochladen in JPEG um, findet der
-  Parser die Koordinaten. Kommt echtes HEIC an, findet er nichts — dann bleibt
-  der abweisbare Knopf «Standort hinzufügen». Auch das ist Feldwissen, kein
-  Schreibtischwissen.
+- **GPS — am Gerät geklärt (29.08.2026).** Ein frisch über den Kamera-Knopf
+  aufgenommenes Foto kommt **ohne** Koordinaten an: Es landet nicht in der
+  Mediathek, und Safari hat keine Ortungsberechtigung, also stehen im EXIF keine
+  GPS-Daten. Das EXIF-Lesen bleibt damit für *mitgebrachte* Bilder zuständig;
+  für frisch geschossene ist `navigator.geolocation` der reguläre Weg, nicht die
+  Ausnahme. Der Standort-Knopf steht deshalb als eigene, erklärte Karte im
+  Formular statt als kleine Randnotiz.
+- **Bilddrehung: erledigt.** Am iPhone geprüft, die Fotos stehen richtig herum.
 - **Datenschutz-Hinweis.** Ein Satz in der Aufgabenstellungs-Vorlage
   («keine erkennbaren Personen fotografieren») sowie eine bewusste Praxis, die
   Sammlung nach der Auswertung herunterzuladen und zu leeren. Das ist

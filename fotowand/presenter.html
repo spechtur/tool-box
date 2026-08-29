@@ -80,10 +80,11 @@
 
     /* ── Bühne ──────────────────────────────────────────── */
     #aufgabe-band {
-      padding: 14px 24px; background: white; border-bottom: 1px solid var(--mg);
-      font-size: 19px; font-weight: 800; color: #3a3a3a; line-height: 1.35;
-      flex-shrink: 0; display: none; white-space: pre-wrap;
+      padding: 13px 24px; background: white; border-bottom: 1px solid var(--mg);
+      flex-shrink: 0; display: none;
     }
+    #band-titel   { font-size: 21px; font-weight: 800; color: #1a1a1a; line-height: 1.25; }
+    #band-aufgabe { font-size: 15px; color: #4a4a4a; line-height: 1.45; white-space: pre-wrap; margin-top: 5px; }
     #view { flex: 1; overflow: auto; position: relative; min-height: 0; }
     #view.kein-scroll { overflow: hidden; }
 
@@ -289,7 +290,10 @@
     </div>
 
     <div id="toolbar"></div>
-    <div id="aufgabe-band"></div>
+    <div id="aufgabe-band">
+      <div id="band-titel"></div>
+      <div id="band-aufgabe"></div>
+    </div>
 
     <div id="view">
       <div id="empty-state">
@@ -312,9 +316,13 @@
     </div>
 
     <div class="s-sec">
+      <span class="s-label">Titel</span>
+      <input class="s-input" id="titel-input" placeholder="z.B. CityWalk BNE" oninput="aufgabeGeaendert()">
+      <div class="s-hint" style="margin-bottom:14px">Steht gross auf dem Handy. Gross- und Kleinschreibung frei — anders als die Session-ID.</div>
+
       <span class="s-label">Aufgabenstellung</span>
-      <textarea class="s-input" id="aufgabe-input" rows="4" placeholder="z.B. Fotografiert im Stadtraum, was euch zum Thema einfällt." oninput="aufgabeGeaendert()"></textarea>
-      <div class="s-hint">Steht über der Wand und auf jedem Handy.</div>
+      <textarea class="s-input" id="aufgabe-input" rows="5" placeholder="z.B. Fotografiert im Stadtraum, was euch zum Thema Nachhaltigkeit auffällt." oninput="aufgabeGeaendert()"></textarea>
+      <div class="s-hint">Steht über der Wand und auf jedem Handy, direkt unter dem Titel. Darf ausführlich sein.</div>
     </div>
 
     <div class="s-sec">
@@ -367,7 +375,8 @@ const KARTE_B  = 240;
 
 let sb          = null;
 let sessionId   = '';
-let sitzung     = { aufgabenstellung: '', kategorien: [] };
+let sitzung     = { titel: '', aufgabenstellung: '', kategorien: [] };
+let titelSpalteDa = true;      // wird auf false gesetzt, falls Supabase sie nicht kennt
 let beitraege   = [];
 let anordnungen = [];
 let aktiveAnordnungId = null;
@@ -380,7 +389,7 @@ let pan         = { x: 0, y: 0 };
 let zoom        = 0.5;
 let maxZ        = 0;
 
-let pollTimer = null, hideTimer = null, aufgabeTimer = null, qrTimer = null;
+let pollTimer = null, hideTimer = null, aufgabeTimer = null, qrTimer = null, sanftTimer = null;
 let hashBeitraege = '', hashPositionen = '';
 let ziehtGerade = false;
 let drag = null, resize = null, panDrag = null;
@@ -427,17 +436,19 @@ async function sessionSetzen(id) {
 }
 
 async function ladeSitzung() {
-  sitzung = { aufgabenstellung: '', kategorien: [] };
+  sitzung = { titel: '', aufgabenstellung: '', kategorien: [] };
   if (!sessionId) return;
   try {
     const { data } = await sb.from('fotowand_sessions')
-      .select('aufgabenstellung, kategorien')
+      .select('*')
       .eq('session_id', sessionId).maybeSingle();
     if (data) {
+      sitzung.titel            = data.titel || '';
       sitzung.aufgabenstellung = data.aufgabenstellung || '';
       sitzung.kategorien = Array.isArray(data.kategorien) ? data.kategorien : [];
     }
   } catch (e) { console.warn('Session laden:', e); }
+  document.getElementById('titel-input').value   = sitzung.titel;
   document.getElementById('aufgabe-input').value = sitzung.aufgabenstellung;
   zeigeAufgabe();
   renderRubriken();
@@ -445,16 +456,32 @@ async function ladeSitzung() {
 
 async function speichereSitzung() {
   if (!sessionId) return;
+  const zeile = {
+    session_id:       sessionId,
+    aufgabenstellung: sitzung.aufgabenstellung,
+    kategorien:       sitzung.kategorien
+  };
+  if (titelSpalteDa) zeile.titel = sitzung.titel;
   try {
-    await sb.from('fotowand_sessions').upsert({
-      session_id:       sessionId,
-      aufgabenstellung: sitzung.aufgabenstellung,
-      kategorien:       sitzung.kategorien
-    }, { onConflict: 'session_id' });
-  } catch (e) { console.warn('Session speichern:', e); }
+    const { error } = await sb.from('fotowand_sessions').upsert(zeile, { onConflict: 'session_id' });
+    if (error) throw error;
+  } catch (e) {
+    // Läuft das Projekt noch ohne die Titel-Spalte, soll wenigstens die
+    // Aufgabenstellung gespeichert werden statt gar nichts.
+    if (titelSpalteDa && /titel/i.test(e.message || '')) {
+      titelSpalteDa = false;
+      console.warn('Spalte «titel» fehlt in Supabase — setup.sql erneut ausführen.');
+      delete zeile.titel;
+      try { await sb.from('fotowand_sessions').upsert(zeile, { onConflict: 'session_id' }); }
+      catch (e2) { console.warn('Session speichern:', e2); }
+      return;
+    }
+    console.warn('Session speichern:', e);
+  }
 }
 
 function aufgabeGeaendert() {
+  sitzung.titel            = document.getElementById('titel-input').value;
   sitzung.aufgabenstellung = document.getElementById('aufgabe-input').value;
   zeigeAufgabe();
   clearTimeout(aufgabeTimer);
@@ -463,9 +490,13 @@ function aufgabeGeaendert() {
 
 function zeigeAufgabe() {
   const band = document.getElementById('aufgabe-band');
-  const t = (sitzung.aufgabenstellung || '').trim();
-  band.textContent = t;
-  band.style.display = t ? 'block' : 'none';
+  const ti   = (sitzung.titel || '').trim();
+  const auf  = (sitzung.aufgabenstellung || '').trim();
+  const bt   = document.getElementById('band-titel');
+  const ba   = document.getElementById('band-aufgabe');
+  bt.textContent = ti;  bt.style.display = ti  ? 'block' : 'none';
+  ba.textContent = auf; ba.style.display = auf ? 'block' : 'none';
+  band.style.display = (ti || auf) ? 'block' : 'none';
 }
 
 // ── Daten laden ───────────────────────────────────────────
@@ -584,8 +615,8 @@ function renderWerkzeugleiste() {
       <button class="tb-btn" onclick="anordnungLoeschen()">🗑️</button>
       <span class="tb-sep"></span>
       <button class="tb-btn${mitText ? ' aktiv' : ''}" onclick="textUmschalten()">Text zeigen</button>
-      <button class="tb-btn" onclick="zoomStufe(1.2)">＋</button>
-      <button class="tb-btn" onclick="zoomStufe(1/1.2)">－</button>
+      <button class="tb-btn" onclick="zoomStufe(1.25)">＋</button>
+      <button class="tb-btn" onclick="zoomStufe(1/1.25)">－</button>
       <button class="tb-btn" onclick="brettEinpassen()">⤢ Alles zeigen</button>
       <span class="tb-sep"></span>
       <button class="tb-btn" onclick="anordnungLeeren()" title="Alle Fotos zurück in die Ablage">↺ Zurück in die Ablage</button>`;
@@ -780,6 +811,17 @@ function brettTransform() {
   if (brett) brett.style.transform = `translate(${pan.x}px,${pan.y}px) scale(${zoom})`;
 }
 
+// Für Knopfdruck und «Alles zeigen»: kurz gleiten statt springen.
+// Beim Rad und beim Ziehen wäre eine Überblendung störend, dort nicht verwenden.
+function brettTransformSanft() {
+  const brett = document.getElementById('brett');
+  if (!brett) return;
+  brett.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)';
+  brettTransform();
+  clearTimeout(sanftTimer);
+  sanftTimer = setTimeout(() => { brett.style.transition = ''; }, 280);
+}
+
 function brettEinpassen() {
   const port = document.getElementById('brett-port');
   if (!port) return;
@@ -787,7 +829,7 @@ function brettEinpassen() {
   zoom  = Math.min(r.width / WELT_B, r.height / WELT_H) * 0.98;
   pan.x = (r.width  - WELT_B * zoom) / 2;
   pan.y = (r.height - WELT_H * zoom) / 2;
-  brettTransform();
+  brettTransformSanft();
 }
 
 function zoomStufe(f) {
@@ -795,11 +837,11 @@ function zoomStufe(f) {
   if (!port) return;
   const r = port.getBoundingClientRect();
   const mx = r.width / 2, my = r.height / 2;
-  const neu = Math.max(0.1, Math.min(2.5, zoom * f));
+  const neu = Math.max(0.08, Math.min(2.5, zoom * f));
   pan.x = mx - (mx - pan.x) * (neu / zoom);
   pan.y = my - (my - pan.y) * (neu / zoom);
   zoom = neu;
-  brettTransform();
+  brettTransformSanft();
 }
 
 function textUmschalten() {
@@ -814,7 +856,19 @@ function brettRad(e) {
   const port = document.getElementById('brett-port');
   const r  = port.getBoundingClientRect();
   const mx = e.clientX - r.left, my = e.clientY - r.top;
-  const neu = Math.max(0.1, Math.min(2.5, zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+
+  // Ein Trackpad feuert dutzende kleine Ereignisse je Wischbewegung. Ein
+  // fester Schritt pro Ereignis liess die Fläche deshalb von ganz nah auf
+  // ganz fern springen. Jetzt zählt die tatsächlich gewischte Distanz —
+  // und ein einzelnes Ereignis darf die Ansicht nie mehr als gut 10 Prozent
+  // verändern.
+  let dy = e.deltaY;
+  if (e.deltaMode === 1) dy *= 16;        // Zeilen statt Pixel
+  else if (e.deltaMode === 2) dy *= 400;  // Seiten
+  const staerke = e.ctrlKey ? 0.010 : 0.0016;   // ctrl = Aufziehen mit zwei Fingern
+  const faktor  = Math.min(1.11, Math.max(0.90, Math.exp(-dy * staerke)));
+
+  const neu = Math.max(0.08, Math.min(2.5, zoom * faktor));
   pan.x = mx - (mx - pan.x) * (neu / zoom);
   pan.y = my - (my - pan.y) * (neu / zoom);
   zoom = neu;

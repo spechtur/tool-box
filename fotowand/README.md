@@ -77,23 +77,50 @@ Das ist der eine Schritt, den SQL nicht erledigen kann — er wird im Dashboard 
 
 ### 3. Hochladen erlauben
 
-Ein öffentlicher Bucket ist *lesbar*, aber noch nicht *beschreibbar*. Damit die
-Handys hochladen dürfen:
+Ein öffentlicher Bucket ist *lesbar*, aber noch nicht *beschreibbar*. Der kurze
+Weg — **SQL Editor → New query**, einfügen, **Run**:
+
+```sql
+drop policy if exists fw_upload on storage.objects;
+drop policy if exists fw_delete on storage.objects;
+
+create policy fw_upload on storage.objects
+  for insert to anon, authenticated
+  with check (bucket_id = 'fotowand');
+
+create policy fw_delete on storage.objects
+  for delete to anon, authenticated
+  using (bucket_id = 'fotowand');
+```
+
+Erscheint stattdessen `must be owner of table objects` — das kommt bei manchen
+Projekten vor —, führt der Assistent zum Ziel:
 
 1. **Storage → Policies** → beim Bucket `fotowand` auf **New policy**
 2. **For full customization** wählen
-3. Name: `fw_upload`, Operation: **INSERT** ankreuzen
-4. Target roles: `anon` und `authenticated`
-5. Policy definition: `bucket_id = 'fotowand'`
-6. **Save**
+3. Name `fw_upload`, Operation **INSERT**, Target roles `anon` und
+   `authenticated`, Bedingung `bucket_id = 'fotowand'`
+4. **Save policy** — und dasselbe ein zweites Mal als `fw_delete` mit **DELETE**
 
-Dasselbe ein zweites Mal für **DELETE** (Name `fw_delete`) — damit
-«Session zurücksetzen» die Bilddateien wirklich löscht und der Speicherplatz
-wieder frei wird.
+Die DELETE-Regel sorgt dafür, dass «Session zurücksetzen» die Bilddateien
+wirklich löscht und der Speicherplatz wieder frei wird.
 
-> **Prüfen:** `join.html` mit einer Test-Session öffnen und ein Foto abschicken.
-> Kommt die Meldung «Der Speicherort ist noch nicht eingerichtet», fehlt der
-> Bucket oder die INSERT-Regel.
+### 4. Kontrollieren
+
+```sql
+select table_name from information_schema.tables
+where table_schema = 'public' and table_name like 'fotowand%';   -- vier Zeilen
+
+select id, public from storage.buckets where id = 'fotowand';    -- public = true
+
+select policyname, cmd, roles from pg_policies
+where schemaname = 'storage' and tablename = 'objects'
+  and policyname like 'fw_%';                                    -- zwei Zeilen
+```
+
+> **Praxisprobe:** `join.html` mit einer Test-Session öffnen und ein Foto
+> abschicken. Kommt die Meldung «Der Speicherort ist noch nicht eingerichtet»,
+> fehlt der Bucket oder die INSERT-Regel.
 
 ---
 
@@ -101,7 +128,10 @@ wieder frei wird.
 
 ### Vor der Veranstaltung
 - `presenter.html` öffnen, Session-ID vergeben (z.B. `citywalk-2026-09`)
-- Aufgabenstellung eintippen — sie erscheint über der Wand **und** auf jedem Handy
+- **Titel** eintippen (z.B. «CityWalk BNE») — er steht gross auf jedem Handy und
+  darf im Gegensatz zur Session-ID Grossbuchstaben und Leerzeichen enthalten
+- **Aufgabenstellung** eintippen — sie steht darunter, etwas kleiner, und darf
+  ausführlich sein. Beides erscheint auch über der Wand am Beamer.
 - Rubriken anlegen, falls sie vorab feststehen sollen (optional)
 
 ### Während des Sammelns
@@ -139,10 +169,13 @@ wieder frei wird.
 - **Bilddrehung:** über `createImageBitmap(file, { imageOrientation: 'from-image' })`,
   damit Hochformat-Fotos nicht quer liegen.
 - **GPS:** wird aus den EXIF-Daten der Originaldatei gelesen, *bevor* verkleinert
-  wird — beim Verkleinern über das Canvas gehen alle EXIF-Daten verloren. Fehlen die
-  Koordinaten (iOS entfernt sie beim Teilen, oder die Ortung war aus), bietet die
-  Seite einen abweisbaren Knopf für `navigator.geolocation` an. Fotos ohne
-  Koordinaten verschwinden nie, sie erscheinen später in einer Randleiste.
+  wird — beim Verkleinern über das Canvas gehen alle EXIF-Daten verloren.
+  **Am Gerät gelernt (29.08.2026):** Ein frisch über den Kamera-Knopf aufgenommenes
+  Foto trägt *keine* Koordinaten, weil es gar nicht erst in der Mediathek landet und
+  Safari keine Ortungsberechtigung hat. Das EXIF-Lesen greift also nur bei
+  mitgebrachten Bildern; für frisch geschossene ist `navigator.geolocation` der
+  reguläre Weg. Deshalb steht der Standort-Knopf prominent als eigene Karte und
+  nicht als Randnotiz. Fotos ohne Koordinaten verschwinden nie.
 - **Kamera:** `<input type="file" capture="environment">` — das Betriebssystem öffnet
   seine eigene Kamera-App, die Seite sieht nie ein Live-Bild. Deshalb gibt es keine
   Berechtigungsabfrage.

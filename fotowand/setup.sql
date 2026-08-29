@@ -8,12 +8,16 @@
 -- Eine Zeile je Veranstaltung. Hält Aufgabenstellung und Rubriken.
 create table if not exists fotowand_sessions (
   session_id       text primary key,
+  titel            text        not null default '',   -- frei gestaltbar, steht gross auf dem Handy
   aufgabenstellung text        not null default '',
   -- Liste aus { id, label, farbe } — leer erlaubt, frei definierbar.
   -- Die id bleibt stabil, auch wenn das label später umbenannt wird.
   kategorien       jsonb       not null default '[]'::jsonb,
   erstellt         timestamptz not null default now()
 );
+
+-- Nachtrag für Projekte, in denen die Tabelle schon ohne Titel steht:
+alter table fotowand_sessions add column if not exists titel text not null default '';
 
 -- ── 2. Beiträge ─────────────────────────────────────────────
 create table if not exists fotowand_beitraege (
