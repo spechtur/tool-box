@@ -69,6 +69,22 @@ Nach Fertigstellung: Kachel in der `index.html` der tool-box ergänzen.
 
 ---
 
+## Der Start-Reiter
+
+Seit dem 29.08.2026 liegen alle Einstellungen in einem eigenen Reiter statt in
+einer Seitenleiste. Der Grund ist nicht Ordnung, sondern Fläche: Die Leiste
+kostete dauerhaft 268 Pixel — ausgerechnet bei Karte und Pinnwand, wo Fläche das
+Arbeitsmittel ist.
+
+Dreispaltig: links die Einstellungen, in der Mitte Titel, Aufgabe und QR-Code
+gross (das Projektionsbild für den Auftakt), rechts eine Vorschau der echten
+`join.html` in einem Telefonrahmen.
+
+**Wichtig fürs Weiterarbeiten:** Der Start-Reiter ist statisches Markup und wird
+per `display` ein- und ausgeblendet, nicht bei jedem Rendern neu gezeichnet —
+sonst verlöre man beim Tippen den Cursor im Eingabefeld. Die vier Ansichten
+dagegen werden in `#view` neu gezeichnet.
+
 ## Die vier Ansichten
 
 Der Presenter-Canvas zeigt dieselbe Sammlung wahlweise in vier Anordnungen,

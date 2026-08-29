@@ -30,6 +30,23 @@ Architekturbetrachtungen.
 
 ---
 
+## Der Start-Reiter
+
+Alle Einstellungen liegen im Reiter **⚙️ Start**, dreispaltig:
+
+- **links** Session mit Verlauf, Titel, Aufgabenstellung, Rubriken, die zwei
+  Handy-Schalter, ZIP-Download und das Zurücksetzen
+- **in der Mitte** Titel und Aufgabe gross, darunter der QR-Code — das ist
+  zugleich das Projektionsbild für den Auftakt, während die Teilnehmenden scannen
+- **rechts** eine Vorschau der Teilnahme-Ansicht im Telefonrahmen. Sie zeigt die
+  echte `join.html` und frischt sich auf, sobald oben etwas geändert wird. Auf
+  schmalen Bildschirmen (unter 1500 px) blendet sie sich aus.
+
+Die vier Ansichten bekommen dadurch die volle Breite. Der QR-Code bleibt aus
+jeder von ihnen erreichbar — über **▣ QR-Code** in der Werkzeugleiste. Das
+Zurücksetzen liegt bewusst nur im Start-Reiter, damit es beim Präsentieren
+niemand versehentlich trifft.
+
 ## Die vier Ansichten
 
 | Reiter | Wozu |
@@ -127,7 +144,8 @@ where schemaname = 'storage' and tablename = 'objects'
 ## Bedienung
 
 ### Vor der Veranstaltung
-- `presenter.html` öffnen, Session-ID vergeben (z.B. `citywalk-2026-09`)
+- `presenter.html` öffnen — er startet im Reiter **⚙️ Start**
+- Session-ID vergeben (z.B. `citywalk-2026-09`)
 - **Titel** eintippen (z.B. «CityWalk BNE») — er steht gross auf jedem Handy und
   darf im Gegensatz zur Session-ID Grossbuchstaben und Leerzeichen enthalten
 - **Aufgabenstellung** eintippen — sie steht darunter, etwas kleiner, und darf
@@ -135,7 +153,10 @@ where schemaname = 'storage' and tablename = 'objects'
 - Rubriken anlegen, falls sie vorab feststehen sollen (optional)
 
 ### Während des Sammelns
-- Reiter **Wand** auf den Beamer, QR-Code gross einblenden (Klick auf den Code)
+- Reiter **Start** auf den Beamer: Titel, Aufgabe und QR-Code stehen dort gross
+  nebeneinander. Ein Klick auf den Code blendet ihn bildschirmfüllend ein.
+- Sobald die ersten Fotos eintreffen, auf **Wand** wechseln — der QR bleibt über
+  **▣ QR-Code** in der Werkzeugleiste erreichbar
 - Unpassende Beiträge über 🚫 ausblenden — sie bleiben erhalten, verschwinden aber
   von der Wand
 

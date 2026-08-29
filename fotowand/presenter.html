@@ -217,11 +217,39 @@
     .opt-name { font-size: 12.5px; font-weight: 700; color: #333; }
     .opt-hint { font-size: 11px; color: var(--dg); line-height: 1.45; margin-top: 2px; }
 
-    /* ── Sidebar ────────────────────────────────────────── */
-    #sidebar {
-      width: 268px; flex-shrink: 0; background: white;
-      border-left: 1px solid var(--mg); display: flex; flex-direction: column; overflow-y: auto;
+    /* ── Start-Reiter: Dashboard und Projektionsbild ─────── */
+    #start-view {
+      flex: 1; min-height: 0; display: none;
+      grid-template-columns: 400px minmax(340px, 1fr) 320px;
     }
+    #start-view.an { display: grid; }
+    .st-spalte { overflow-y: auto; min-width: 0; }
+    .st-einstellungen { background: white; border-right: 1px solid var(--mg); }
+    .st-projektion {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 18px; padding: 34px 40px; text-align: center; background: var(--hg);
+    }
+    #start-titel   { font-size: 42px; font-weight: 800; color: #1a1a1a; line-height: 1.15; }
+    #start-titel:empty::before   { content: 'Fotowand'; color: var(--mg); }
+    #start-aufgabe { font-size: 17px; color: #4a4a4a; line-height: 1.55; max-width: 620px; white-space: pre-wrap; }
+    #start-aufgabe:empty::before { content: 'Session-ID, Titel und Aufgabe links festlegen — dann den QR-Code zeigen.'; color: var(--mg); font-style: italic; }
+    #join-url-text { font-size: 12px; color: var(--dg); word-break: break-all; max-width: 420px; }
+    #start-status  { font-size: 13px; font-weight: 700; color: var(--tuerkis); }
+    .st-vorschau {
+      background: white; border-left: 1px solid var(--mg);
+      padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+    .telefon {
+      width: 274px; height: 542px; flex-shrink: 0; border: 9px solid #2b2b2b;
+      border-radius: 30px; overflow: hidden; background: #2b2b2b;
+      box-shadow: 0 5px 22px rgba(0,0,0,.22);
+    }
+    .telefon iframe { width: 100%; height: 100%; border: none; display: block; background: var(--bg); }
+    @media (max-width: 1500px) {
+      #start-view { grid-template-columns: 380px 1fr; }
+      .st-vorschau { display: none; }
+    }
+
     .s-sec { padding: 15px 17px; border-bottom: 1px solid var(--hg); }
     .s-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 9px; }
     .s-input {
@@ -238,6 +266,8 @@
     }
     .s-btn:hover { background: var(--mg); }
     .s-btn.gelb { background: var(--gelb); border-color: var(--gelb); color: #111; }
+    .s-btn.rot  { background: var(--rot);  border-color: var(--rot);  color: white; }
+    .s-btn.rot:hover { filter: brightness(1.08); background: var(--rot); }
 
     .s-hist-toggle { background:none; border:none; color:var(--tuerkis); font-size:10.5px; font-weight:700; cursor:pointer; padding:0; letter-spacing:.5px; text-transform:uppercase; margin-top:4px; display:inline-block; }
     .s-hist-toggle:hover { text-decoration:underline; }
@@ -252,8 +282,9 @@
     .s-hist-btn   { background:none; border:none; cursor:pointer; font-size:12px; padding:2px 5px; border-radius:3px; color:var(--mg); line-height:1; }
     .s-hist-btn:hover { background:rgba(0,0,0,.1); }
 
-    .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 168px; cursor: pointer; }
-    #qrcode { width: 152px; height: 152px; display: flex; align-items: center; justify-content: center; }
+    .qr-wrap { background: white; border-radius: 16px; padding: 12px; border: 5px solid var(--gelb); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    #qrcode { width: 258px; height: 258px; display: flex; align-items: center; justify-content: center; }
+    #qrcode img { width: 100%; height: 100%; display: block; border-radius: 4px; }
 
     .rub-zeile { display: flex; align-items: center; gap: 7px; padding: 5px 0; }
     .rub-farbe { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; cursor: pointer; }
@@ -262,7 +293,6 @@
     .rub-btn   { background: none; border: none; cursor: pointer; font-size: 11px; padding: 2px 4px; color: var(--mg); }
     .rub-btn:hover { color: #333; }
 
-    #fs-hint { padding: 12px 17px; margin-top: auto; }
 
     /* ── Overlays ───────────────────────────────────────── */
     .ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 999; align-items: center; justify-content: center; }
@@ -302,7 +332,6 @@
   <div class="topbar-right">
     <span class="stats-pill" id="stats">0 Fotos</span>
     <span class="stats-pill" id="session-badge">Session: –</span>
-    <button class="btn-reset" onclick="sessionZuruecksetzen()">↺ Session zurücksetzen</button>
     <button class="btn-icon" onclick="vollbild()" title="Vollbild">⛶</button>
     <a href="../index.html" style="font-size:13px;font-weight:700;color:#333;text-decoration:none;background:rgba(0,0,0,.13);padding:10px 16px;border-radius:8px;white-space:nowrap">← tool-box</a>
   </div>
@@ -341,7 +370,8 @@
   <div id="stage">
 
     <div id="tabbar">
-      <button class="tab on" data-v="wand"      onclick="setzeAnsicht('wand')">🧱 Wand</button>
+      <button class="tab on" data-v="start"     onclick="setzeAnsicht('start')">⚙️ Start</button>
+      <button class="tab"    data-v="wand"      onclick="setzeAnsicht('wand')">🧱 Wand</button>
       <button class="tab"    data-v="pinnwand"  onclick="setzeAnsicht('pinnwand')">📌 Pinnwand</button>
       <button class="tab"    data-v="kategorien" onclick="setzeAnsicht('kategorien')">🗂️ Rubriken</button>
       <button class="tab"    data-v="karte"     onclick="setzeAnsicht('karte')">🗺️ Karte</button>
@@ -361,75 +391,91 @@
       </div>
     </div>
 
+    <div id="start-view">
+
+      <div class="st-spalte st-einstellungen">
+
+        <div class="s-sec">
+          <span class="s-label">Session</span>
+          <input class="s-input" id="session-input" placeholder="z.B. citywalk-2026-09" onchange="sessionGewechselt()">
+          <div class="s-hint">Für jede Veranstaltung eine neue ID. Enter drücken zum Wechseln.</div>
+          <button class="s-hist-toggle" onclick="verlaufUmschalten()">▾ Gespeicherte Sessions</button>
+          <div id="history-list" class="s-hist-list" style="display:none"></div>
+        </div>
+
+        <div class="s-sec">
+          <span class="s-label">Titel</span>
+          <input class="s-input" id="titel-input" placeholder="z.B. CityWalk BNE" oninput="aufgabeGeaendert()">
+          <div class="s-hint" style="margin-bottom:14px">Steht gross auf dem Handy. Gross- und Kleinschreibung frei — anders als die Session-ID.</div>
+
+          <span class="s-label">Aufgabenstellung</span>
+          <textarea class="s-input" id="aufgabe-input" rows="5" placeholder="z.B. Fotografiert im Stadtraum, was euch zum Thema Nachhaltigkeit auffällt." oninput="aufgabeGeaendert()"></textarea>
+          <div class="s-hint">Steht über der Wand und auf jedem Handy, direkt unter dem Titel. Darf ausführlich sein.</div>
+        </div>
+
+        <div class="s-sec">
+          <span class="s-label">Rubriken</span>
+          <div id="rub-liste"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input class="s-input" id="rub-neu" placeholder="Neue Rubrik…" style="margin-bottom:0" onkeydown="if(event.key==='Enter')rubrikAnlegen()">
+            <button class="s-btn" style="width:auto;padding:8px 12px" onclick="rubrikAnlegen()">+</button>
+          </div>
+          <div class="s-hint" style="margin-top:8px">Können jederzeit angelegt werden — auch erst, wenn die Wand schon voll ist.</div>
+        </div>
+
+        <div class="s-sec">
+          <span class="s-label">Auf dem Handy</span>
+          <label class="opt-zeile">
+            <input type="checkbox" id="opt-ort" checked onchange="optionGeaendert()">
+            <span>
+              <span class="opt-name">Standort erfassen</span>
+              <span class="opt-hint" id="opt-ort-hint">Aus: Es wird weder im Foto nachgesehen noch nach dem Standort gefragt. Die Kartenansicht bleibt dann leer.</span>
+            </span>
+          </label>
+          <label class="opt-zeile">
+            <input type="checkbox" id="opt-kamera" checked onchange="optionGeaendert()">
+            <span>
+              <span class="opt-name">Kamera direkt öffnen</span>
+              <span class="opt-hint">Aus: nur der Weg über die Mediathek. Etwas umständlicher, aber nur so bringen die Fotos ihre Ortsangabe mit.</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="s-sec">
+          <span class="s-label">Sammlung sichern</span>
+          <button class="s-btn gelb" id="dl-btn" onclick="alsZipLaden()">↓ Alle Fotos + CSV (ZIP)</button>
+          <div class="s-hint" style="margin:8px 0 14px">Nach der Auswertung herunterladen — danach lässt sich die Session gefahrlos leeren.</div>
+          <button class="s-btn rot" onclick="sessionZuruecksetzen()">↺ Session zurücksetzen</button>
+          <div class="s-hint" style="margin-top:8px">Löscht alle Fotos dieser Session endgültig, auch aus dem Speicher. Titel, Aufgabe, Rubriken und Anordnungen bleiben erhalten.</div>
+        </div>
+
+        <div class="s-sec" style="border-bottom:none">
+          <button class="s-btn" onclick="vollbild()">⛶ Vollbild (F11 oder Klick)</button>
+        </div>
+
+      </div>
+
+      <div class="st-spalte st-projektion">
+        <div id="start-titel"></div>
+        <div id="start-aufgabe"></div>
+        <div class="qr-wrap" onclick="qrOverlayAuf()" title="Klick zum Vergrössern">
+          <div id="qrcode"><span style="color:#888;font-size:12px;text-align:center;padding:8px;line-height:1.7">Session-ID<br>eingeben →<br>QR erscheint</span></div>
+        </div>
+        <div id="join-url-text"></div>
+        <div id="start-status"></div>
+      </div>
+
+      <div class="st-spalte st-vorschau">
+        <span class="s-label">So sieht es auf dem Handy aus</span>
+        <div class="telefon"><iframe id="vorschau-rahmen" title="Vorschau der Teilnahme-Ansicht"></iframe></div>
+        <button class="s-btn" onclick="vorschauAuffrischen(true)">↻ Vorschau jetzt aktualisieren</button>
+        <div class="s-hint">Aktualisiert sich von selbst, sobald du oben etwas änderst.</div>
+      </div>
+
+    </div>
+
   </div>
 
-  <div id="sidebar">
-
-    <div class="s-sec">
-      <span class="s-label">Session</span>
-      <input class="s-input" id="session-input" placeholder="z.B. citywalk-2026-09" onchange="sessionGewechselt()">
-      <div class="s-hint">Für jede Veranstaltung eine neue ID. Enter drücken zum Wechseln.</div>
-      <button class="s-hist-toggle" onclick="verlaufUmschalten()">▾ Gespeicherte Sessions</button>
-      <div id="history-list" class="s-hist-list" style="display:none"></div>
-    </div>
-
-    <div class="s-sec">
-      <span class="s-label">Titel</span>
-      <input class="s-input" id="titel-input" placeholder="z.B. CityWalk BNE" oninput="aufgabeGeaendert()">
-      <div class="s-hint" style="margin-bottom:14px">Steht gross auf dem Handy. Gross- und Kleinschreibung frei — anders als die Session-ID.</div>
-
-      <span class="s-label">Aufgabenstellung</span>
-      <textarea class="s-input" id="aufgabe-input" rows="5" placeholder="z.B. Fotografiert im Stadtraum, was euch zum Thema Nachhaltigkeit auffällt." oninput="aufgabeGeaendert()"></textarea>
-      <div class="s-hint">Steht über der Wand und auf jedem Handy, direkt unter dem Titel. Darf ausführlich sein.</div>
-    </div>
-
-    <div class="s-sec">
-      <span class="s-label">Teilnahme-QR-Code</span>
-      <div class="qr-wrap" onclick="qrOverlayAuf()" title="Klick zum Vergrössern">
-        <div id="qrcode"><span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span></div>
-      </div>
-      <div class="s-hint" style="margin-top:8px" id="join-url-text"></div>
-    </div>
-
-    <div class="s-sec">
-      <span class="s-label">Rubriken</span>
-      <div id="rub-liste"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <input class="s-input" id="rub-neu" placeholder="Neue Rubrik…" style="margin-bottom:0" onkeydown="if(event.key==='Enter')rubrikAnlegen()">
-        <button class="s-btn" style="width:auto;padding:8px 12px" onclick="rubrikAnlegen()">+</button>
-      </div>
-      <div class="s-hint" style="margin-top:8px">Können jederzeit angelegt werden — auch erst, wenn die Wand schon voll ist.</div>
-    </div>
-
-    <div class="s-sec">
-      <span class="s-label">Auf dem Handy</span>
-      <label class="opt-zeile">
-        <input type="checkbox" id="opt-ort" checked onchange="optionGeaendert()">
-        <span>
-          <span class="opt-name">Standort erfassen</span>
-          <span class="opt-hint" id="opt-ort-hint">Aus: Es wird weder im Foto nachgesehen noch nach dem Standort gefragt. Die Kartenansicht bleibt dann leer.</span>
-        </span>
-      </label>
-      <label class="opt-zeile">
-        <input type="checkbox" id="opt-kamera" checked onchange="optionGeaendert()">
-        <span>
-          <span class="opt-name">Kamera direkt öffnen</span>
-          <span class="opt-hint">Aus: nur der Weg über die Mediathek. Etwas umständlicher, aber nur so bringen die Fotos ihre Ortsangabe mit.</span>
-        </span>
-      </label>
-    </div>
-
-    <div class="s-sec">
-      <span class="s-label">Sammlung sichern</span>
-      <button class="s-btn gelb" id="dl-btn" onclick="alsZipLaden()">↓ Alle Fotos + CSV (ZIP)</button>
-      <div class="s-hint" style="margin-top:8px">Nach der Auswertung herunterladen und die Session zurücksetzen.</div>
-    </div>
-
-    <div id="fs-hint">
-      <button class="s-btn" onclick="vollbild()">⛶ Vollbild (F11 oder Klick)</button>
-    </div>
-
-  </div>
 </div>
 
 <script>
@@ -465,7 +511,7 @@ let aktiveAnordnungId = null;
 let positionen  = {};          // beitrag_id → { pos_x, pos_y, z, skalierung }
 let brettStand  = {};          // beitrag_id → { x, y, z, s } (auch virtuelle Ablageplätze)
 
-let ansicht     = 'wand';
+let ansicht     = 'start';
 let mitText     = false;
 let pan         = { x: 0, y: 0 };
 let zoom        = 0.5;
@@ -488,6 +534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const gemerkt = localStorage.getItem(SESS_KEY) || heuteId();
   document.getElementById('session-input').value = gemerkt;
   await sessionSetzen(gemerkt);
+  setzeAnsicht('start');
   startePolling();
   initAutoHide();
 });
@@ -553,6 +600,7 @@ async function speichereSitzung() {
   try {
     const { error } = await sb.from('fotowand_sessions').upsert(zeile, { onConflict: 'session_id' });
     if (error) throw error;
+    vorschauAuffrischen();
   } catch (e) {
     // Läuft das Projekt noch ohne die neueren Spalten, soll wenigstens die
     // Aufgabenstellung gespeichert werden statt gar nichts.
@@ -600,7 +648,12 @@ function zeigeAufgabe() {
   const ba   = document.getElementById('band-aufgabe');
   bt.textContent = ti;  bt.style.display = ti  ? 'block' : 'none';
   ba.textContent = auf; ba.style.display = auf ? 'block' : 'none';
-  band.style.display = (ti || auf) ? 'block' : 'none';
+  band.style.display = (ansicht !== 'start' && (ti || auf)) ? 'block' : 'none';
+
+  const sti = document.getElementById('start-titel');
+  const sau = document.getElementById('start-aufgabe');
+  if (sti) sti.textContent = ti;
+  if (sau) sau.textContent = auf;
 }
 
 // ── Daten laden ───────────────────────────────────────────
@@ -668,20 +721,53 @@ function statsAktualisieren() {
   const n = beitraege.length;
   const v = beitraege.filter(b => b.versteckt).length;
   const o = beitraege.filter(b => b.lat != null && b.lon != null).length;
-  document.getElementById('stats').textContent =
-    `${n} Foto${n === 1 ? '' : 's'}` + (v ? ` · ${v} ausgeblendet` : '') + (o ? ` · ${o} mit Ort` : '');
+  const text = `${n} Foto${n === 1 ? '' : 's'}` + (v ? ` · ${v} ausgeblendet` : '') + (o ? ` · ${o} mit Ort` : '');
+  document.getElementById('stats').textContent = text;
+  const st = document.getElementById('start-status');
+  if (st) st.textContent = n ? text : 'Noch keine Beiträge — der QR-Code wartet.';
 }
 
 // ── Ansichten ─────────────────────────────────────────────
 function setzeAnsicht(v) {
   ansicht = v;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
+
+  const start = v === 'start';
+  document.getElementById('start-view').classList.toggle('an', start);
+  document.getElementById('view').style.display     = start ? 'none' : 'block';
+  document.getElementById('toolbar').style.display  = start ? 'none' : 'flex';
   document.getElementById('view').classList.toggle('kein-scroll', v === 'pinnwand' || v === 'karte');
+  zeigeAufgabe();                                   // das Band gehört nicht auf den Start-Reiter
+
+  if (start) { renderStart(); vorschauAuffrischen(); return; }
   if (v === 'pinnwand') sorgeFuerAnordnung();
   else rendern();
 }
 
+// Der Start-Reiter ist bewusst statisches Markup und wird nicht neu
+// gezeichnet — sonst verlöre man beim Tippen den Cursor im Eingabefeld.
+function renderStart() {
+  const ti  = (sitzung.titel || '').trim();
+  const auf = (sitzung.aufgabenstellung || '').trim();
+  document.getElementById('start-titel').textContent   = ti;
+  document.getElementById('start-aufgabe').textContent = auf;
+  statsAktualisieren();
+}
+
+// Die Handy-Vorschau lädt die echte join.html in einem Telefonrahmen.
+let vorschauTimer = null;
+function vorschauAuffrischen(sofort) {
+  if (ansicht !== 'start') return;
+  const rahmen = document.getElementById('vorschau-rahmen');
+  if (!rahmen || !sessionId) return;
+  clearTimeout(vorschauTimer);
+  vorschauTimer = setTimeout(() => {
+    rahmen.src = `join.html?session=${encodeURIComponent(sessionId)}&frisch=${Date.now()}`;
+  }, sofort ? 0 : 350);
+}
+
 function rendern() {
+  if (ansicht === 'start')           { renderStart(); return; }
   renderWerkzeugleiste();
   if (ansicht === 'wand')            renderWand();
   else if (ansicht === 'pinnwand')   renderBrett();
@@ -701,9 +787,11 @@ function leerHtml(text, hinweis) {
 function renderWerkzeugleiste() {
   const tb = document.getElementById('toolbar');
 
+  const qrKnopf = `<span class="tb-sep"></span><button class="tb-btn" onclick="qrOverlayAuf()" title="QR-Code gross zeigen">▣ QR-Code</button>`;
+
   if (ansicht === 'wand') {
     tb.innerHTML = `<span class="tb-label">Upload-Reihenfolge</span>
-      <span style="font-size:12px;color:var(--dg)">Neueste zuerst — die Sammlung wächst, während die Gruppen noch unterwegs sind.</span>`;
+      <span style="font-size:12px;color:var(--dg)">Neueste zuerst — die Sammlung wächst, während die Gruppen noch unterwegs sind.</span>` + qrKnopf;
     return;
   }
 
@@ -723,13 +811,13 @@ function renderWerkzeugleiste() {
       <button class="tb-btn" onclick="zoomStufe(1/1.25)">－</button>
       <button class="tb-btn" onclick="brettEinpassen()">⤢ Alles zeigen</button>
       <span class="tb-sep"></span>
-      <button class="tb-btn" onclick="anordnungLeeren()" title="Alle Fotos zurück in die Ablage">↺ Zurück in die Ablage</button>`;
+      <button class="tb-btn" onclick="anordnungLeeren()" title="Alle Fotos zurück in die Ablage">↺ Zurück in die Ablage</button>` + qrKnopf;
     return;
   }
 
   if (ansicht === 'kategorien') {
     tb.innerHTML = `<span class="tb-label">Rubriken</span>
-      <span style="font-size:12px;color:var(--dg)">Zuordnung direkt an der Karte ändern. Rubriken werden in der Seitenleiste angelegt.</span>`;
+      <span style="font-size:12px;color:var(--dg)">Zuordnung direkt an der Karte ändern. Rubriken legst du im Start-Reiter an.</span>` + qrKnopf;
     return;
   }
 
@@ -737,7 +825,7 @@ function renderWerkzeugleiste() {
   tb.innerHTML = `<span class="tb-label">Karte</span>
     <span style="font-size:12px;color:var(--dg)">${mitOrt} von ${beitraege.length} Fotos verortet</span>
     <span class="tb-sep"></span>
-    <button class="tb-btn" onclick="karteEinpassen()">⤢ Alle Funde zeigen</button>`;
+    <button class="tb-btn" onclick="karteEinpassen()">⤢ Alle Funde zeigen</button>` + qrKnopf;
 }
 
 // ── Ansicht 1: Wand ───────────────────────────────────────
@@ -1445,7 +1533,7 @@ function qrAktualisieren() {
     }
     const url = `${BASE_URL}/join.html?session=${encodeURIComponent(sessionId)}`;
     document.getElementById('join-url-text').textContent = url;
-    box.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=152x152&qzone=2&data=${encodeURIComponent(url)}" width="152" height="152" alt="QR-Code" style="display:block;border-radius:4px">`;
+    box.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&qzone=2&data=${encodeURIComponent(url)}" alt="QR-Code">`;
   }, 350);
 }
 
