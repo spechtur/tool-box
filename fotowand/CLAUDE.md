@@ -331,8 +331,9 @@ neue Tool automatisch mit.
   alle Tools `supabase-js` per CDN laden und die Wortwolke zusätzlich
   `api.qrserver.com`. Entschärft dadurch, dass Leaflet erst beim Öffnen des
   Reiters geholt wird: Fällt das CDN aus, verliert man die Karte, nicht das Tool.
-  Kacheln im «Positron»-Stil von CARTO auf OpenStreetMap-Daten — zurückgenommen,
-  damit die Fotos wirken.
+  Kacheln direkt von OpenStreetMap, im Browser per CSS-Filter entsättigt, damit
+  die Fotos wirken. **Nicht CARTO:** deren freier «Positron»-Stil verlangt seit
+  2026 einen API-Schlüssel und legt sonst «API KEY REQUIRED» über die Karte.
 - **Ungetestet am Gerät:** ob Safari auf dem iPhone `createImageBitmap` mit
   `imageOrientation: 'from-image'` unterstützt. Der Code fällt sonst auf den
   Aufruf ohne Option zurück, bei dem Safari die EXIF-Drehung nach eigener

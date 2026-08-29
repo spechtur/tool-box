@@ -207,8 +207,11 @@ gelten:
   sich ohnehin nicht sinnvoll komprimieren.
 - **Karte:** Leaflet, per CDN und **erst beim ersten Öffnen des Reiters** geladen.
   Bleibt das CDN stumm, sagt die Karte das und die übrigen drei Ansichten laufen
-  weiter. Kartendaten von OpenStreetMap, gerendert im zurückgenommenen
-  «Positron»-Stil von CARTO, damit die Fotos und nicht die Stadt dominieren.
+  weiter. Kacheln direkt von OpenStreetMap — kein Schlüssel, kein weiterer
+  Anbieter. Der zurückgenommene, fast graue Look entsteht erst im Browser durch
+  einen CSS-Filter auf der Kachelebene; die Foto-Marker liegen darüber und
+  behalten ihre Farbe. (Zuvor CARTOs «Positron»-Stil — der verlangt inzwischen
+  einen API-Schlüssel und blendet sonst «API KEY REQUIRED» quer über die Karte.)
   Für eine Lehrveranstaltung ist die Kachelnutzung unproblematisch; ein Werkzeug
   mit zehntausenden Abrufen bräuchte einen eigenen Kacheldienst.
 - **Abhängigkeiten:** `supabase-js` per CDN, der QR-Dienst `api.qrserver.com` und
