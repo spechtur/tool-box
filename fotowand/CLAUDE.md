@@ -56,7 +56,10 @@ Neues Unterverzeichnis `fotowand/` nach dem etablierten Muster:
   praktisch identisch, nur steht statt eines Stichworts ein Foto.
 - **`feedback/`** liefert die Darstellung — Kachel-Raster, Fokus-Overlay
   (88vw × 88vh) zum Grosseinblenden per Klick, «hidden»-Mechanik zum Ausblenden
-  einzelner Beiträge, Session-Verlauf im localStorage.
+  einzelner Beiträge, Session-Verlauf im localStorage. Erweitert um das
+  Durchblättern: Das Overlay hält eine Reihenfolge, die der jeweiligen Ansicht
+  folgt — man blättert durch das, was man vor sich sieht, nicht durch eine
+  abstrakte Datenbankreihenfolge.
 
 **Kein Cloudflare Worker, keine Anthropic-API, keine KI-Auswertung.** Das Tool
 sammelt und zeigt, es interpretiert nicht. Damit entfällt die gesamte
@@ -79,8 +82,10 @@ Auswertungsprozess im Lernraum in Etappen gliedert:
    bevor man weiss, wie sie heissen.
 3. **Rubriken** — dieselben Fotos, gruppiert nach den Kategorien der Session.
    Das ist das *deduktive* Einordnen in ein Raster, das schon feststeht.
-4. **Karte** — dieselben Fotos, verortet im Stadtraum. Zeigt, welche Ecken
-   abgelaufen wurden und wo sich Funde häufen. *(Runde zwei, siehe unten.)*
+4. **Karte** — dieselben Fotos, verortet im Stadtraum, als runde Miniaturen mit
+   der Rubrikenfarbe als Ring. Zeigt, welche Ecken abgelaufen wurden und wo sich
+   Funde häufen. Leaflet wird erst beim Öffnen des Reiters geladen; fällt es aus,
+   bleiben die anderen drei Ansichten unberührt.
 
 Pinnwand und Rubriken sind keine Doppelung, sondern die zwei Richtungen desselben
 Vorgangs. Der Ablauf über alle vier: sammeln → frei clustern → benennen → verorten.
@@ -176,6 +181,7 @@ Kategorienbildung wird selbst zum Lerngegenstand.
 | `titel` | frei gestaltet, z.B. «CityWalk BNE»; steht gross auf dem Handy. Nachgerüstet am 29.08.2026, weil ein technischer Schlüssel kein guter Titel ist |
 | `aufgabenstellung` | Freitext; erscheint als Canvas-Header **und** auf dem Handy unter dem Titel, etwas kleiner — sie darf lang werden |
 | `kategorien` | JSON-Liste aus `{ id, label, farbe }`; leer erlaubt |
+| `optionen` | JSON-Schalter für die Handy-Ansicht, z.B. `{ ort, kamera }`. Bewusst **eine** JSON-Spalte statt einer Spalte je Schalter — künftige Optionen brauchen dann keine Wanderung in Supabase mehr |
 | `erstellt` | Zeitstempel |
 
 **`fotowand_beitraege`**
@@ -307,7 +313,8 @@ neue Tool automatisch mit.
 5. ⬜ **Bucket anlegen** — Davids Schritt im Dashboard. *(blockiert 6.)*
 6. ⬜ **Praxistest** — und zwar ernsthaft: echtes iPhone, echtes HEIC-Foto, über
    Mobilfunk statt WLAN. Erst dann ist die Verkleinerung bewiesen.
-7. ⬜ **Runde zwei** — Kartenansicht mit Leaflet.
+7. ✅ **Kartenansicht** mit Leaflet, plus zwei Schalter «Auf dem Handy»
+   (Standorterfassung, direkter Kamerazugriff).
 
 `README.md` und die Kachel in der `index.html` der tool-box sind ergänzt.
 
@@ -319,16 +326,22 @@ neue Tool automatisch mit.
   éducation21 und die SDGs werden *nicht* hinterlegt. Das Werkzeug bleibt
   inhaltlich leer, die Rubriken entstehen zur Laufzeit. Wer ein Raster braucht,
   tippt es ein — die technische Möglichkeit genügt.
-- **Kartenbibliothek.** Eine Karte ohne fremde Bibliothek zu bauen hiesse,
-  Leaflet nachzubauen. Leaflet per CDN wäre eine bewusste Ausnahme von der
-  «keine Abhängigkeiten»-Regel — betrifft nur die vierte Ansicht, das übrige
-  Tool bliebe wie gehabt. Zu beachten: die Regel ist ohnehin schon eine
-  «zwei Abhängigkeiten»-Regel — alle Tools der tool-box laden `supabase-js`
-  per CDN, die Wortwolke zusätzlich den QR-Dienst `api.qrserver.com`.
+- **Kartenbibliothek — entschieden am 29.08.2026.** Leaflet per CDN, als bewusste
+  Ausnahme; die Regel war ohnehin schon eine «zwei Abhängigkeiten»-Regel, weil
+  alle Tools `supabase-js` per CDN laden und die Wortwolke zusätzlich
+  `api.qrserver.com`. Entschärft dadurch, dass Leaflet erst beim Öffnen des
+  Reiters geholt wird: Fällt das CDN aus, verliert man die Karte, nicht das Tool.
+  Kacheln im «Positron»-Stil von CARTO auf OpenStreetMap-Daten — zurückgenommen,
+  damit die Fotos wirken.
 - **Ungetestet am Gerät:** ob Safari auf dem iPhone `createImageBitmap` mit
   `imageOrientation: 'from-image'` unterstützt. Der Code fällt sonst auf den
   Aufruf ohne Option zurück, bei dem Safari die EXIF-Drehung nach eigener
   Rechnung anwendet — das kann stimmen, muss aber gesehen werden.
+- **Datenschutz-Schalter.** «Standort erfassen» aus heisst: Es wird gar nicht
+  erst im Foto nachgesehen und nichts gespeichert — nicht bloss nichts angezeigt.
+  «Kamera direkt öffnen» aus erzwingt den Umweg über die Mediathek, und genau
+  dieser Umweg ist der einzige, bei dem Ortsangaben mitkommen. Die zwei Schalter
+  ziehen also in entgegengesetzte Richtungen und gehören bewusst gesetzt.
 - **GPS — am Gerät geklärt (29.08.2026).** Ein frisch über den Kamera-Knopf
   aufgenommenes Foto kommt **ohne** Koordinaten an: Es landet nicht in der
   Mediathek, und Safari hat keine Ortungsberechtigung, also stehen im EXIF keine

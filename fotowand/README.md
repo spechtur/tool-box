@@ -37,7 +37,7 @@ Architekturbetrachtungen.
 | 🧱 **Wand** | Upload-Reihenfolge, neueste zuerst. Die Sammlung wächst sichtbar, während die Gruppen noch unterwegs sind. |
 | 📌 **Pinnwand** | Freies Anordnen wie auf einem Miro-Board: ziehen, vergrössern, clustern. **Mehrere Anordnungen** derselben Sammlung nebeneinander — Gruppe A, Gruppe B, Plenum — jederzeit umschaltbar. |
 | 🗂️ **Rubriken** | Dieselben Fotos, gruppiert nach den selbst definierten Rubriken. |
-| 🗺️ **Karte** | Folgt in der zweiten Runde. Die Koordinaten werden bereits gesammelt. |
+| 🗺️ **Karte** | Dieselben Fotos, verortet im Stadtraum — als runde Miniaturen mit der Rubrikenfarbe als Ring. Zeigt, welche Ecken abgelaufen wurden und wo sich Funde häufen. |
 
 Pinnwand und Rubriken ergänzen sich didaktisch: Die Pinnwand ist das *induktive*
 Sortieren — Gruppen bilden, bevor man weiss, wie sie heissen. Die Rubrikenansicht
@@ -152,6 +152,30 @@ where schemaname = 'storage' and tablename = 'objects'
   jederzeit änderbar. Umbenennen verliert keine Zuordnung, weil intern eine stabile
   ID gespeichert wird.
 
+### Durchblättern
+
+Ein Klick auf ein Foto blendet es gross ein — mit **‹ ›**, den Pfeiltasten oder
+der Leertaste geht es weiter zum nächsten, ein Klick aufs Bild ebenfalls. Die
+Reihenfolge folgt der Ansicht, aus der heraus geöffnet wurde: in der Wand die
+Upload-Reihenfolge, bei den Rubriken der Reihe nach durch die Kategorien, auf der
+Pinnwand in Lesereihenfolge des Bretts, auf der Karte zuerst die verorteten. Man
+blättert also durch das, was man vor sich sieht. Die Nachbarbilder werden im
+Voraus geholt, damit es am Beamer nicht stockt.
+
+### Optionen für das Handy
+
+In der Seitenleiste unter **Auf dem Handy** stehen zwei Schalter, die pro Session
+gelten:
+
+- **Standort erfassen** — ausgeschaltet wird im Foto gar nicht erst nachgesehen
+  und nichts gespeichert. Die Standort-Karte verschwindet vom Handy, die
+  Kartenansicht bleibt leer. Für Situationen, in denen eine Verortung nicht
+  erwünscht ist.
+- **Kamera direkt öffnen** — ausgeschaltet bleibt nur der Weg über die Mediathek.
+  Etwas umständlicher, aber der einzige, bei dem die Fotos ihre Ortsangabe
+  mitbringen (siehe Technische Notizen). Wer die Karte wirklich braucht, schaltet
+  diesen Knopf aus.
+
 ### Nach der Veranstaltung
 - **↓ Alle Fotos + CSV (ZIP)** herunterladen — die CSV verknüpft über den Dateinamen
   Beschreibung, Kommentar, Rubrik, Name, Koordinaten und Zeitpunkt
@@ -181,8 +205,14 @@ where schemaname = 'storage' and tablename = 'objects'
   Berechtigungsabfrage.
 - **ZIP ohne Bibliothek:** Store-Modus, im Werkzeug selbst geschrieben. JPEGs liessen
   sich ohnehin nicht sinnvoll komprimieren.
-- **Abhängigkeiten:** `supabase-js` per CDN und der QR-Dienst `api.qrserver.com` —
-  dieselben zwei wie in den übrigen Tools der tool-box.
+- **Karte:** Leaflet, per CDN und **erst beim ersten Öffnen des Reiters** geladen.
+  Bleibt das CDN stumm, sagt die Karte das und die übrigen drei Ansichten laufen
+  weiter. Kartendaten von OpenStreetMap, gerendert im zurückgenommenen
+  «Positron»-Stil von CARTO, damit die Fotos und nicht die Stadt dominieren.
+  Für eine Lehrveranstaltung ist die Kachelnutzung unproblematisch; ein Werkzeug
+  mit zehntausenden Abrufen bräuchte einen eigenen Kacheldienst.
+- **Abhängigkeiten:** `supabase-js` per CDN, der QR-Dienst `api.qrserver.com` und
+  — nur für die Kartenansicht — Leaflet samt Kartenkacheln.
 - **Speicherplatz:** Supabase Free bietet 1 GB, bei ~250 KB pro Foto also rund
   4'000 Bilder. Alte Sessions gelegentlich herunterladen und leeren.
 
@@ -196,3 +226,8 @@ Ein offener QR-Code ist ein offenes Scheunentor — die Moderationsfunktion
 - ein Satz in der Aufgabenstellung: «Bitte keine erkennbaren Personen fotografieren»
 - die Sammlung nach der Auswertung herunterladen und die Session zurücksetzen
 - die Namensangabe ist und bleibt freiwillig
+- die Standorterfassung lässt sich pro Session ganz abschalten; dann wird auch
+  nichts erfasst, nicht bloss nichts angezeigt
+- eine Karte macht sichtbar, wo sich die Teilnehmenden aufgehalten haben. Beim
+  CityWalk ist genau das der Sinn — es lohnt sich, es in der Aufgabenstellung
+  einmal zu benennen

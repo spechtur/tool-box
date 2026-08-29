@@ -106,8 +106,8 @@
       <p class="sub" id="untertitel">Foto aufnehmen oder aus der Mediathek wählen</p>
 
       <div class="pick-row" id="pick-row">
-        <button class="btn" onclick="document.getElementById('file-cam').click()">📷 Foto aufnehmen</button>
-        <button class="btn sec" onclick="document.getElementById('file-lib').click()">🖼️ Aus der Mediathek</button>
+        <button class="btn" id="btn-kamera" onclick="document.getElementById('file-cam').click()">📷 Foto aufnehmen</button>
+        <button class="btn sec" id="btn-mediathek" onclick="document.getElementById('file-lib').click()">🖼️ Aus der Mediathek</button>
       </div>
 
       <input type="file" id="file-cam" accept="image/*" capture="environment" hidden onchange="dateiGewaehlt(this)">
@@ -178,6 +178,7 @@ let sb          = null;
 let kontextZustand = 'laedt';    // laedt | ok | fehlt | demo
 let titel       = '';
 let aufgabe     = '';
+let optionen    = { ort: true, kamera: true };
 let kategorien  = [];
 let katGewaehlt = null;
 let bildBlob    = null;   // verkleinertes JPEG
@@ -217,12 +218,31 @@ async function ladeSession() {
     titel      = (data.titel || '').trim();
     aufgabe    = (data.aufgabenstellung || '').trim();
     kategorien = Array.isArray(data.kategorien) ? data.kategorien : [];
+    const o = data.optionen && typeof data.optionen === 'object' ? data.optionen : {};
+    optionen = { ort: o.ort !== false, kamera: o.kamera !== false };
     renderKontext();
+    wendeOptionenAn();
     baueKategorien();
   } catch (e) {
     console.warn('Session konnte nicht geladen werden:', e);
     kontextZustand = 'fehlt';
     renderKontext();
+  }
+}
+
+// ── Optionen der Session ──────────────────────────────────
+function wendeOptionenAn() {
+  if (!optionen.kamera) {
+    // Der Umweg über die Mediathek ist gewollt: nur so bringt ein Foto
+    // seine Ortsangabe mit. Frisch Aufgenommenes trägt keine.
+    document.getElementById('btn-kamera').style.display = 'none';
+    const lib = document.getElementById('btn-mediathek');
+    lib.className = 'btn';
+    lib.textContent = '🖼️ Foto aus der Mediathek wählen';
+    setzeUntertitel('Wähle ein Foto aus deiner Mediathek');
+  }
+  if (!optionen.ort) {
+    document.getElementById('geo-box').style.display = 'none';
   }
 }
 
@@ -324,7 +344,8 @@ async function dateiGewaehlt(input) {
   try {
     // Reihenfolge ist wichtig: GPS zuerst aus dem Original lesen,
     // denn beim Verkleinern über das Canvas gehen alle EXIF-Daten verloren.
-    koord = await leseGpsAusExif(file);
+    // Ist die Standorterfassung abgeschaltet, wird gar nicht erst nachgesehen.
+    koord = optionen.ort ? await leseGpsAusExif(file) : null;
     koordQuelle = koord ? 'exif' : '';
 
     bildBlob = await verkleinern(file);
@@ -341,7 +362,8 @@ async function dateiGewaehlt(input) {
     document.getElementById('submit-btn').style.display   = 'block';
     btnRow.style.display = 'none';
     setzeUntertitel('Kurz beschreiben und absenden');
-    aktualisiereGeoZeile();
+    if (optionen.ort) aktualisiereGeoZeile();
+    else document.getElementById('geo-box').style.display = 'none';
   } catch (e) {
     console.warn(e);
     zeigeFehler('Dieses Foto liess sich nicht verarbeiten. Bitte ein anderes wählen.');
@@ -568,8 +590,8 @@ async function absenden() {
       beschreibung: beschreibung,
       kommentar:    kommentar,
       kategorie_id: katGewaehlt,
-      lat:          koord ? koord.lat : null,
-      lon:          koord ? koord.lon : null,
+      lat:          (optionen.ort && koord) ? koord.lat : null,
+      lon:          (optionen.ort && koord) ? koord.lon : null,
       autor:        autor || null
     });
     if (dbFehler) throw dbFehler;

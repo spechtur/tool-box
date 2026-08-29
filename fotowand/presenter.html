@@ -175,10 +175,42 @@
     .kat-leer { font-size: 12px; color: var(--mg); font-style: italic; }
 
     /* ── Ansicht 4: Karte ───────────────────────────────── */
-    #karte-wrap { padding: 28px; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
     .info-box { background: white; border-left: 5px solid var(--orange); border-radius: 10px; padding: 16px 18px; font-size: 13.5px; line-height: 1.6; color: #444; }
-    .ort-zeile { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hg); font-size: 13px; }
-    .ort-zeile a { color: var(--tuerkis); font-size: 12px; }
+    #karte-buehne { position: absolute; inset: 0; display: flex; }
+    #karte-flaeche { flex: 1; min-width: 0; background: #e8e8e8; }
+    #karte-hinweis {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px; padding: 40px;
+      background: var(--hg); text-align: center; z-index: 5;
+    }
+    /* Randleiste für alles ohne Ortsangabe — sie verschwinden nie */
+    #ohne-ort {
+      width: 210px; flex-shrink: 0; background: white; border-left: 1px solid var(--mg);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #ohne-ort-kopf { padding: 13px 15px 11px; border-bottom: 1px solid var(--hg); }
+    #ohne-ort-liste { flex: 1; overflow-y: auto; padding: 11px; display: flex; flex-direction: column; gap: 9px; }
+    .oo-karte { display: flex; gap: 9px; align-items: center; cursor: pointer; border-radius: 8px; padding: 4px; }
+    .oo-karte:hover { background: var(--hg); }
+    .oo-karte img { width: 46px; height: 46px; border-radius: 7px; object-fit: cover; flex-shrink: 0; background: var(--mg); }
+    .oo-txt { font-size: 11.5px; color: #444; line-height: 1.35; overflow: hidden; }
+
+    /* Marker: das Foto selbst, rund, mit Rubrikenfarbe als Ring */
+    .fm-ring {
+      width: 46px; height: 46px; border-radius: 50%; overflow: hidden;
+      border: 3px solid var(--mg); background: white; cursor: pointer;
+      box-shadow: 0 2px 7px rgba(0,0,0,.35); transition: transform .15s;
+    }
+    .fm-ring:hover { transform: scale(1.13); }
+    .fm-ring img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .fm-ring.versteckt { opacity: .35; }
+    .leaflet-container { font-family: Arial, Helvetica, sans-serif; }
+
+    /* ── Schalter in der Seitenleiste ───────────────────── */
+    .opt-zeile { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; cursor: pointer; }
+    .opt-zeile input { margin-top: 2px; width: 16px; height: 16px; accent-color: var(--tuerkis); cursor: pointer; flex-shrink: 0; }
+    .opt-name { font-size: 12.5px; font-weight: 700; color: #333; }
+    .opt-hint { font-size: 11px; color: var(--dg); line-height: 1.45; margin-top: 2px; }
 
     /* ── Sidebar ────────────────────────────────────────── */
     #sidebar {
@@ -235,8 +267,22 @@
       border: 8px solid var(--gelb); display: flex; overflow: hidden;
       box-shadow: 0 8px 50px rgba(0,0,0,.5); cursor: default;
     }
-    #fokus-bild { flex: 1; background: #111; display: flex; align-items: center; justify-content: center; min-width: 0; }
-    #fokus-bild img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+    #fokus-bild { flex: 1; background: #111; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; }
+    #fokus-bild img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: e-resize; }
+    .fokus-pfeil {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 52px; height: 52px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,.86); color: #333; font-size: 30px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,.4); opacity: .55; transition: opacity .15s, transform .15s;
+      padding-bottom: 4px;
+    }
+    #fokus-bild:hover .fokus-pfeil { opacity: 1; }
+    .fokus-pfeil:hover { background: white; transform: translateY(-50%) scale(1.08); }
+    #fokus-zurueck { left: 16px; }
+    #fokus-vor     { right: 16px; }
+    #fokus-zaehler { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); }
+    #fokus-badge { display: inline-block; background: var(--rot); color: white; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; letter-spacing: .06em; }
     #fokus-info { width: 340px; flex-shrink: 0; padding: 28px 26px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
     #fokus-besch { font-size: 24px; font-weight: 800; color: #1a1a1a; line-height: 1.3; }
     #fokus-komm  { font-size: 16px; color: #444; line-height: 1.6; white-space: pre-wrap; }
@@ -268,13 +314,20 @@
 <!-- FOTO-FOKUS -->
 <div id="fokus-ov" class="ov" onclick="fokusZu()">
   <div id="fokus-box" onclick="event.stopPropagation()">
-    <div id="fokus-bild"><img id="fokus-img" alt=""></div>
+    <div id="fokus-bild">
+      <button class="fokus-pfeil" id="fokus-zurueck" onclick="event.stopPropagation();fokusBlaettern(-1)" title="Zurück (Pfeil links)">‹</button>
+      <img id="fokus-img" alt="" onclick="fokusBlaettern(1)" title="Klick: weiter">
+      <button class="fokus-pfeil" id="fokus-vor" onclick="event.stopPropagation();fokusBlaettern(1)" title="Weiter (Pfeil rechts)">›</button>
+    </div>
     <div id="fokus-info">
+      <div id="fokus-zaehler"></div>
+      <div id="fokus-badge" style="display:none">ausgeblendet</div>
       <div id="fokus-besch"></div>
       <div id="fokus-komm"></div>
       <div id="fokus-rubrik-zeile"></div>
       <div id="fokus-meta"></div>
       <button class="s-btn" onclick="fokusZu()">Schliessen · Esc</button>
+      <div style="font-size:10.5px;color:var(--mg);text-align:center;line-height:1.5">Blättern mit ← → oder Leertaste ·<br>Klick aufs Bild geht weiter</div>
     </div>
   </div>
 </div>
@@ -344,6 +397,24 @@
     </div>
 
     <div class="s-sec">
+      <span class="s-label">Auf dem Handy</span>
+      <label class="opt-zeile">
+        <input type="checkbox" id="opt-ort" checked onchange="optionGeaendert()">
+        <span>
+          <span class="opt-name">Standort erfassen</span>
+          <span class="opt-hint" id="opt-ort-hint">Aus: Es wird weder im Foto nachgesehen noch nach dem Standort gefragt. Die Kartenansicht bleibt dann leer.</span>
+        </span>
+      </label>
+      <label class="opt-zeile">
+        <input type="checkbox" id="opt-kamera" checked onchange="optionGeaendert()">
+        <span>
+          <span class="opt-name">Kamera direkt öffnen</span>
+          <span class="opt-hint">Aus: nur der Weg über die Mediathek. Etwas umständlicher, aber nur so bringen die Fotos ihre Ortsangabe mit.</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="s-sec">
       <span class="s-label">Sammlung sichern</span>
       <button class="s-btn gelb" id="dl-btn" onclick="alsZipLaden()">↓ Alle Fotos + CSV (ZIP)</button>
       <div class="s-hint" style="margin-top:8px">Nach der Auswertung herunterladen und die Session zurücksetzen.</div>
@@ -375,8 +446,14 @@ const KARTE_B  = 240;
 
 let sb          = null;
 let sessionId   = '';
-let sitzung     = { titel: '', aufgabenstellung: '', kategorien: [] };
-let titelSpalteDa = true;      // wird auf false gesetzt, falls Supabase sie nicht kennt
+let sitzung     = { titel: '', aufgabenstellung: '', kategorien: [], optionen: { ort: true, kamera: true } };
+let titelSpalteDa    = true;   // werden auf false gesetzt, falls Supabase sie nicht kennt
+let optionenSpalteDa = true;
+
+// Karte (Leaflet wird erst beim ersten Öffnen des Reiters geladen)
+const LEAFLET_CSS = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+const LEAFLET_JS  = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+let leafletLaedt = null, karteObj = null, markerSchicht = null;
 let beitraege   = [];
 let anordnungen = [];
 let aktiveAnordnungId = null;
@@ -392,6 +469,7 @@ let maxZ        = 0;
 let pollTimer = null, hideTimer = null, aufgabeTimer = null, qrTimer = null, sanftTimer = null;
 let hashBeitraege = '', hashPositionen = '';
 let ziehtGerade = false;
+let fokusListe = [], fokusIndex = -1;
 let drag = null, resize = null, panDrag = null;
 
 // ── Start ─────────────────────────────────────────────────
@@ -436,7 +514,7 @@ async function sessionSetzen(id) {
 }
 
 async function ladeSitzung() {
-  sitzung = { titel: '', aufgabenstellung: '', kategorien: [] };
+  sitzung = { titel: '', aufgabenstellung: '', kategorien: [], optionen: { ort: true, kamera: true } };
   if (!sessionId) return;
   try {
     const { data } = await sb.from('fotowand_sessions')
@@ -446,8 +524,12 @@ async function ladeSitzung() {
       sitzung.titel            = data.titel || '';
       sitzung.aufgabenstellung = data.aufgabenstellung || '';
       sitzung.kategorien = Array.isArray(data.kategorien) ? data.kategorien : [];
+      const o = data.optionen && typeof data.optionen === 'object' ? data.optionen : {};
+      sitzung.optionen = { ort: o.ort !== false, kamera: o.kamera !== false };
     }
   } catch (e) { console.warn('Session laden:', e); }
+  document.getElementById('opt-ort').checked    = sitzung.optionen.ort;
+  document.getElementById('opt-kamera').checked = sitzung.optionen.kamera;
   document.getElementById('titel-input').value   = sitzung.titel;
   document.getElementById('aufgabe-input').value = sitzung.aufgabenstellung;
   zeigeAufgabe();
@@ -461,23 +543,40 @@ async function speichereSitzung() {
     aufgabenstellung: sitzung.aufgabenstellung,
     kategorien:       sitzung.kategorien
   };
-  if (titelSpalteDa) zeile.titel = sitzung.titel;
+  if (titelSpalteDa)    zeile.titel    = sitzung.titel;
+  if (optionenSpalteDa) zeile.optionen = sitzung.optionen;
   try {
     const { error } = await sb.from('fotowand_sessions').upsert(zeile, { onConflict: 'session_id' });
     if (error) throw error;
   } catch (e) {
-    // Läuft das Projekt noch ohne die Titel-Spalte, soll wenigstens die
+    // Läuft das Projekt noch ohne die neueren Spalten, soll wenigstens die
     // Aufgabenstellung gespeichert werden statt gar nichts.
-    if (titelSpalteDa && /titel/i.test(e.message || '')) {
-      titelSpalteDa = false;
+    const meldung = e.message || '';
+    let nochmal = false;
+    if (titelSpalteDa && /titel/i.test(meldung)) {
+      titelSpalteDa = false; delete zeile.titel; nochmal = true;
       console.warn('Spalte «titel» fehlt in Supabase — setup.sql erneut ausführen.');
-      delete zeile.titel;
+    }
+    if (optionenSpalteDa && /optionen/i.test(meldung)) {
+      optionenSpalteDa = false; delete zeile.optionen; nochmal = true;
+      console.warn('Spalte «optionen» fehlt in Supabase — setup.sql erneut ausführen.');
+    }
+    if (nochmal) {
       try { await sb.from('fotowand_sessions').upsert(zeile, { onConflict: 'session_id' }); }
       catch (e2) { console.warn('Session speichern:', e2); }
       return;
     }
     console.warn('Session speichern:', e);
   }
+}
+
+function optionGeaendert() {
+  sitzung.optionen = {
+    ort:    document.getElementById('opt-ort').checked,
+    kamera: document.getElementById('opt-kamera').checked
+  };
+  speichereSitzung();
+  if (ansicht === 'karte') rendern();
 }
 
 function aufgabeGeaendert() {
@@ -572,7 +671,7 @@ function statsAktualisieren() {
 function setzeAnsicht(v) {
   ansicht = v;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
-  document.getElementById('view').classList.toggle('kein-scroll', v === 'pinnwand');
+  document.getElementById('view').classList.toggle('kein-scroll', v === 'pinnwand' || v === 'karte');
   if (v === 'pinnwand') sorgeFuerAnordnung();
   else rendern();
 }
@@ -629,8 +728,11 @@ function renderWerkzeugleiste() {
     return;
   }
 
+  const mitOrt = beitraege.filter(b => b.lat != null && b.lon != null).length;
   tb.innerHTML = `<span class="tb-label">Karte</span>
-    <span style="font-size:12px;color:var(--dg)">Folgt in der zweiten Runde — die Koordinaten werden bereits gesammelt.</span>`;
+    <span style="font-size:12px;color:var(--dg)">${mitOrt} von ${beitraege.length} Fotos verortet</span>
+    <span class="tb-sep"></span>
+    <button class="tb-btn" onclick="karteEinpassen()">⤢ Alle Funde zeigen</button>`;
 }
 
 // ── Ansicht 1: Wand ───────────────────────────────────────
@@ -680,30 +782,145 @@ function blockHtml(name, farbe, liste) {
 }
 
 // ── Ansicht 4: Karte ──────────────────────────────────────
+// Leaflet wird erst geholt, wenn der Reiter zum ersten Mal geöffnet wird.
+// Bleibt das CDN stumm, sagt die Karte das — die übrigen Ansichten laufen weiter.
+function ladeLeaflet() {
+  if (window.L) return Promise.resolve(true);
+  if (leafletLaedt) return leafletLaedt;
+  leafletLaedt = new Promise(fertig => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = LEAFLET_CSS;
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = LEAFLET_JS;
+    js.onload  = () => fertig(true);
+    js.onerror = () => fertig(false);
+    document.head.appendChild(js);
+  });
+  return leafletLaedt;
+}
+
 function renderKarte() {
   const view = document.getElementById('view');
   const mit  = beitraege.filter(b => b.lat != null && b.lon != null);
-  const ohne = beitraege.length - mit.length;
+  const ohne = beitraege.filter(b => b.lat == null || b.lon == null);
 
-  view.innerHTML = `<div id="karte-wrap">
-    <div class="info-box">
-      <b>Die Kartenansicht folgt in der zweiten Runde.</b><br>
-      Sie braucht als einziger Teil des Werkzeugs eine fremde Bibliothek (Leaflet) —
-      das wird bewusst gesondert entschieden. Die Koordinaten werden jetzt schon
-      gesammelt, es geht also nichts verloren.
-    </div>
-    <div class="info-box" style="border-left-color:var(--tuerkis)">
-      <b>${mit.length}</b> von ${beitraege.length} Fotos tragen Koordinaten.
-      ${ohne ? `<b>${ohne}</b> ohne Ortsangabe — sie werden später in einer Randleiste
-      «ohne Ortsangabe» erscheinen und nicht verschwinden.` : ''}
-    </div>
-    ${mit.length ? `<div style="background:white;border-radius:10px;padding:14px 18px">
-      ${mit.map(b => `<div class="ort-zeile">
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.beschreibung || 'ohne Beschreibung')}</span>
-        <a href="https://www.openstreetmap.org/?mlat=${b.lat}&mlon=${b.lon}#map=17/${b.lat}/${b.lon}" target="_blank" rel="noopener">${b.lat.toFixed(4)}, ${b.lon.toFixed(4)} ↗</a>
-      </div>`).join('')}
-    </div>` : ''}
-  </div>`;
+  // Nur neu aufbauen, wenn die Bühne fehlt — sonst bliebe bei jedem
+  // Polling der Kartenausschnitt stehen, den man gerade eingestellt hat.
+  if (!document.getElementById('karte-buehne')) {
+    if (karteObj) { try { karteObj.remove(); } catch (e) {} karteObj = null; markerSchicht = null; }
+    view.innerHTML = `<div id="karte-buehne">
+        <div id="karte-flaeche"></div>
+        <div id="ohne-ort">
+          <div id="ohne-ort-kopf">
+            <span class="s-label" style="margin:0">Ohne Ortsangabe</span>
+            <div style="font-size:11px;color:var(--dg);margin-top:4px" id="ohne-ort-zahl"></div>
+          </div>
+          <div id="ohne-ort-liste"></div>
+        </div>
+      </div>`;
+  }
+
+  renderOhneOrt(ohne);
+
+  const hinweis = document.getElementById('karte-hinweis');
+  if (hinweis) hinweis.remove();
+
+  if (!sitzung.optionen.ort) {
+    zeigeKartenHinweis('📍', 'Standorterfassung ist ausgeschaltet',
+      'In der Seitenleiste unter «Auf dem Handy» lässt sie sich wieder einschalten. Bereits erfasste Orte bleiben erhalten.');
+    return;
+  }
+  if (!mit.length) {
+    zeigeKartenHinweis('🗺️', 'Noch keine Fotos mit Ortsangabe',
+      'Fotos aus der Mediathek bringen ihren Ort meist mit. Frisch aufgenommene brauchen einen Tipp auf «Standort hinzufügen».');
+    return;
+  }
+
+  starteKarte(mit);
+}
+
+function zeigeKartenHinweis(symbol, text, hinweis) {
+  const buehne = document.getElementById('karte-buehne');
+  if (!buehne) return;
+  buehne.insertAdjacentHTML('beforeend', `<div id="karte-hinweis">
+      <div class="empty-icon">${symbol}</div>
+      <div class="empty-text">${esc(text)}</div>
+      <div class="empty-hint" style="max-width:420px;line-height:1.6">${esc(hinweis)}</div>
+    </div>`);
+}
+
+async function starteKarte(mit) {
+  const da = await ladeLeaflet();
+  if (!da) {
+    zeigeKartenHinweis('🔌', 'Die Kartenbibliothek liess sich nicht laden',
+      'Die Karte ist der einzige Teil der Fotowand, der eine fremde Bibliothek braucht. Alle anderen Ansichten funktionieren weiter.');
+    return;
+  }
+  if (ansicht !== 'karte') return;                   // in der Zwischenzeit weitergeklickt
+  const flaeche = document.getElementById('karte-flaeche');
+  if (!flaeche) return;
+
+  if (!karteObj) {
+    karteObj = L.map(flaeche, { zoomControl: true, attributionControl: true });
+    // Zurückgenommener Kartenstil: die Stadt tritt zurück, die Fotos dominieren.
+    // Kartendaten von OpenStreetMap, gerendert von CARTO.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(karteObj);
+    markerSchicht = L.layerGroup().addTo(karteObj);
+    karteObj.setView([46.8508, 9.5320], 14);         // Chur, bis die Funde da sind
+    setTimeout(() => karteObj.invalidateSize(), 60);
+    setzeMarker(mit, true);
+    return;
+  }
+  karteObj.invalidateSize();
+  setzeMarker(mit, false);
+}
+
+function setzeMarker(mit, einpassen) {
+  if (!karteObj || !markerSchicht) return;
+  markerSchicht.clearLayers();
+
+  mit.forEach(b => {
+    const kat   = rubrikVon(b.kategorie_id);
+    const farbe = kat ? (kat.farbe || PALETTE[0]) : '#ffffff';
+    const symbol = L.divIcon({
+      className: '',
+      html: `<div class="fm-ring${b.versteckt ? ' versteckt' : ''}" style="border-color:${farbe}" title="${esc(b.beschreibung || '')}">
+               <img src="${esc(b.bild_url)}" alt=""></div>`,
+      iconSize: [46, 46], iconAnchor: [23, 23]
+    });
+    L.marker([b.lat, b.lon], { icon: symbol })
+      .on('click', () => fokusAuf(b.id))
+      .addTo(markerSchicht);
+  });
+
+  if (einpassen) karteEinpassen();
+}
+
+function karteEinpassen() {
+  if (!karteObj) return;
+  const mit = beitraege.filter(b => b.lat != null && b.lon != null);
+  if (!mit.length) return;
+  const rand = L.latLngBounds(mit.map(b => [b.lat, b.lon]));
+  karteObj.fitBounds(rand, { padding: [70, 70], maxZoom: 17 });
+}
+
+function renderOhneOrt(ohne) {
+  const zahl  = document.getElementById('ohne-ort-zahl');
+  const liste = document.getElementById('ohne-ort-liste');
+  if (!zahl || !liste) return;
+  zahl.textContent = ohne.length
+    ? `${ohne.length} Foto${ohne.length === 1 ? '' : 's'} ohne Koordinaten`
+    : 'Alle Fotos sind verortet';
+  liste.innerHTML = ohne.length
+    ? ohne.map(b => `<div class="oo-karte" onclick="fokusAuf('${b.id}')">
+         <img src="${esc(b.bild_url)}" alt="" loading="lazy">
+         <div class="oo-txt">${esc((b.beschreibung || 'ohne Beschreibung').slice(0, 60))}</div>
+       </div>`).join('')
+    : '<div style="font-size:11.5px;color:var(--mg);font-style:italic;padding:4px">Nichts übrig — schön.</div>';
 }
 
 // ── Kartenbaustein ────────────────────────────────────────
@@ -1133,23 +1350,83 @@ async function verstecktUmschalten(id) {
   statsAktualisieren();
 }
 
-// ── Fokus-Overlay ─────────────────────────────────────────
+// ── Fokus-Overlay mit Blättern ────────────────────────────
+// Die Reihenfolge folgt der Ansicht, aus der heraus geöffnet wurde —
+// man blättert durch das, was man vor sich sieht.
+function aktuelleReihenfolge() {
+  if (ansicht === 'kategorien') {
+    const ids = new Set(sitzung.kategorien.map(k => k.id));
+    const folge = [];
+    sitzung.kategorien.forEach(k =>
+      beitraege.filter(b => b.kategorie_id === k.id).forEach(b => folge.push(b.id)));
+    beitraege.filter(b => !b.kategorie_id || !ids.has(b.kategorie_id))
+             .forEach(b => folge.push(b.id));
+    return folge;
+  }
+  if (ansicht === 'pinnwand') {
+    // Lesereihenfolge auf dem Brett: zeilenweise von oben links
+    return beitraege.slice().sort((a, b) => {
+      const A = brettStand[a.id] || { x: 0, y: 0 };
+      const B = brettStand[b.id] || { x: 0, y: 0 };
+      const zeile = Math.round(A.y / 170) - Math.round(B.y / 170);
+      return zeile !== 0 ? zeile : A.x - B.x;
+    }).map(b => b.id);
+  }
+  if (ansicht === 'karte') {
+    const mit  = beitraege.filter(b => b.lat != null && b.lon != null);
+    const ohne = beitraege.filter(b => b.lat == null || b.lon == null);
+    return mit.concat(ohne).map(b => b.id);
+  }
+  return beitraege.map(b => b.id);          // Wand: Upload-Reihenfolge
+}
+
 function fokusAuf(id) {
-  const b = beitraege.find(x => x.id === id);
+  fokusListe = aktuelleReihenfolge();
+  fokusIndex = fokusListe.indexOf(id);
+  if (fokusIndex < 0) { fokusListe = [id]; fokusIndex = 0; }
+  fokusZeigen();
+  document.getElementById('fokus-ov').style.display = 'flex';
+}
+
+function fokusBlaettern(schritt) {
+  if (fokusListe.length < 2) return;
+  fokusIndex = (fokusIndex + schritt + fokusListe.length) % fokusListe.length;
+  fokusZeigen();
+}
+
+function fokusZeigen() {
+  const b = beitraege.find(x => x.id === fokusListe[fokusIndex]);
   if (!b) return;
   const kat = rubrikVon(b.kategorie_id);
+  const mehrere = fokusListe.length > 1;
+
   document.getElementById('fokus-img').src            = b.bild_url;
   document.getElementById('fokus-besch').textContent  = b.beschreibung || 'ohne Beschreibung';
   document.getElementById('fokus-komm').textContent   = b.kommentar || '';
+  document.getElementById('fokus-zaehler').textContent = mehrere ? `${fokusIndex + 1} von ${fokusListe.length}` : '';
+  document.getElementById('fokus-badge').style.display = b.versteckt ? 'inline-block' : 'none';
   document.getElementById('fokus-rubrik-zeile').innerHTML = kat
     ? `<span class="fokus-rubrik"><span class="k-punkt" style="background:${kat.farbe}"></span>${esc(kat.label)}</span>` : '';
   document.getElementById('fokus-meta').innerHTML =
     (b.autor ? `${esc(b.autor)}<br>` : '') +
     (b.lat != null ? `📍 ${b.lat.toFixed(5)}, ${b.lon.toFixed(5)}<br>` : 'ohne Ortsangabe<br>') +
     zeitLang(b.erstellt);
-  document.getElementById('fokus-ov').style.display = 'flex';
+
+  document.getElementById('fokus-zurueck').style.display = mehrere ? 'flex' : 'none';
+  document.getElementById('fokus-vor').style.display     = mehrere ? 'flex' : 'none';
+
+  // Nachbarn im Voraus holen, damit das Blättern am Beamer nicht stockt
+  if (mehrere) [1, -1].forEach(schritt => {
+    const nachbar = beitraege.find(x =>
+      x.id === fokusListe[(fokusIndex + schritt + fokusListe.length) % fokusListe.length]);
+    if (nachbar) new Image().src = nachbar.bild_url;
+  });
 }
-function fokusZu() { document.getElementById('fokus-ov').style.display = 'none'; }
+
+function fokusZu() {
+  document.getElementById('fokus-ov').style.display = 'none';
+  fokusListe = []; fokusIndex = -1;
+}
 
 // ── QR-Code ───────────────────────────────────────────────
 function qrAktualisieren() {
@@ -1433,11 +1710,18 @@ function vollbild() {
 }
 document.addEventListener('fullscreenchange', () => {
   if (ansicht === 'pinnwand') setTimeout(brettEinpassen, 90);
+  if (ansicht === 'karte' && karteObj) setTimeout(() => karteObj.invalidateSize(), 120);
 });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { fokusZu(); qrOverlayZu(); }
   if (e.key === 'F11') { e.preventDefault(); vollbild(); }
+
+  // Blättern nur, solange das Fokus-Overlay offen ist
+  if (document.getElementById('fokus-ov').style.display === 'flex') {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); fokusBlaettern(1); }
+    if (e.key === 'ArrowLeft')                   { e.preventDefault(); fokusBlaettern(-1); }
+  }
 });
 </script>
 </body>

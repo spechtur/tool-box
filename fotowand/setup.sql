@@ -13,11 +13,15 @@ create table if not exists fotowand_sessions (
   -- Liste aus { id, label, farbe } — leer erlaubt, frei definierbar.
   -- Die id bleibt stabil, auch wenn das label später umbenannt wird.
   kategorien       jsonb       not null default '[]'::jsonb,
+  -- Schalter für die Handy-Ansicht, z.B. { "ort": true, "kamera": true }.
+  -- Bewusst als eine JSON-Spalte: neue Optionen brauchen keine Wanderung.
+  optionen         jsonb       not null default '{}'::jsonb,
   erstellt         timestamptz not null default now()
 );
 
--- Nachtrag für Projekte, in denen die Tabelle schon ohne Titel steht:
-alter table fotowand_sessions add column if not exists titel text not null default '';
+-- Nachträge für Projekte, in denen die Tabelle schon älter ist:
+alter table fotowand_sessions add column if not exists titel    text  not null default '';
+alter table fotowand_sessions add column if not exists optionen jsonb not null default '{}'::jsonb;
 
 -- ── 2. Beiträge ─────────────────────────────────────────────
 create table if not exists fotowand_beitraege (
