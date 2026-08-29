@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHGR Fotowand – Präsentation</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb:    #c7d200;
+      --tuerkis: #23b2c6;
+      --rot:     #ed6a69;
+      --orange:  #fbb900;
+      --violett: #6169af;
+      --dg:      #878787;
+      --mg:      #c6c6c6;
+      --hg:      #ececec;
+      --bg:      #ececec;
+      --text:    #1a1a1a;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    button { font-family: Arial; cursor: pointer; }
+
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 22px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 22px; color: #111; letter-spacing: .04em; }
+
+    /* ── Topbar ─────────────────────────────────────────── */
+    #topbar {
+      background: var(--gelb); padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; gap: 20px; transition: opacity .5s ease;
+    }
+    #topbar.autohide { opacity: 0; pointer-events: none; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .stats-pill { background: rgba(0,0,0,.13); border-radius: 24px; padding: 8px 18px; font-size: 15px; color: #222; font-weight: 700; white-space: nowrap; }
+    .btn-reset { background: var(--rot); color: white; border: none; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: 700; }
+    .btn-reset:hover { filter: brightness(1.1); }
+    .btn-icon  { background: rgba(0,0,0,.13); border: none; border-radius: 8px; padding: 10px 16px; font-size: 16px; font-weight: 700; color: #222; }
+    .btn-icon:hover { background: rgba(0,0,0,.22); }
+
+    #body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+    #stage { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--hg); }
+    #stage:fullscreen { background: var(--hg); }
+
+    /* ── Reiter und Werkzeugleiste ──────────────────────── */
+    #tabbar {
+      display: flex; align-items: center; gap: 6px; padding: 10px 16px 0;
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+    .tab {
+      border: none; background: transparent; color: var(--dg);
+      font-size: 14px; font-weight: 700; padding: 9px 18px;
+      border-radius: 9px 9px 0 0; border-bottom: 3px solid transparent;
+    }
+    .tab:hover { color: #444; background: rgba(0,0,0,.04); }
+    .tab.on { color: #111; background: white; border-bottom-color: var(--gelb); }
+
+    #toolbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 9px 16px; background: white; border-bottom: 1px solid var(--mg);
+      flex-shrink: 0; min-height: 46px;
+    }
+    .tb-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tuerkis); }
+    .tb-btn {
+      border: 1px solid var(--mg); background: var(--hg); color: #444;
+      border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 700;
+    }
+    .tb-btn:hover { background: var(--mg); }
+    .tb-btn.aktiv { background: var(--tuerkis); border-color: var(--tuerkis); color: white; }
+    .tb-sep { width: 1px; height: 22px; background: var(--mg); margin: 0 4px; }
+    .a-chip {
+      border: 2px solid var(--mg); background: white; color: #555;
+      border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 700;
+    }
+    .a-chip:hover { border-color: var(--tuerkis); }
+    .a-chip.on { background: var(--tuerkis); border-color: var(--tuerkis); color: white; }
+
+    /* ── Bühne ──────────────────────────────────────────── */
+    #aufgabe-band {
+      padding: 14px 24px; background: white; border-bottom: 1px solid var(--mg);
+      font-size: 19px; font-weight: 800; color: #3a3a3a; line-height: 1.35;
+      flex-shrink: 0; display: none; white-space: pre-wrap;
+    }
+    #view { flex: 1; overflow: auto; position: relative; min-height: 0; }
+    #view.kein-scroll { overflow: hidden; }
+
+    #empty-state {
+      position: absolute; inset: 0; display: none;
+      flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    }
+    .empty-icon { font-size: 60px; color: var(--mg); }
+    .empty-text { color: var(--dg); font-size: 16px; }
+    .empty-hint { color: var(--mg); font-size: 12px; }
+
+    /* ── Karte (gemeinsames Grundelement) ───────────────── */
+    .karte {
+      background: white; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      border-top: 4px solid transparent; position: relative;
+    }
+    .karte img { width: 100%; display: block; background: var(--mg); }
+    .karte-txt { padding: 9px 11px 11px; }
+    .k-besch { font-size: 13px; font-weight: 700; color: #1a1a1a; line-height: 1.35; }
+    .k-komm  { font-size: 12px; color: #555; line-height: 1.45; margin-top: 5px; }
+    .k-meta  { font-size: 10.5px; color: var(--mg); margin-top: 7px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .k-versteckt { opacity: .32; }
+    .k-werkzeug {
+      position: absolute; top: 6px; right: 6px; display: flex; gap: 4px;
+      opacity: 0; transition: opacity .15s;
+    }
+    .karte:hover .k-werkzeug { opacity: 1; }
+    .k-wbtn {
+      border: none; background: rgba(255,255,255,.94); color: #444;
+      border-radius: 6px; padding: 5px 8px; font-size: 12px; line-height: 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    }
+    .k-wbtn:hover { background: white; }
+    .k-select {
+      width: 100%; margin-top: 8px; font-family: Arial; font-size: 11px;
+      padding: 5px 6px; border: 1px solid var(--mg); border-radius: 6px;
+      background: var(--hg); color: #444; cursor: pointer;
+    }
+    .k-punkt { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+    /* ── Ansicht 1: Upload-Reihenfolge (Masonry) ────────── */
+    #wand-grid { padding: 18px; column-gap: 14px; }
+    #wand-grid .karte { break-inside: avoid; margin-bottom: 14px; cursor: pointer; }
+
+    /* ── Ansicht 2: Pinnwand ────────────────────────────── */
+    #brett-port { position: absolute; inset: 0; overflow: hidden; cursor: grab; background: #e4e4e4; }
+    #brett-port.zieht { cursor: grabbing; }
+    #brett {
+      position: absolute; top: 0; left: 0; transform-origin: 0 0;
+      background:
+        linear-gradient(rgba(0,0,0,.035) 1px, transparent 1px) 0 0 / 60px 60px,
+        linear-gradient(90deg, rgba(0,0,0,.035) 1px, transparent 1px) 0 0 / 60px 60px,
+        #ededed;
+    }
+    #ablage-band {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: rgba(35,178,198,.07); border-right: 2px dashed var(--tuerkis);
+    }
+    #ablage-titel {
+      position: absolute; top: 14px; left: 18px; font-size: 15px; font-weight: 800;
+      color: var(--tuerkis); letter-spacing: .06em; text-transform: uppercase;
+    }
+    .b-karte {
+      position: absolute; transform-origin: 0 0; touch-action: none;
+      cursor: grab; user-select: none;
+    }
+    .b-karte.aktiv { cursor: grabbing; }
+    .b-karte .karte { box-shadow: 0 3px 12px rgba(0,0,0,.22); }
+    .b-karte .karte-txt { display: none; }
+    #brett.mit-text .b-karte .karte-txt { display: block; }
+    .griff {
+      position: absolute; right: -7px; bottom: -7px; width: 22px; height: 22px;
+      border-radius: 50%; background: var(--tuerkis); border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,.3); opacity: 0; transition: opacity .15s;
+      cursor: nwse-resize; touch-action: none;
+    }
+    .b-karte:hover .griff { opacity: 1; }
+
+    /* ── Ansicht 3: Rubriken ────────────────────────────── */
+    #kat-wrap { padding: 18px; display: flex; flex-direction: column; gap: 20px; }
+    .kat-block { background: white; border-radius: 12px; padding: 14px 16px 18px; }
+    .kat-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .kat-farbe { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .kat-name { font-size: 16px; font-weight: 800; color: #1a1a1a; }
+    .kat-zahl { font-size: 12px; color: var(--dg); font-weight: 700; }
+    .kat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+    .kat-leer { font-size: 12px; color: var(--mg); font-style: italic; }
+
+    /* ── Ansicht 4: Karte ───────────────────────────────── */
+    #karte-wrap { padding: 28px; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .info-box { background: white; border-left: 5px solid var(--orange); border-radius: 10px; padding: 16px 18px; font-size: 13.5px; line-height: 1.6; color: #444; }
+    .ort-zeile { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hg); font-size: 13px; }
+    .ort-zeile a { color: var(--tuerkis); font-size: 12px; }
+
+    /* ── Sidebar ────────────────────────────────────────── */
+    #sidebar {
+      width: 268px; flex-shrink: 0; background: white;
+      border-left: 1px solid var(--mg); display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .s-sec { padding: 15px 17px; border-bottom: 1px solid var(--hg); }
+    .s-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 9px; }
+    .s-input {
+      width: 100%; background: var(--hg); border: 1px solid var(--mg);
+      color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px;
+      font-family: Arial; outline: none; margin-bottom: 7px;
+    }
+    .s-input:focus { border-color: var(--tuerkis); }
+    textarea.s-input { resize: vertical; min-height: 62px; }
+    .s-hint { font-size: 11px; color: var(--dg); line-height: 1.45; }
+    .s-btn {
+      width: 100%; background: var(--hg); border: 1px solid var(--mg); border-radius: 6px;
+      padding: 8px 10px; font-size: 12px; font-weight: 700; color: #444;
+    }
+    .s-btn:hover { background: var(--mg); }
+    .s-btn.gelb { background: var(--gelb); border-color: var(--gelb); color: #111; }
+
+    .s-hist-toggle { background:none; border:none; color:var(--tuerkis); font-size:10.5px; font-weight:700; cursor:pointer; padding:0; letter-spacing:.5px; text-transform:uppercase; margin-top:4px; display:inline-block; }
+    .s-hist-toggle:hover { text-decoration:underline; }
+    .s-hist-list { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
+    .s-hist-item { background:var(--bg); border-radius:6px; padding:7px 9px; cursor:pointer; border:1px solid transparent; display:flex; align-items:center; gap:6px; }
+    .s-hist-item:hover { border-color:var(--tuerkis); }
+    .s-hist-item.active { border-color:var(--tuerkis); background:rgba(35,178,198,.1); }
+    .s-hist-label { font-size:12px; font-weight:700; color:#1a1a1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .s-hist-meta  { font-size:10px; color:var(--dg); margin-top:1px; }
+    .s-hist-btns  { display:flex; gap:3px; opacity:0; flex-shrink:0; }
+    .s-hist-item:hover .s-hist-btns { opacity:1; }
+    .s-hist-btn   { background:none; border:none; cursor:pointer; font-size:12px; padding:2px 5px; border-radius:3px; color:var(--mg); line-height:1; }
+    .s-hist-btn:hover { background:rgba(0,0,0,.1); }
+
+    .qr-wrap { background: white; border-radius: 10px; padding: 6px; border: 3px solid var(--gelb); display: flex; align-items: center; justify-content: center; min-height: 168px; cursor: pointer; }
+    #qrcode { width: 152px; height: 152px; display: flex; align-items: center; justify-content: center; }
+
+    .rub-zeile { display: flex; align-items: center; gap: 7px; padding: 5px 0; }
+    .rub-farbe { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; cursor: pointer; }
+    .rub-name  { flex: 1; font-size: 12.5px; font-weight: 700; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rub-zahl  { font-size: 10px; color: var(--dg); }
+    .rub-btn   { background: none; border: none; cursor: pointer; font-size: 11px; padding: 2px 4px; color: var(--mg); }
+    .rub-btn:hover { color: #333; }
+
+    #fs-hint { padding: 12px 17px; margin-top: auto; }
+
+    /* ── Overlays ───────────────────────────────────────── */
+    .ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 999; align-items: center; justify-content: center; }
+    #fokus-ov { cursor: zoom-out; }
+    #fokus-box {
+      width: 88vw; height: 88vh; background: white; border-radius: 20px;
+      border: 8px solid var(--gelb); display: flex; overflow: hidden;
+      box-shadow: 0 8px 50px rgba(0,0,0,.5); cursor: default;
+    }
+    #fokus-bild { flex: 1; background: #111; display: flex; align-items: center; justify-content: center; min-width: 0; }
+    #fokus-bild img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+    #fokus-info { width: 340px; flex-shrink: 0; padding: 28px 26px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    #fokus-besch { font-size: 24px; font-weight: 800; color: #1a1a1a; line-height: 1.3; }
+    #fokus-komm  { font-size: 16px; color: #444; line-height: 1.6; white-space: pre-wrap; }
+    #fokus-meta  { font-size: 12px; color: var(--dg); margin-top: auto; line-height: 1.7; }
+    .fokus-rubrik { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #333; }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="topbar-right">
+    <span class="stats-pill" id="stats">0 Fotos</span>
+    <span class="stats-pill" id="session-badge">Session: –</span>
+    <button class="btn-reset" onclick="sessionZuruecksetzen()">↺ Session zurücksetzen</button>
+    <button class="btn-icon" onclick="vollbild()" title="Vollbild">⛶</button>
+    <a href="../index.html" style="font-size:13px;font-weight:700;color:#333;text-decoration:none;background:rgba(0,0,0,.13);padding:10px 16px;border-radius:8px;white-space:nowrap">← tool-box</a>
+  </div>
+</div>
+
+<!-- QR-OVERLAY -->
+<div id="qr-ov" class="ov" style="background:rgba(0,0,0,.72);cursor:pointer" onclick="qrOverlayZu()">
+  <div onclick="event.stopPropagation()" style="background:white;border-radius:24px;padding:28px 32px;border:8px solid #c7d200;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <div id="qr-ov-img" style="width:460px;height:460px;display:flex;align-items:center;justify-content:center"></div>
+    <p style="margin-top:14px;color:#878787;font-size:14px">Klick zum Schliessen · Esc</p>
+  </div>
+</div>
+
+<!-- FOTO-FOKUS -->
+<div id="fokus-ov" class="ov" onclick="fokusZu()">
+  <div id="fokus-box" onclick="event.stopPropagation()">
+    <div id="fokus-bild"><img id="fokus-img" alt=""></div>
+    <div id="fokus-info">
+      <div id="fokus-besch"></div>
+      <div id="fokus-komm"></div>
+      <div id="fokus-rubrik-zeile"></div>
+      <div id="fokus-meta"></div>
+      <button class="s-btn" onclick="fokusZu()">Schliessen · Esc</button>
+    </div>
+  </div>
+</div>
+
+<div id="body">
+  <div id="stage">
+
+    <div id="tabbar">
+      <button class="tab on" data-v="wand"      onclick="setzeAnsicht('wand')">🧱 Wand</button>
+      <button class="tab"    data-v="pinnwand"  onclick="setzeAnsicht('pinnwand')">📌 Pinnwand</button>
+      <button class="tab"    data-v="kategorien" onclick="setzeAnsicht('kategorien')">🗂️ Rubriken</button>
+      <button class="tab"    data-v="karte"     onclick="setzeAnsicht('karte')">🗺️ Karte</button>
+    </div>
+
+    <div id="toolbar"></div>
+    <div id="aufgabe-band"></div>
+
+    <div id="view">
+      <div id="empty-state">
+        <div class="empty-icon">🖼️</div>
+        <div class="empty-text">Warte auf Fotos…</div>
+        <div class="empty-hint">QR-Code scannen und mitmachen</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="sidebar">
+
+    <div class="s-sec">
+      <span class="s-label">Session</span>
+      <input class="s-input" id="session-input" placeholder="z.B. citywalk-2026-09" onchange="sessionGewechselt()">
+      <div class="s-hint">Für jede Veranstaltung eine neue ID. Enter drücken zum Wechseln.</div>
+      <button class="s-hist-toggle" onclick="verlaufUmschalten()">▾ Gespeicherte Sessions</button>
+      <div id="history-list" class="s-hist-list" style="display:none"></div>
+    </div>
+
+    <div class="s-sec">
+      <span class="s-label">Aufgabenstellung</span>
+      <textarea class="s-input" id="aufgabe-input" rows="4" placeholder="z.B. Fotografiert im Stadtraum, was euch zum Thema einfällt." oninput="aufgabeGeaendert()"></textarea>
+      <div class="s-hint">Steht über der Wand und auf jedem Handy.</div>
+    </div>
+
+    <div class="s-sec">
+      <span class="s-label">Teilnahme-QR-Code</span>
+      <div class="qr-wrap" onclick="qrOverlayAuf()" title="Klick zum Vergrössern">
+        <div id="qrcode"><span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span></div>
+      </div>
+      <div class="s-hint" style="margin-top:8px" id="join-url-text"></div>
+    </div>
+
+    <div class="s-sec">
+      <span class="s-label">Rubriken</span>
+      <div id="rub-liste"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input class="s-input" id="rub-neu" placeholder="Neue Rubrik…" style="margin-bottom:0" onkeydown="if(event.key==='Enter')rubrikAnlegen()">
+        <button class="s-btn" style="width:auto;padding:8px 12px" onclick="rubrikAnlegen()">+</button>
+      </div>
+      <div class="s-hint" style="margin-top:8px">Können jederzeit angelegt werden — auch erst, wenn die Wand schon voll ist.</div>
+    </div>
+
+    <div class="s-sec">
+      <span class="s-label">Sammlung sichern</span>
+      <button class="s-btn gelb" id="dl-btn" onclick="alsZipLaden()">↓ Alle Fotos + CSV (ZIP)</button>
+      <div class="s-hint" style="margin-top:8px">Nach der Auswertung herunterladen und die Session zurücksetzen.</div>
+    </div>
+
+    <div id="fs-hint">
+      <button class="s-btn" onclick="vollbild()">⛶ Vollbild (F11 oder Klick)</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  PHGR Fotowand — Presenter
+// ═══════════════════════════════════════════════════════════
+
+const PALETTE   = ['#c7d200','#23b2c6','#ed6a69','#fbb900','#6169af','#3a3a3a'];
+const HIST_KEY  = 'phgr-fw-history';
+const HIST_MAX  = 12;
+const SESS_KEY  = 'phgr-fw-session';
+
+// Die Pinnwand rechnet in einer gedachten Fläche, nicht in
+// Bildschirmpixeln — sonst verrutscht alles, sobald dasselbe
+// Board am Beamer statt am Laptop läuft.
+const WELT_B   = 4200;
+const WELT_H   = 2600;
+const KARTE_B  = 240;
+
+let sb          = null;
+let sessionId   = '';
+let sitzung     = { aufgabenstellung: '', kategorien: [] };
+let beitraege   = [];
+let anordnungen = [];
+let aktiveAnordnungId = null;
+let positionen  = {};          // beitrag_id → { pos_x, pos_y, z, skalierung }
+let brettStand  = {};          // beitrag_id → { x, y, z, s } (auch virtuelle Ablageplätze)
+
+let ansicht     = 'wand';
+let mitText     = false;
+let pan         = { x: 0, y: 0 };
+let zoom        = 0.5;
+let maxZ        = 0;
+
+let pollTimer = null, hideTimer = null, aufgabeTimer = null, qrTimer = null;
+let hashBeitraege = '', hashPositionen = '';
+let ziehtGerade = false;
+let drag = null, resize = null, panDrag = null;
+
+// ── Start ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } catch (e) {
+    alert('Supabase konnte nicht initialisiert werden. Bitte config.js prüfen.');
+    return;
+  }
+  const gemerkt = localStorage.getItem(SESS_KEY) || heuteId();
+  document.getElementById('session-input').value = gemerkt;
+  await sessionSetzen(gemerkt);
+  startePolling();
+  initAutoHide();
+});
+
+function heuteId() { return 'fw-' + new Date().toISOString().slice(0, 10); }
+
+// ── Session ───────────────────────────────────────────────
+function sessionGewechselt() {
+  const roh = document.getElementById('session-input').value;
+  const id  = roh.trim().toLowerCase().replace(/\s+/g, '-');
+  document.getElementById('session-input').value = id;
+  sessionSetzen(id);
+}
+
+async function sessionSetzen(id) {
+  sessionId = id;
+  localStorage.setItem(SESS_KEY, id);
+  document.getElementById('session-badge').textContent = id ? `Session: ${id}` : 'Session: –';
+
+  beitraege = []; anordnungen = []; positionen = {}; brettStand = {};
+  aktiveAnordnungId = null;
+  hashBeitraege = ''; hashPositionen = '';
+
+  qrAktualisieren();
+  await ladeSitzung();
+  await ladeAnordnungen();
+  await ladeBeitraege();
+  rendern();
+}
+
+async function ladeSitzung() {
+  sitzung = { aufgabenstellung: '', kategorien: [] };
+  if (!sessionId) return;
+  try {
+    const { data } = await sb.from('fotowand_sessions')
+      .select('aufgabenstellung, kategorien')
+      .eq('session_id', sessionId).maybeSingle();
+    if (data) {
+      sitzung.aufgabenstellung = data.aufgabenstellung || '';
+      sitzung.kategorien = Array.isArray(data.kategorien) ? data.kategorien : [];
+    }
+  } catch (e) { console.warn('Session laden:', e); }
+  document.getElementById('aufgabe-input').value = sitzung.aufgabenstellung;
+  zeigeAufgabe();
+  renderRubriken();
+}
+
+async function speichereSitzung() {
+  if (!sessionId) return;
+  try {
+    await sb.from('fotowand_sessions').upsert({
+      session_id:       sessionId,
+      aufgabenstellung: sitzung.aufgabenstellung,
+      kategorien:       sitzung.kategorien
+    }, { onConflict: 'session_id' });
+  } catch (e) { console.warn('Session speichern:', e); }
+}
+
+function aufgabeGeaendert() {
+  sitzung.aufgabenstellung = document.getElementById('aufgabe-input').value;
+  zeigeAufgabe();
+  clearTimeout(aufgabeTimer);
+  aufgabeTimer = setTimeout(speichereSitzung, 700);
+}
+
+function zeigeAufgabe() {
+  const band = document.getElementById('aufgabe-band');
+  const t = (sitzung.aufgabenstellung || '').trim();
+  band.textContent = t;
+  band.style.display = t ? 'block' : 'none';
+}
+
+// ── Daten laden ───────────────────────────────────────────
+async function ladeBeitraege() {
+  if (!sessionId) { beitraege = []; return false; }
+  try {
+    const { data, error } = await sb.from('fotowand_beitraege')
+      .select('*').eq('session_id', sessionId).order('erstellt', { ascending: false });
+    if (error) { console.warn('Beiträge:', error.message); return false; }
+    const neu = data || [];
+    const hash = JSON.stringify(neu.map(b => [b.id, b.kategorie_id, b.versteckt]));
+    beitraege = neu;
+    if (neu.length) verlaufMerken(sessionId, neu.length);
+    statsAktualisieren();
+    if (hash !== hashBeitraege) { hashBeitraege = hash; return true; }
+    return false;
+  } catch (e) { console.warn('Netzwerk:', e); return false; }
+}
+
+async function ladeAnordnungen() {
+  if (!sessionId) { anordnungen = []; return; }
+  try {
+    const { data } = await sb.from('fotowand_anordnungen')
+      .select('*').eq('session_id', sessionId).order('reihenfolge', { ascending: true });
+    anordnungen = data || [];
+    if (anordnungen.length && !anordnungen.some(a => a.id === aktiveAnordnungId)) {
+      aktiveAnordnungId = anordnungen[0].id;
+      await ladePositionen();
+    }
+  } catch (e) { console.warn('Anordnungen:', e); }
+}
+
+async function ladePositionen() {
+  positionen = {};
+  hashPositionen = '';
+  if (!aktiveAnordnungId) return false;
+  try {
+    const { data } = await sb.from('fotowand_positionen')
+      .select('*').eq('anordnung_id', aktiveAnordnungId);
+    (data || []).forEach(p => {
+      positionen[p.beitrag_id] = { pos_x: p.pos_x, pos_y: p.pos_y, z: p.z, skalierung: p.skalierung };
+      maxZ = Math.max(maxZ, p.z || 0);
+    });
+    hashPositionen = JSON.stringify(positionen);
+    return true;
+  } catch (e) { console.warn('Positionen:', e); return false; }
+}
+
+// ── Polling ───────────────────────────────────────────────
+function startePolling() {
+  pollTimer = setInterval(async () => {
+    if (ziehtGerade) return;                 // nicht unter den Händen wegziehen
+    const geaendert = await ladeBeitraege();
+    let posNeu = false;
+    if (ansicht === 'pinnwand' && aktiveAnordnungId) {
+      const alt = hashPositionen;
+      await ladePositionen();
+      posNeu = alt !== hashPositionen;
+    }
+    if (geaendert || posNeu) rendern();
+  }, 3000);
+}
+
+function statsAktualisieren() {
+  const n = beitraege.length;
+  const v = beitraege.filter(b => b.versteckt).length;
+  const o = beitraege.filter(b => b.lat != null && b.lon != null).length;
+  document.getElementById('stats').textContent =
+    `${n} Foto${n === 1 ? '' : 's'}` + (v ? ` · ${v} ausgeblendet` : '') + (o ? ` · ${o} mit Ort` : '');
+}
+
+// ── Ansichten ─────────────────────────────────────────────
+function setzeAnsicht(v) {
+  ansicht = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
+  document.getElementById('view').classList.toggle('kein-scroll', v === 'pinnwand');
+  if (v === 'pinnwand') sorgeFuerAnordnung();
+  else rendern();
+}
+
+function rendern() {
+  renderWerkzeugleiste();
+  if (ansicht === 'wand')            renderWand();
+  else if (ansicht === 'pinnwand')   renderBrett();
+  else if (ansicht === 'kategorien') renderKategorien();
+  else                               renderKarte();
+}
+
+function leerHtml(text, hinweis) {
+  return `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+    <div class="empty-icon">🖼️</div>
+    <div class="empty-text">${esc(text)}</div>
+    <div class="empty-hint">${esc(hinweis || '')}</div>
+  </div>`;
+}
+
+// ── Werkzeugleiste ────────────────────────────────────────
+function renderWerkzeugleiste() {
+  const tb = document.getElementById('toolbar');
+
+  if (ansicht === 'wand') {
+    tb.innerHTML = `<span class="tb-label">Upload-Reihenfolge</span>
+      <span style="font-size:12px;color:var(--dg)">Neueste zuerst — die Sammlung wächst, während die Gruppen noch unterwegs sind.</span>`;
+    return;
+  }
+
+  if (ansicht === 'pinnwand') {
+    const chips = anordnungen.map(a => `
+      <button class="a-chip${a.id === aktiveAnordnungId ? ' on' : ''}" onclick="anordnungWaehlen('${a.id}')">${esc(a.name)}</button>`).join('');
+    tb.innerHTML = `
+      <span class="tb-label">Anordnung</span>
+      ${chips}
+      <button class="tb-btn" onclick="anordnungAnlegen()" title="Neue, leere Anordnung">+ Neu</button>
+      <button class="tb-btn" onclick="anordnungDuplizieren()" title="Aktuelle Anordnung kopieren">⧉ Kopie</button>
+      <button class="tb-btn" onclick="anordnungUmbenennen()">✏️</button>
+      <button class="tb-btn" onclick="anordnungLoeschen()">🗑️</button>
+      <span class="tb-sep"></span>
+      <button class="tb-btn${mitText ? ' aktiv' : ''}" onclick="textUmschalten()">Text zeigen</button>
+      <button class="tb-btn" onclick="zoomStufe(1.2)">＋</button>
+      <button class="tb-btn" onclick="zoomStufe(1/1.2)">－</button>
+      <button class="tb-btn" onclick="brettEinpassen()">⤢ Alles zeigen</button>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" onclick="anordnungLeeren()" title="Alle Fotos zurück in die Ablage">↺ Zurück in die Ablage</button>`;
+    return;
+  }
+
+  if (ansicht === 'kategorien') {
+    tb.innerHTML = `<span class="tb-label">Rubriken</span>
+      <span style="font-size:12px;color:var(--dg)">Zuordnung direkt an der Karte ändern. Rubriken werden in der Seitenleiste angelegt.</span>`;
+    return;
+  }
+
+  tb.innerHTML = `<span class="tb-label">Karte</span>
+    <span style="font-size:12px;color:var(--dg)">Folgt in der zweiten Runde — die Koordinaten werden bereits gesammelt.</span>`;
+}
+
+// ── Ansicht 1: Wand ───────────────────────────────────────
+function renderWand() {
+  const view = document.getElementById('view');
+  if (!beitraege.length) { view.innerHTML = leerHtml('Warte auf Fotos…', 'QR-Code scannen und mitmachen'); return; }
+  view.innerHTML = `<div id="wand-grid" style="columns:270px">
+    ${beitraege.map(b => karteHtml(b, { klick: true, rubrikWahl: true })).join('')}
+  </div>`;
+}
+
+// ── Ansicht 3: Rubriken ───────────────────────────────────
+function renderKategorien() {
+  const view = document.getElementById('view');
+  if (!beitraege.length) { view.innerHTML = leerHtml('Warte auf Fotos…', 'QR-Code scannen und mitmachen'); return; }
+
+  const bloecke = sitzung.kategorien.map(k => {
+    const drin = beitraege.filter(b => b.kategorie_id === k.id);
+    return blockHtml(k.label, k.farbe || PALETTE[0], drin);
+  });
+
+  const ids  = new Set(sitzung.kategorien.map(k => k.id));
+  const rest = beitraege.filter(b => !b.kategorie_id || !ids.has(b.kategorie_id));
+  if (rest.length || !sitzung.kategorien.length) {
+    bloecke.push(blockHtml('Noch nicht zugeordnet', 'var(--mg)', rest));
+  }
+
+  const hinweis = sitzung.kategorien.length ? '' :
+    `<div class="info-box">Noch keine Rubriken angelegt. Das ist kein Mangel — oft ist es didaktisch
+     stärker, erst zu sammeln und die Ordnung anschliessend gemeinsam zu erarbeiten.
+     Rubriken legst du links in der Seitenleiste an.</div>`;
+
+  view.innerHTML = `<div id="kat-wrap">${hinweis}${bloecke.join('')}</div>`;
+}
+
+function blockHtml(name, farbe, liste) {
+  return `<div class="kat-block">
+    <div class="kat-kopf">
+      <span class="kat-farbe" style="background:${farbe}"></span>
+      <span class="kat-name">${esc(name)}</span>
+      <span class="kat-zahl">${liste.length}</span>
+    </div>
+    ${liste.length
+      ? `<div class="kat-grid">${liste.map(b => karteHtml(b, { klick: true, rubrikWahl: true })).join('')}</div>`
+      : `<div class="kat-leer">Noch keine Fotos in dieser Rubrik.</div>`}
+  </div>`;
+}
+
+// ── Ansicht 4: Karte ──────────────────────────────────────
+function renderKarte() {
+  const view = document.getElementById('view');
+  const mit  = beitraege.filter(b => b.lat != null && b.lon != null);
+  const ohne = beitraege.length - mit.length;
+
+  view.innerHTML = `<div id="karte-wrap">
+    <div class="info-box">
+      <b>Die Kartenansicht folgt in der zweiten Runde.</b><br>
+      Sie braucht als einziger Teil des Werkzeugs eine fremde Bibliothek (Leaflet) —
+      das wird bewusst gesondert entschieden. Die Koordinaten werden jetzt schon
+      gesammelt, es geht also nichts verloren.
+    </div>
+    <div class="info-box" style="border-left-color:var(--tuerkis)">
+      <b>${mit.length}</b> von ${beitraege.length} Fotos tragen Koordinaten.
+      ${ohne ? `<b>${ohne}</b> ohne Ortsangabe — sie werden später in einer Randleiste
+      «ohne Ortsangabe» erscheinen und nicht verschwinden.` : ''}
+    </div>
+    ${mit.length ? `<div style="background:white;border-radius:10px;padding:14px 18px">
+      ${mit.map(b => `<div class="ort-zeile">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.beschreibung || 'ohne Beschreibung')}</span>
+        <a href="https://www.openstreetmap.org/?mlat=${b.lat}&mlon=${b.lon}#map=17/${b.lat}/${b.lon}" target="_blank" rel="noopener">${b.lat.toFixed(4)}, ${b.lon.toFixed(4)} ↗</a>
+      </div>`).join('')}
+    </div>` : ''}
+  </div>`;
+}
+
+// ── Kartenbaustein ────────────────────────────────────────
+function karteHtml(b, opt) {
+  opt = opt || {};
+  const kat   = rubrikVon(b.kategorie_id);
+  const farbe = kat ? (kat.farbe || PALETTE[0]) : 'transparent';
+  const klick = opt.klick ? `onclick="fokusAuf('${b.id}')"` : '';
+
+  const wahl = (opt.rubrikWahl && sitzung.kategorien.length)
+    ? `<select class="k-select" onclick="event.stopPropagation()" onchange="rubrikZuweisen('${b.id}', this.value)">
+         <option value="">— nicht zugeordnet —</option>
+         ${sitzung.kategorien.map(k => `<option value="${k.id}"${k.id === b.kategorie_id ? ' selected' : ''}>${esc(k.label)}</option>`).join('')}
+       </select>` : '';
+
+  return `<div class="karte${b.versteckt ? ' k-versteckt' : ''}" style="border-top-color:${farbe}" ${klick}>
+    <img src="${esc(b.bild_url)}" alt="${esc(b.beschreibung)}" loading="${opt.sofort ? 'eager' : 'lazy'}">
+    <div class="k-werkzeug">
+      <button class="k-wbtn" onclick="event.stopPropagation();verstecktUmschalten('${b.id}')" title="${b.versteckt ? 'Wieder einblenden' : 'Ausblenden'}">${b.versteckt ? '👁' : '🚫'}</button>
+    </div>
+    <div class="karte-txt">
+      <div class="k-besch">${esc(b.beschreibung || 'ohne Beschreibung')}</div>
+      ${b.kommentar ? `<div class="k-komm">${esc(b.kommentar)}</div>` : ''}
+      <div class="k-meta">
+        ${kat ? `<span class="k-punkt" style="background:${farbe}"></span>${esc(kat.label)}` : ''}
+        ${b.autor ? `<span>${esc(b.autor)}</span>` : ''}
+        ${b.lat != null ? '<span>📍</span>' : ''}
+        <span>${zeitKurz(b.erstellt)}</span>
+      </div>
+      ${wahl}
+    </div>
+  </div>`;
+}
+
+// ── Ansicht 2: Pinnwand ───────────────────────────────────
+async function sorgeFuerAnordnung() {
+  if (!sessionId) { rendern(); return; }
+  await ladeAnordnungen();
+  if (!anordnungen.length) {
+    await anordnungAnlegen('Erste Anordnung', true);
+    return;
+  }
+  if (!aktiveAnordnungId) { aktiveAnordnungId = anordnungen[0].id; }
+  await ladePositionen();
+  rendern();
+  brettEinpassen();
+}
+
+function brettPositionen() {
+  // Fotos ohne gespeicherte Position drängen sich nicht ins Bild,
+  // sondern warten in der Ablage am linken Rand.
+  const reihe = beitraege.slice().reverse();       // älteste zuerst → stabile Ablage
+  let i = 0;
+  const stand = {};
+  reihe.forEach(b => {
+    const p = positionen[b.id];
+    if (p) {
+      stand[b.id] = { x: p.pos_x, y: p.pos_y, z: p.z || 0, s: p.skalierung || 1, ablage: false };
+    } else {
+      const spalte = Math.floor(i / 12), zeile = i % 12;
+      stand[b.id] = { x: 24 + spalte * 160, y: 74 + zeile * 200, z: 0, s: 0.6, ablage: true };
+      i++;
+    }
+  });
+  return { stand, ablageSpalten: Math.max(1, Math.ceil(i / 12)) };
+}
+
+function renderBrett() {
+  const view = document.getElementById('view');
+  const { stand, ablageSpalten } = brettPositionen();
+  brettStand = stand;
+
+  const bandBreite = 24 + ablageSpalten * 160 + 16;
+  const karten = beitraege.map(b => {
+    const s = stand[b.id];
+    return `<div class="b-karte" data-id="${b.id}" style="width:${KARTE_B}px;z-index:${s.z};transform:translate(${s.x}px,${s.y}px) scale(${s.s})">
+      ${karteHtml(b, { sofort: true })}
+      <div class="griff" title="Ziehen zum Vergrössern"></div>
+    </div>`;
+  }).join('');
+
+  view.innerHTML = `<div id="brett-port">
+    <div id="brett" class="${mitText ? 'mit-text' : ''}" style="width:${WELT_B}px;height:${WELT_H}px">
+      <div id="ablage-band" style="width:${bandBreite}px"></div>
+      <div id="ablage-titel">Ablage</div>
+      ${karten}
+    </div>
+  </div>`;
+
+  if (!beitraege.length) {
+    view.insertAdjacentHTML('beforeend', leerHtml('Warte auf Fotos…', 'Neue Fotos landen zuerst in der Ablage'));
+  }
+
+  const port = document.getElementById('brett-port');
+  port.addEventListener('pointerdown', brettDown);
+  port.addEventListener('pointermove', brettMove);
+  port.addEventListener('pointerup',   brettUp);
+  port.addEventListener('pointercancel', brettUp);
+  port.addEventListener('wheel', brettRad, { passive: false });
+  brettTransform();
+}
+
+function brettTransform() {
+  const brett = document.getElementById('brett');
+  if (brett) brett.style.transform = `translate(${pan.x}px,${pan.y}px) scale(${zoom})`;
+}
+
+function brettEinpassen() {
+  const port = document.getElementById('brett-port');
+  if (!port) return;
+  const r = port.getBoundingClientRect();
+  zoom  = Math.min(r.width / WELT_B, r.height / WELT_H) * 0.98;
+  pan.x = (r.width  - WELT_B * zoom) / 2;
+  pan.y = (r.height - WELT_H * zoom) / 2;
+  brettTransform();
+}
+
+function zoomStufe(f) {
+  const port = document.getElementById('brett-port');
+  if (!port) return;
+  const r = port.getBoundingClientRect();
+  const mx = r.width / 2, my = r.height / 2;
+  const neu = Math.max(0.1, Math.min(2.5, zoom * f));
+  pan.x = mx - (mx - pan.x) * (neu / zoom);
+  pan.y = my - (my - pan.y) * (neu / zoom);
+  zoom = neu;
+  brettTransform();
+}
+
+function textUmschalten() {
+  mitText = !mitText;
+  const brett = document.getElementById('brett');
+  if (brett) brett.classList.toggle('mit-text', mitText);
+  renderWerkzeugleiste();
+}
+
+function brettRad(e) {
+  e.preventDefault();
+  const port = document.getElementById('brett-port');
+  const r  = port.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const neu = Math.max(0.1, Math.min(2.5, zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+  pan.x = mx - (mx - pan.x) * (neu / zoom);
+  pan.y = my - (my - pan.y) * (neu / zoom);
+  zoom = neu;
+  brettTransform();
+}
+
+function brettDown(e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const port  = document.getElementById('brett-port');
+  if (e.target.closest && e.target.closest('.k-wbtn, .k-select')) return;   // Werkzeuge an der Karte
+  const karte = e.target.closest ? e.target.closest('.b-karte') : null;
+  const griff = e.target.closest ? e.target.closest('.griff')   : null;
+
+  if (karte && griff) {
+    const st = brettStand[karte.dataset.id];
+    resize = { id: karte.dataset.id, el: karte, startX: e.clientX, s0: st.s, x: st.x, y: st.y, z: st.z, s: st.s };
+    ziehtGerade = true;
+    port.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
+
+  if (karte) {
+    const st = brettStand[karte.dataset.id];
+    maxZ++;
+    drag = { id: karte.dataset.id, el: karte, startX: e.clientX, startY: e.clientY,
+             x0: st.x, y0: st.y, x: st.x, y: st.y, s: st.s, z: maxZ, bewegt: false };
+    karte.style.zIndex = maxZ;
+    karte.classList.add('aktiv');
+    ziehtGerade = true;
+    port.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
+
+  panDrag = { startX: e.clientX, startY: e.clientY, px: pan.x, py: pan.y };
+  port.classList.add('zieht');
+  port.setPointerCapture(e.pointerId);
+}
+
+function brettMove(e) {
+  if (drag) {
+    if (Math.abs(e.clientX - drag.startX) > 4 || Math.abs(e.clientY - drag.startY) > 4) drag.bewegt = true;
+    const dx = (e.clientX - drag.startX) / zoom;
+    const dy = (e.clientY - drag.startY) / zoom;
+    drag.x = Math.max(0, Math.min(WELT_B - KARTE_B * drag.s, drag.x0 + dx));
+    drag.y = Math.max(0, Math.min(WELT_H - 80, drag.y0 + dy));
+    drag.el.style.transform = `translate(${drag.x}px,${drag.y}px) scale(${drag.s})`;
+    return;
+  }
+  if (resize) {
+    const d = (e.clientX - resize.startX) / zoom;
+    resize.s = Math.max(0.35, Math.min(3, resize.s0 + d / 240));
+    resize.el.style.transform = `translate(${resize.x}px,${resize.y}px) scale(${resize.s})`;
+    return;
+  }
+  if (panDrag) {
+    pan.x = panDrag.px + (e.clientX - panDrag.startX);
+    pan.y = panDrag.py + (e.clientY - panDrag.startY);
+    brettTransform();
+  }
+}
+
+async function brettUp(e) {
+  const port = document.getElementById('brett-port');
+  if (port) port.classList.remove('zieht');
+
+  if (drag) {
+    const d = drag; drag = null; ziehtGerade = false;
+    d.el.classList.remove('aktiv');
+    if (!d.bewegt) { fokusAuf(d.id); return; }      // kurzer Klick = gross anzeigen
+    await positionSpeichern(d.id, d.x, d.y, d.z, d.s);
+    renderBrett();
+    return;
+  }
+  if (resize) {
+    const r = resize; resize = null; ziehtGerade = false;
+    await positionSpeichern(r.id, r.x, r.y, r.z, r.s);
+    renderBrett();
+    return;
+  }
+  panDrag = null;
+}
+
+async function positionSpeichern(id, x, y, z, s) {
+  positionen[id] = { pos_x: x, pos_y: y, z: z, skalierung: s };
+  hashPositionen = JSON.stringify(positionen);
+  try {
+    await sb.from('fotowand_positionen').upsert({
+      anordnung_id: aktiveAnordnungId, beitrag_id: id,
+      pos_x: x, pos_y: y, z: z, skalierung: s
+    }, { onConflict: 'anordnung_id,beitrag_id' });
+  } catch (e) { console.warn('Position speichern:', e); }
+}
+
+// ── Anordnungen verwalten ─────────────────────────────────
+async function anordnungWaehlen(id) {
+  if (id === aktiveAnordnungId) return;
+  aktiveAnordnungId = id;
+  await ladePositionen();
+  rendern();
+}
+
+async function anordnungAnlegen(name, still) {
+  if (!sessionId) return;
+  const n = still ? name : (prompt('Name der neuen Anordnung:', `Anordnung ${anordnungen.length + 1}`) || '').trim();
+  if (!n) return;
+  try {
+    const { data, error } = await sb.from('fotowand_anordnungen')
+      .insert({ session_id: sessionId, name: n, reihenfolge: anordnungen.length })
+      .select().single();
+    if (error) throw error;
+    anordnungen.push(data);
+    aktiveAnordnungId = data.id;
+    await ladePositionen();
+    rendern();
+    brettEinpassen();
+  } catch (e) { alert('Anordnung konnte nicht angelegt werden: ' + (e.message || e)); }
+}
+
+async function anordnungDuplizieren() {
+  if (!aktiveAnordnungId) return;
+  const alt = anordnungen.find(a => a.id === aktiveAnordnungId);
+  const n = (prompt('Name der Kopie:', `${alt ? alt.name : 'Anordnung'} (Kopie)`) || '').trim();
+  if (!n) return;
+  try {
+    const { data, error } = await sb.from('fotowand_anordnungen')
+      .insert({ session_id: sessionId, name: n, reihenfolge: anordnungen.length })
+      .select().single();
+    if (error) throw error;
+    const zeilen = Object.entries(positionen).map(([bid, p]) => ({
+      anordnung_id: data.id, beitrag_id: bid,
+      pos_x: p.pos_x, pos_y: p.pos_y, z: p.z, skalierung: p.skalierung
+    }));
+    if (zeilen.length) await sb.from('fotowand_positionen').insert(zeilen);
+    anordnungen.push(data);
+    aktiveAnordnungId = data.id;
+    await ladePositionen();
+    rendern();
+  } catch (e) { alert('Kopie fehlgeschlagen: ' + (e.message || e)); }
+}
+
+async function anordnungUmbenennen() {
+  const a = anordnungen.find(x => x.id === aktiveAnordnungId);
+  if (!a) return;
+  const n = (prompt('Anordnung umbenennen:', a.name) || '').trim();
+  if (!n) return;
+  a.name = n;
+  renderWerkzeugleiste();
+  try { await sb.from('fotowand_anordnungen').update({ name: n }).eq('id', a.id); }
+  catch (e) { console.warn(e); }
+}
+
+async function anordnungLoeschen() {
+  const a = anordnungen.find(x => x.id === aktiveAnordnungId);
+  if (!a) return;
+  if (!confirm(`Anordnung „${a.name}" löschen?\n\nDie Fotos selbst bleiben erhalten — nur diese eine Anordnung verschwindet.`)) return;
+  try {
+    await sb.from('fotowand_anordnungen').delete().eq('id', a.id);
+    anordnungen = anordnungen.filter(x => x.id !== a.id);
+    aktiveAnordnungId = anordnungen.length ? anordnungen[0].id : null;
+    await ladePositionen();
+    if (!anordnungen.length) { await sorgeFuerAnordnung(); return; }
+    rendern();
+  } catch (e) { alert('Löschen fehlgeschlagen: ' + (e.message || e)); }
+}
+
+async function anordnungLeeren() {
+  if (!aktiveAnordnungId) return;
+  if (!confirm('Alle Fotos zurück in die Ablage?\n\nDie Anordnung selbst bleibt bestehen, nur die Plätze werden geleert.')) return;
+  try {
+    await sb.from('fotowand_positionen').delete().eq('anordnung_id', aktiveAnordnungId);
+    positionen = {}; hashPositionen = '{}';
+    renderBrett();
+  } catch (e) { alert('Zurücksetzen fehlgeschlagen: ' + (e.message || e)); }
+}
+
+// ── Rubriken verwalten ────────────────────────────────────
+function rubrikVon(id) { return id ? sitzung.kategorien.find(k => k.id === id) : null; }
+
+function renderRubriken() {
+  const box = document.getElementById('rub-liste');
+  if (!sitzung.kategorien.length) {
+    box.innerHTML = '<div class="s-hint">Noch keine Rubriken. Das Werkzeug funktioniert auch ganz ohne.</div>';
+    return;
+  }
+  box.innerHTML = sitzung.kategorien.map(k => {
+    const n = beitraege.filter(b => b.kategorie_id === k.id).length;
+    return `<div class="rub-zeile">
+      <span class="rub-farbe" style="background:${k.farbe}" onclick="rubrikFarbe('${k.id}')" title="Farbe wechseln"></span>
+      <span class="rub-name" onclick="rubrikUmbenennen('${k.id}')" title="Klick zum Umbenennen">${esc(k.label)}</span>
+      <span class="rub-zahl">${n}</span>
+      <button class="rub-btn" onclick="rubrikLoeschen('${k.id}')" title="Löschen">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function rubrikAnlegen() {
+  const feld = document.getElementById('rub-neu');
+  const name = feld.value.trim();
+  if (!name || !sessionId) return;
+  sitzung.kategorien.push({
+    id:    neueId(),
+    label: name,
+    farbe: PALETTE[sitzung.kategorien.length % PALETTE.length]
+  });
+  feld.value = '';
+  renderRubriken();
+  rendern();
+  await speichereSitzung();
+}
+
+async function rubrikUmbenennen(id) {
+  const k = rubrikVon(id);
+  if (!k) return;
+  const n = (prompt('Rubrik umbenennen:', k.label) || '').trim();
+  if (!n) return;
+  k.label = n;                       // die id bleibt — Zuordnungen gehen nicht verloren
+  renderRubriken(); rendern();
+  await speichereSitzung();
+}
+
+async function rubrikFarbe(id) {
+  const k = rubrikVon(id);
+  if (!k) return;
+  const i = PALETTE.indexOf(k.farbe);
+  k.farbe = PALETTE[(i + 1) % PALETTE.length];
+  renderRubriken(); rendern();
+  await speichereSitzung();
+}
+
+async function rubrikLoeschen(id) {
+  const k = rubrikVon(id);
+  if (!k) return;
+  const n = beitraege.filter(b => b.kategorie_id === id).length;
+  if (!confirm(`Rubrik „${k.label}" löschen?` + (n ? `\n\n${n} Foto${n === 1 ? '' : 's'} verliert die Zuordnung — die Fotos selbst bleiben.` : ''))) return;
+  sitzung.kategorien = sitzung.kategorien.filter(x => x.id !== id);
+  await speichereSitzung();
+  if (n) {
+    try { await sb.from('fotowand_beitraege').update({ kategorie_id: null }).eq('session_id', sessionId).eq('kategorie_id', id); }
+    catch (e) { console.warn(e); }
+    beitraege.forEach(b => { if (b.kategorie_id === id) b.kategorie_id = null; });
+  }
+  renderRubriken(); rendern();
+}
+
+async function rubrikZuweisen(beitragId, katId) {
+  const b = beitraege.find(x => x.id === beitragId);
+  if (!b) return;
+  b.kategorie_id = katId || null;
+  hashBeitraege = '';
+  renderRubriken(); rendern();
+  try { await sb.from('fotowand_beitraege').update({ kategorie_id: katId || null }).eq('id', beitragId); }
+  catch (e) { console.warn('Zuordnung:', e); }
+}
+
+// ── Moderation ────────────────────────────────────────────
+async function verstecktUmschalten(id) {
+  const b = beitraege.find(x => x.id === id);
+  if (!b) return;
+  b.versteckt = !b.versteckt;
+  hashBeitraege = '';
+  rendern();
+  try { await sb.from('fotowand_beitraege').update({ versteckt: b.versteckt }).eq('id', id); }
+  catch (e) { console.warn(e); }
+  statsAktualisieren();
+}
+
+// ── Fokus-Overlay ─────────────────────────────────────────
+function fokusAuf(id) {
+  const b = beitraege.find(x => x.id === id);
+  if (!b) return;
+  const kat = rubrikVon(b.kategorie_id);
+  document.getElementById('fokus-img').src            = b.bild_url;
+  document.getElementById('fokus-besch').textContent  = b.beschreibung || 'ohne Beschreibung';
+  document.getElementById('fokus-komm').textContent   = b.kommentar || '';
+  document.getElementById('fokus-rubrik-zeile').innerHTML = kat
+    ? `<span class="fokus-rubrik"><span class="k-punkt" style="background:${kat.farbe}"></span>${esc(kat.label)}</span>` : '';
+  document.getElementById('fokus-meta').innerHTML =
+    (b.autor ? `${esc(b.autor)}<br>` : '') +
+    (b.lat != null ? `📍 ${b.lat.toFixed(5)}, ${b.lon.toFixed(5)}<br>` : 'ohne Ortsangabe<br>') +
+    zeitLang(b.erstellt);
+  document.getElementById('fokus-ov').style.display = 'flex';
+}
+function fokusZu() { document.getElementById('fokus-ov').style.display = 'none'; }
+
+// ── QR-Code ───────────────────────────────────────────────
+function qrAktualisieren() {
+  clearTimeout(qrTimer);
+  qrTimer = setTimeout(() => {
+    const box = document.getElementById('qrcode');
+    if (!sessionId) {
+      box.innerHTML = '<span style="color:#888;font-size:11px;text-align:center;padding:8px;line-height:1.6">Session-ID<br>eingeben →<br>QR erscheint</span>';
+      document.getElementById('join-url-text').textContent = '';
+      return;
+    }
+    const url = `${BASE_URL}/join.html?session=${encodeURIComponent(sessionId)}`;
+    document.getElementById('join-url-text').textContent = url;
+    box.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=152x152&qzone=2&data=${encodeURIComponent(url)}" width="152" height="152" alt="QR-Code" style="display:block;border-radius:4px">`;
+  }, 350);
+}
+
+function qrOverlayAuf() {
+  const url = document.getElementById('join-url-text').textContent;
+  if (!url) return;
+  document.getElementById('qr-ov-img').innerHTML =
+    `<img src="https://api.qrserver.com/v1/create-qr-code/?size=460x460&qzone=2&data=${encodeURIComponent(url)}" width="460" height="460" alt="QR-Code" style="display:block;border-radius:4px">`;
+  document.getElementById('qr-ov').style.display = 'flex';
+}
+function qrOverlayZu() { document.getElementById('qr-ov').style.display = 'none'; }
+
+// ── Session-Verlauf ───────────────────────────────────────
+function verlaufLesen() { try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch { return []; } }
+function verlaufSchreiben(a) { localStorage.setItem(HIST_KEY, JSON.stringify(a)); }
+
+function verlaufMerken(id, anzahl) {
+  if (!id) return;
+  let h = verlaufLesen();
+  const heute = new Date().toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const i = h.findIndex(x => x.id === id);
+  if (i >= 0) { const [it] = h.splice(i, 1); it.count = anzahl; it.lastUsed = heute; h.unshift(it); }
+  else { h.unshift({ id, label: '', count: anzahl, lastUsed: heute }); if (h.length > HIST_MAX) h = h.slice(0, HIST_MAX); }
+  verlaufSchreiben(h);
+  renderVerlauf();
+}
+
+function verlaufEntfernen(e, id) {
+  if (e) e.stopPropagation();
+  verlaufSchreiben(verlaufLesen().filter(x => x.id !== id));
+  renderVerlauf();
+}
+
+function verlaufUmbenennen(e, id) {
+  e.stopPropagation();
+  const h = verlaufLesen(); const it = h.find(x => x.id === id);
+  if (!it) return;
+  const n = prompt('Session umbenennen:', it.label || it.id);
+  if (n === null) return;
+  it.label = n.trim(); verlaufSchreiben(h); renderVerlauf();
+}
+
+function verlaufUmschalten() {
+  const list = document.getElementById('history-list');
+  const btn  = document.querySelector('.s-hist-toggle');
+  if (list.style.display === 'none') { list.style.display = 'flex'; btn.textContent = '▴ Gespeicherte Sessions'; renderVerlauf(); }
+  else { list.style.display = 'none'; btn.textContent = '▾ Gespeicherte Sessions'; }
+}
+
+function renderVerlauf() {
+  const list = document.getElementById('history-list');
+  if (list.style.display === 'none') return;
+  const h = verlaufLesen();
+  if (!h.length) { list.innerHTML = '<div style="font-size:11px;color:var(--dg);padding:4px 2px">Noch keine gespeicherten Sessions.</div>'; return; }
+  list.innerHTML = h.map(x => `
+    <div class="s-hist-item${x.id === sessionId ? ' active' : ''}" onclick="sessionWechseln('${esc(x.id)}')">
+      <div style="flex:1;min-width:0">
+        <div class="s-hist-label">${esc(x.label || x.id)}</div>
+        <div class="s-hist-meta">${x.count} Fotos · ${x.lastUsed}</div>
+      </div>
+      <div class="s-hist-btns">
+        <button class="s-hist-btn" onclick="verlaufUmbenennen(event,'${esc(x.id)}')" title="Umbenennen">✏️</button>
+        <button class="s-hist-btn" onclick="verlaufEntfernen(event,'${esc(x.id)}')" title="Entfernen">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function sessionWechseln(id) {
+  document.getElementById('session-input').value = id;
+  sessionSetzen(id);
+}
+
+// ── Session zurücksetzen ──────────────────────────────────
+async function sessionZuruecksetzen() {
+  if (!sessionId || !beitraege.length) return;
+  if (!confirm(`Session „${sessionId}" wirklich zurücksetzen?\n\n${beitraege.length} Fotos werden endgültig gelöscht — auch aus dem Speicher.\nAufgabenstellung, Rubriken und Anordnungen bleiben erhalten.\n\nVorher herunterladen?`)) return;
+  try {
+    const pfade = beitraege.map(b => b.bild_pfad).filter(Boolean);
+    if (pfade.length) await sb.storage.from(BUCKET).remove(pfade);
+    const { error } = await sb.from('fotowand_beitraege').delete().eq('session_id', sessionId);
+    if (error) throw error;
+    beitraege = []; positionen = {}; hashBeitraege = ''; hashPositionen = '';
+    verlaufEntfernen(null, sessionId);
+    statsAktualisieren();
+    rendern();
+  } catch (e) { alert('Zurücksetzen fehlgeschlagen: ' + (e.message || e)); }
+}
+
+// ── ZIP-Download (Store-Modus, ohne Bibliothek) ───────────
+const CRC_TAB = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(u8) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TAB[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function dosZeit(d) {
+  const zeit = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | (Math.floor(d.getSeconds() / 2) & 31);
+  const datum = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+  return [zeit, datum];
+}
+
+function baueZip(dateien) {
+  const enc = new TextEncoder();
+  const [zeit, datum] = dosZeit(new Date());
+  const teile = [], zentral = [];
+  let offset = 0;
+
+  dateien.forEach(f => {
+    const name = enc.encode(f.name);
+    const crc  = crc32(f.daten);
+    const gr   = f.daten.length;
+
+    const lh = new Uint8Array(30 + name.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true);        // UTF-8-Dateinamen
+    lv.setUint16(8, 0, true);             // Store, keine Kompression
+    lv.setUint16(10, zeit, true); lv.setUint16(12, datum, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, gr, true); lv.setUint32(22, gr, true);
+    lv.setUint16(26, name.length, true); lv.setUint16(28, 0, true);
+    lh.set(name, 30);
+    teile.push(lh, f.daten);
+
+    const ch = new Uint8Array(46 + name.length);
+    const cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, zeit, true); cv.setUint16(14, datum, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, gr, true); cv.setUint32(24, gr, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(name, 46);
+    zentral.push(ch);
+    offset += lh.length + gr;
+  });
+
+  const zLaenge = zentral.reduce((a, b) => a + b.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, dateien.length, true);
+  ev.setUint16(10, dateien.length, true);
+  ev.setUint32(12, zLaenge, true);
+  ev.setUint32(16, offset, true);
+
+  return new Blob([...teile, ...zentral, eocd], { type: 'application/zip' });
+}
+
+async function alsZipLaden() {
+  const liste = beitraege.filter(b => !b.versteckt);
+  if (!liste.length) { alert('Es gibt noch nichts herunterzuladen.'); return; }
+
+  const btn = document.getElementById('dl-btn');
+  const alt = btn.textContent;
+  btn.disabled = true;
+
+  try {
+    const dateien = [];
+    const zeilen  = ['Datei;Beschreibung;Kommentar;Rubrik;Name;Breitengrad;Längengrad;Zeitpunkt'];
+    const alte = liste.slice().reverse();          // älteste zuerst nummerieren
+
+    for (let i = 0; i < alte.length; i++) {
+      const b = alte[i];
+      btn.textContent = `Lade ${i + 1}/${alte.length}…`;
+      const nr   = String(i + 1).padStart(3, '0');
+      const name = `${nr}_${dateiName(b.beschreibung)}.jpg`;
+      try {
+        const antwort = await fetch(b.bild_url);
+        const puffer  = await antwort.arrayBuffer();
+        dateien.push({ name, daten: new Uint8Array(puffer) });
+      } catch (e) {
+        console.warn('Bild nicht ladbar:', b.bild_url);
+        continue;
+      }
+      const kat = rubrikVon(b.kategorie_id);
+      zeilen.push([
+        name, b.beschreibung || '', b.kommentar || '', kat ? kat.label : '',
+        b.autor || '', b.lat != null ? b.lat : '', b.lon != null ? b.lon : '',
+        zeitLang(b.erstellt)
+      ].map(csvFeld).join(';'));
+    }
+
+    // BOM, damit Excel die Umlaute richtig liest
+    dateien.push({ name: 'beitraege.csv', daten: new TextEncoder().encode('﻿' + zeilen.join('\r\n')) });
+
+    btn.textContent = 'ZIP wird gepackt…';
+    const blob = baueZip(dateien);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `fotowand-${sessionId || 'export'}-${new Date().toISOString().slice(0, 10)}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Download fehlgeschlagen: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = alt;
+  }
+}
+
+function csvFeld(w) {
+  const s = String(w == null ? '' : w);
+  return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function dateiName(t) {
+  return (t || 'foto').toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'foto';
+}
+
+// ── Kleinkram ─────────────────────────────────────────────
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function neueId() {
+  if (crypto.randomUUID) return crypto.randomUUID().slice(0, 8);
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function zeitKurz(iso) {
+  try { return new Date(iso).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }); }
+  catch { return ''; }
+}
+function zeitLang(iso) {
+  try { return new Date(iso).toLocaleString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  catch { return ''; }
+}
+
+// ── Topbar, Vollbild, Tastatur ────────────────────────────
+function initAutoHide() {
+  document.addEventListener('mousemove', topbarZeigen);
+  document.addEventListener('click',     topbarZeigen);
+  topbarVerstecken();
+}
+function topbarZeigen() {
+  document.getElementById('topbar').classList.remove('autohide');
+  topbarVerstecken();
+}
+function topbarVerstecken() {
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => document.getElementById('topbar').classList.add('autohide'), 4000);
+}
+
+function vollbild() {
+  const el = document.getElementById('stage');
+  if (!document.fullscreenElement) el.requestFullscreen().catch(() => document.documentElement.requestFullscreen().catch(() => {}));
+  else document.exitFullscreen().catch(() => {});
+}
+document.addEventListener('fullscreenchange', () => {
+  if (ansicht === 'pinnwand') setTimeout(brettEinpassen, 90);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { fokusZu(); qrOverlayZu(); }
+  if (e.key === 'F11') { e.preventDefault(); vollbild(); }
+});
+</script>
+</body>
+</html>

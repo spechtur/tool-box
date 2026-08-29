@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>PHGR Fotowand – Mitmachen</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gelb: #c7d200; --tuerkis: #23b2c6; --rot: #ed6a69;
+      --orange: #fbb900; --violett: #6169af;
+      --dg: #878787; --mg: #c6c6c6; --bg: #ececec;
+    }
+    body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { background: var(--gelb); padding: 11px 18px; flex-shrink: 0; }
+    .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 20px; color: #111; }
+    .gr { font-variant: small-caps; font-weight: 300; font-size: 20px; color: #111; letter-spacing: .04em; }
+
+    .center { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 22px 20px 40px; gap: 15px; }
+    .wrap { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
+
+    .aufgabe { background: white; border-left: 5px solid var(--gelb); border-radius: 10px; padding: 14px 16px; }
+    .aufgabe-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 6px; }
+    .aufgabe-text { font-size: 15px; line-height: 1.5; color: #1a1a1a; white-space: pre-wrap; }
+
+    h1 { color: #1a1a1a; font-size: 20px; font-weight: 700; text-align: center; }
+    .sub { color: var(--dg); font-size: 13px; text-align: center; line-height: 1.5; }
+
+    .pick-row { display: flex; flex-direction: column; gap: 10px; }
+    .btn { width: 100%; background: var(--gelb); color: #111; border: none; border-radius: 12px; padding: 15px; font-size: 17px; font-weight: 700; cursor: pointer; font-family: Arial; transition: opacity .2s; }
+    .btn:disabled { opacity: .35; cursor: default; }
+    .btn.sec { background: white; color: #333; border: 2px solid var(--mg); }
+    .btn.tuerkis { background: var(--tuerkis); color: white; }
+
+    .preview-wrap { position: relative; background: white; border-radius: 12px; padding: 8px; }
+    .preview-wrap img { width: 100%; border-radius: 8px; display: block; }
+    .preview-info { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px 2px; font-size: 11px; color: var(--dg); gap: 8px; }
+    .link-btn { background: none; border: none; color: var(--tuerkis); font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial; text-decoration: underline; padding: 0; }
+
+    label.fl { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tuerkis); margin-bottom: 6px; }
+    textarea, input[type=text] {
+      width: 100%; padding: 13px 14px; font-size: 16px; border-radius: 12px;
+      border: 2px solid var(--mg); background: white; color: #1a1a1a; outline: none;
+      font-family: Arial; resize: vertical;
+    }
+    textarea:focus, input[type=text]:focus { border-color: var(--tuerkis); box-shadow: 0 0 0 3px rgba(35,178,198,.15); }
+    .feld { display: flex; flex-direction: column; }
+    .hint { font-size: 11px; color: var(--dg); margin-top: 5px; line-height: 1.45; }
+
+    .kat-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .kat-btn {
+      border: 2px solid var(--mg); background: white; color: #555;
+      border-radius: 20px; padding: 8px 14px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: Arial; transition: all .15s;
+    }
+    .kat-btn.on { color: #111; }
+
+    .geo-row { display: flex; align-items: center; gap: 10px; background: white; border-radius: 12px; padding: 12px 14px; }
+    .geo-txt { flex: 1; font-size: 12px; color: var(--dg); line-height: 1.4; }
+    .geo-ok { color: #5a8a2a; font-weight: 700; }
+
+    .err { color: var(--rot); font-size: 13px; text-align: center; background: #fff0f0; padding: 11px 16px; border-radius: 10px; line-height: 1.45; }
+
+    .success { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 32px; }
+    .check { width: 82px; height: 82px; border-radius: 50%; background: var(--gelb); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar"><span class="ph">ph</span><span class="gr">GR</span></div>
+
+  <div class="center" id="form-view">
+    <div class="wrap">
+
+      <div class="aufgabe" id="aufgabe-box" style="display:none">
+        <div class="aufgabe-label">Aufgabe</div>
+        <div class="aufgabe-text" id="aufgabe-text"></div>
+      </div>
+
+      <h1 id="titel">Dein Foto</h1>
+      <p class="sub" id="untertitel">Foto aufnehmen oder aus der Mediathek wählen</p>
+
+      <div class="pick-row" id="pick-row">
+        <button class="btn" onclick="document.getElementById('file-cam').click()">📷 Foto aufnehmen</button>
+        <button class="btn sec" onclick="document.getElementById('file-lib').click()">🖼️ Aus der Mediathek</button>
+      </div>
+
+      <input type="file" id="file-cam" accept="image/*" capture="environment" hidden onchange="dateiGewaehlt(this)">
+      <input type="file" id="file-lib" accept="image/*" hidden onchange="dateiGewaehlt(this)">
+
+      <div class="preview-wrap" id="preview-wrap" style="display:none">
+        <img id="preview-img" alt="Vorschau">
+        <div class="preview-info">
+          <span id="preview-meta"></span>
+          <button class="link-btn" onclick="fotoVerwerfen()">Anderes Foto</button>
+        </div>
+      </div>
+
+      <div id="fields" style="display:none;flex-direction:column;gap:15px">
+
+        <div class="feld">
+          <label class="fl" for="beschreibung">Was ist zu sehen?</label>
+          <textarea id="beschreibung" rows="2" maxlength="200" placeholder="z.B. Solaranlage auf dem Schulhausdach"></textarea>
+        </div>
+
+        <div class="feld">
+          <label class="fl" for="kommentar">Was hat das mit der Aufgabe zu tun?</label>
+          <textarea id="kommentar" rows="3" maxlength="500" placeholder="Dein Gedanke dazu…"></textarea>
+        </div>
+
+        <div class="feld" id="kat-feld" style="display:none">
+          <label class="fl">Rubrik <span style="text-transform:none;letter-spacing:0;color:var(--dg);font-weight:400">(optional)</span></label>
+          <div class="kat-row" id="kat-row"></div>
+        </div>
+
+        <div class="feld">
+          <label class="fl" for="autor">Name oder Gruppe <span style="text-transform:none;letter-spacing:0;color:var(--dg);font-weight:400">(optional)</span></label>
+          <input type="text" id="autor" autocomplete="off" placeholder="Bleibt leer, wenn du willst">
+        </div>
+
+        <div class="geo-row" id="geo-row">
+          <span style="font-size:20px">📍</span>
+          <span class="geo-txt" id="geo-txt">Kein Ort im Foto gespeichert.</span>
+          <button class="link-btn" id="geo-btn" onclick="standortHolen()">Hinzufügen</button>
+        </div>
+
+      </div>
+
+      <p class="err" id="err" style="display:none"></p>
+      <button class="btn tuerkis" id="submit-btn" onclick="absenden()" style="display:none">Absenden →</button>
+
+    </div>
+  </div>
+
+  <div class="success" id="done-view">
+    <div class="check">✓</div>
+    <h2 style="color:#1a1a1a;font-size:24px;font-weight:700">Danke!</h2>
+    <p style="color:var(--dg);text-align:center;font-size:14px">Dein Foto ist auf der Wand.</p>
+    <button class="btn" style="max-width:320px" onclick="nochEins()">Noch ein Foto</button>
+  </div>
+
+<script>
+// ── Parameter und Zustand ─────────────────────────────────
+const params  = new URLSearchParams(window.location.search);
+const session = (params.get('session') || 'default').trim().toLowerCase();
+
+const PALETTE = ['#c7d200','#23b2c6','#ed6a69','#fbb900','#6169af','#878787'];
+const MAX_KANTE = 1600;
+const JPEG_Q    = 0.82;
+
+let sb          = null;
+let kategorien  = [];
+let katGewaehlt = null;
+let bildBlob    = null;   // verkleinertes JPEG
+let bildUrl     = null;   // ObjectURL der Vorschau
+let koord       = null;   // { lat, lon }
+let koordQuelle = '';     // 'exif' | 'gps'
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } catch (e) {
+    zeigeFehler('Verbindung nicht möglich. Bitte die Seite neu laden.');
+    return;
+  }
+  await ladeSession();
+});
+
+async function ladeSession() {
+  try {
+    const { data } = await sb.from('fotowand_sessions')
+      .select('aufgabenstellung, kategorien')
+      .eq('session_id', session)
+      .maybeSingle();
+    if (!data) return;
+
+    const auf = (data.aufgabenstellung || '').trim();
+    if (auf) {
+      document.getElementById('aufgabe-text').textContent = auf;
+      document.getElementById('aufgabe-box').style.display = 'block';
+    }
+    kategorien = Array.isArray(data.kategorien) ? data.kategorien : [];
+    baueKategorien();
+  } catch (e) {
+    // Ohne Session-Zeile geht es trotzdem: dann eben ohne Aufgabe und Rubriken.
+    console.warn('Session konnte nicht geladen werden:', e);
+  }
+}
+
+function baueKategorien() {
+  if (!kategorien.length) return;
+  const row = document.getElementById('kat-row');
+  row.innerHTML = '';
+  kategorien.forEach((k, i) => {
+    const farbe = k.farbe || PALETTE[i % PALETTE.length];
+    const b = document.createElement('button');
+    b.className = 'kat-btn';
+    b.textContent = k.label || 'Rubrik';
+    b.onclick = () => {
+      katGewaehlt = (katGewaehlt === k.id) ? null : k.id;
+      row.querySelectorAll('.kat-btn').forEach(el => {
+        const an = el.dataset.id === katGewaehlt;
+        el.classList.toggle('on', an);
+        el.style.background   = an ? el.dataset.farbe : 'white';
+        el.style.borderColor  = an ? el.dataset.farbe : 'var(--mg)';
+      });
+    };
+    b.dataset.id    = k.id;
+    b.dataset.farbe = farbe;
+    row.appendChild(b);
+  });
+  document.getElementById('kat-feld').style.display = 'flex';
+}
+
+// ── Foto wählen ───────────────────────────────────────────
+async function dateiGewaehlt(input) {
+  const file = input.files && input.files[0];
+  input.value = '';                     // damit dieselbe Datei erneut wählbar bleibt
+  if (!file) return;
+
+  versteckeFehler();
+  const btnRow = document.getElementById('pick-row');
+  btnRow.style.opacity = '.4';
+  btnRow.style.pointerEvents = 'none';
+  setzeUntertitel('Foto wird vorbereitet…');
+
+  try {
+    // Reihenfolge ist wichtig: GPS zuerst aus dem Original lesen,
+    // denn beim Verkleinern über das Canvas gehen alle EXIF-Daten verloren.
+    koord = await leseGpsAusExif(file);
+    koordQuelle = koord ? 'exif' : '';
+
+    bildBlob = await verkleinern(file);
+    if (!bildBlob) throw new Error('Verkleinerung fehlgeschlagen');
+
+    if (bildUrl) URL.revokeObjectURL(bildUrl);
+    bildUrl = URL.createObjectURL(bildBlob);
+    document.getElementById('preview-img').src = bildUrl;
+    document.getElementById('preview-meta').textContent =
+      `${Math.round(bildBlob.size / 1024)} KB · aus ${Math.round(file.size / 1024)} KB`;
+
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('fields').style.display       = 'flex';
+    document.getElementById('submit-btn').style.display   = 'block';
+    btnRow.style.display = 'none';
+    setzeUntertitel('Kurz beschreiben und absenden');
+    aktualisiereGeoZeile();
+  } catch (e) {
+    console.warn(e);
+    zeigeFehler('Dieses Foto liess sich nicht verarbeiten. Bitte ein anderes wählen.');
+    btnRow.style.opacity = '1';
+    btnRow.style.pointerEvents = 'auto';
+    setzeUntertitel('Foto aufnehmen oder aus der Mediathek wählen');
+  }
+}
+
+function fotoVerwerfen() {
+  bildBlob = null; koord = null; koordQuelle = '';
+  if (bildUrl) { URL.revokeObjectURL(bildUrl); bildUrl = null; }
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('fields').style.display       = 'none';
+  document.getElementById('submit-btn').style.display   = 'none';
+  const btnRow = document.getElementById('pick-row');
+  btnRow.style.display = 'flex';
+  btnRow.style.opacity = '1';
+  btnRow.style.pointerEvents = 'auto';
+  setzeUntertitel('Foto aufnehmen oder aus der Mediathek wählen');
+  versteckeFehler();
+}
+
+// ── Verkleinern ───────────────────────────────────────────
+// Löst drei Probleme auf einmal: Dateigrösse (12 MB → ~250 KB),
+// HEIC (das Canvas gibt immer JPEG aus) und die EXIF-Drehung.
+async function verkleinern(file) {
+  let quelle = null, breite = 0, hoehe = 0, close = null;
+
+  if (typeof createImageBitmap === 'function') {
+    try {
+      quelle = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (e) {
+      quelle = await createImageBitmap(file);   // ältere Safari-Versionen
+    }
+    breite = quelle.width; hoehe = quelle.height;
+    close = () => quelle.close && quelle.close();
+  } else {
+    const url = URL.createObjectURL(file);
+    quelle = await new Promise((res, rej) => {
+      const img = new Image();
+      img.onload  = () => res(img);
+      img.onerror = () => rej(new Error('Bild nicht lesbar'));
+      img.src = url;
+    });
+    breite = quelle.naturalWidth; hoehe = quelle.naturalHeight;
+    close = () => URL.revokeObjectURL(url);
+  }
+
+  const f = Math.min(1, MAX_KANTE / Math.max(breite, hoehe));
+  const w = Math.max(1, Math.round(breite * f));
+  const h = Math.max(1, Math.round(hoehe  * f));
+
+  const cv  = document.createElement('canvas');
+  cv.width  = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(quelle, 0, 0, w, h);
+  close();
+
+  return await new Promise(res => cv.toBlob(res, 'image/jpeg', JPEG_Q));
+}
+
+// ── GPS aus den EXIF-Daten ────────────────────────────────
+// Liest den GPS-Block aus einem JPEG. Bei HEIC-Dateien, die das
+// Betriebssystem nicht in JPEG umwandelt, liefert das nichts —
+// dann bleibt der Knopf «Hinzufügen» als Weg über die Ortung.
+async function leseGpsAusExif(file) {
+  try {
+    const buf = await file.slice(0, 512 * 1024).arrayBuffer();
+    const dv  = new DataView(buf);
+    if (dv.byteLength < 12 || dv.getUint16(0) !== 0xFFD8) return null;   // kein JPEG
+
+    let off = 2;
+    while (off + 4 <= dv.byteLength) {
+      if (dv.getUint8(off) !== 0xFF) return null;
+      const marker = dv.getUint8(off + 1);
+      if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { off += 2; continue; }
+      if (marker === 0xDA) return null;                  // ab hier Bilddaten
+      const len = dv.getUint16(off + 2);
+      if (marker === 0xE1 && off + 10 <= dv.byteLength
+          && dv.getUint32(off + 4) === 0x45786966) {     // "Exif"
+        return gpsAusTiff(dv, off + 10);
+      }
+      off += 2 + len;
+    }
+  } catch (e) { /* stillschweigend: GPS ist immer optional */ }
+  return null;
+}
+
+function gpsAusTiff(dv, base) {
+  if (base + 8 > dv.byteLength) return null;
+  const le  = dv.getUint16(base) === 0x4949;             // Intel-Bytefolge
+  const u16 = o => dv.getUint16(o, le);
+  const u32 = o => dv.getUint32(o, le);
+  if (u16(base + 2) !== 0x002A) return null;
+
+  const ifd0 = base + u32(base + 4);
+  if (ifd0 + 2 > dv.byteLength) return null;
+
+  let gpsOff = 0;
+  const n0 = u16(ifd0);
+  for (let i = 0; i < n0; i++) {
+    const e = ifd0 + 2 + i * 12;
+    if (e + 12 > dv.byteLength) return null;
+    if (u16(e) === 0x8825) { gpsOff = base + u32(e + 8); break; }   // GPS-IFD
+  }
+  if (!gpsOff || gpsOff + 2 > dv.byteLength) return null;
+
+  let latRef = '', lonRef = '', lat = null, lon = null;
+  const ng = u16(gpsOff);
+  for (let i = 0; i < ng; i++) {
+    const e = gpsOff + 2 + i * 12;
+    if (e + 12 > dv.byteLength) return null;
+    const tag = u16(e), typ = u16(e + 2), cnt = u32(e + 4);
+
+    if (tag === 1 || tag === 3) {                        // Ref: "N"/"S", "E"/"W"
+      const c = String.fromCharCode(dv.getUint8(e + 8));
+      if (tag === 1) latRef = c; else lonRef = c;
+    }
+    if ((tag === 2 || tag === 4) && typ === 5 && cnt === 3) {
+      const p = base + u32(e + 8);                       // 3 Rationals: Grad, Min, Sek
+      if (p + 24 > dv.byteLength) return null;
+      const r = k => {
+        const nen = u32(p + k * 8 + 4);
+        return nen ? u32(p + k * 8) / nen : 0;
+      };
+      const grad = r(0) + r(1) / 60 + r(2) / 3600;
+      if (tag === 2) lat = grad; else lon = grad;
+    }
+  }
+  if (lat === null || lon === null) return null;
+  if (latRef === 'S') lat = -lat;
+  if (lonRef === 'W') lon = -lon;
+  if (!isFinite(lat) || !isFinite(lon) || (lat === 0 && lon === 0)) return null;
+  return { lat: +lat.toFixed(6), lon: +lon.toFixed(6) };
+}
+
+// ── Standort als Rückfallebene ────────────────────────────
+function standortHolen() {
+  if (!navigator.geolocation) {
+    document.getElementById('geo-txt').textContent = 'Dieses Gerät kennt keine Ortung.';
+    return;
+  }
+  const btn = document.getElementById('geo-btn');
+  btn.textContent = 'Suche…';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      koord = { lat: +pos.coords.latitude.toFixed(6), lon: +pos.coords.longitude.toFixed(6) };
+      koordQuelle = 'gps';
+      btn.disabled = false;
+      aktualisiereGeoZeile();
+    },
+    () => {
+      btn.textContent = 'Nochmal';
+      btn.disabled = false;
+      document.getElementById('geo-txt').textContent =
+        'Ortung nicht möglich. Geht auch ohne — das Foto erscheint dann ohne Ortsangabe.';
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+function aktualisiereGeoZeile() {
+  const txt = document.getElementById('geo-txt');
+  const btn = document.getElementById('geo-btn');
+  if (koord && koordQuelle === 'exif') {
+    txt.innerHTML = '<span class="geo-ok">Ort aus dem Foto übernommen.</span>';
+    btn.style.display = 'none';
+  } else if (koord) {
+    txt.innerHTML = '<span class="geo-ok">Standort übernommen.</span>';
+    btn.style.display = 'none';
+  } else {
+    txt.textContent = 'Kein Ort im Foto gespeichert. Ohne geht es auch.';
+    btn.style.display = 'inline';
+    btn.textContent = 'Hinzufügen';
+  }
+}
+
+// ── Absenden ──────────────────────────────────────────────
+async function absenden() {
+  const btn = document.getElementById('submit-btn');
+  versteckeFehler();
+
+  const beschreibung = document.getElementById('beschreibung').value.trim();
+  const kommentar    = document.getElementById('kommentar').value.trim();
+  const autor        = document.getElementById('autor').value.trim();
+
+  if (!bildBlob) { zeigeFehler('Es ist noch kein Foto gewählt.'); return; }
+  if (!beschreibung) {
+    zeigeFehler('Bitte kurz beschreiben, was zu sehen ist.');
+    document.getElementById('beschreibung').focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Wird hochgeladen…';
+
+  try {
+    const pfad = `${session}/${neueId()}.jpg`;
+    const { error: upFehler } = await sb.storage.from(BUCKET)
+      .upload(pfad, bildBlob, { contentType: 'image/jpeg', cacheControl: '3600' });
+    if (upFehler) throw upFehler;
+
+    const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(pfad);
+
+    const { error: dbFehler } = await sb.from('fotowand_beitraege').insert({
+      session_id:   session,
+      bild_url:     pub.publicUrl,
+      bild_pfad:    pfad,
+      beschreibung: beschreibung,
+      kommentar:    kommentar,
+      kategorie_id: katGewaehlt,
+      lat:          koord ? koord.lat : null,
+      lon:          koord ? koord.lon : null,
+      autor:        autor || null
+    });
+    if (dbFehler) throw dbFehler;
+
+    document.getElementById('form-view').style.display = 'none';
+    const dv = document.getElementById('done-view');
+    dv.style.display = 'flex';
+  } catch (e) {
+    console.warn(e);
+    const meldung = (e && e.message || '').toLowerCase();
+    zeigeFehler(meldung.includes('bucket') || meldung.includes('not found')
+      ? 'Der Speicherort ist noch nicht eingerichtet. Bitte der Kursleitung Bescheid geben.'
+      : 'Hochladen fehlgeschlagen. Bitte nochmal versuchen — vielleicht ist der Empfang gerade schwach.');
+    btn.disabled = false;
+    btn.textContent = 'Absenden →';
+  }
+}
+
+function nochEins() {
+  document.getElementById('beschreibung').value = '';
+  document.getElementById('kommentar').value    = '';
+  // Name und Rubrik bleiben stehen — meist bleibt beides gleich.
+  fotoVerwerfen();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = false;
+  btn.textContent = 'Absenden →';
+  document.getElementById('done-view').style.display = 'none';
+  document.getElementById('form-view').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+// ── Kleinkram ─────────────────────────────────────────────
+function neueId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function setzeUntertitel(t) { document.getElementById('untertitel').textContent = t; }
+function zeigeFehler(t) {
+  const el = document.getElementById('err');
+  el.textContent = t; el.style.display = 'block';
+}
+function versteckeFehler() { document.getElementById('err').style.display = 'none'; }
+</script>
+</body>
+</html>
