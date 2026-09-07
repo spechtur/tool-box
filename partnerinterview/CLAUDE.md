@@ -18,7 +18,9 @@ wiederverwendbar für andere Einsatzszenarien.
 ## Tech-Stack
 
 - **Frontend:** Vanilla HTML/CSS/JS – zwei Seiten: `presenter.html` (Vorbereitung) und `join.html` (TN)
-- **Backend:** keins – Fragensätze als statische JSON-Dateien in `saetze/` (Verzeichnis: `saetze/index.json`)
+- **Backend:** keins – Fragensätze als statische JSON-Dateien in `saetze/`. Die Vorbereitung liest das
+  Verzeichnis über die GitHub-Contents-API (CORS offen, 60 Anfragen/Stunde); `saetze/index.json`
+  ist nur noch Rückfallebene für lokal/offline
 - **Übergabe an die TN:** bevorzugt der kurze Weg `join.html?set=slug` – die Vorbereitung erkennt
   selbst, ob die Eingabe unverändert einem Satz aus `saetze/` entspricht, und baut dann diesen Link
   (QR-Version ~6 statt ~24, vom Beamer aus mühelos scannbar). Nur bei abweichender Eingabe reist der
@@ -98,8 +100,8 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 - Nach „Interview fixieren" stellt der Button „Neue Runde" die volle Liste wieder her (Rollentausch)
 - Fragensätze im Link ergeben dichte QR-Codes (~110 Module); die Vorbereitung sagt das an und
   empfiehlt Vollbild bzw. den Weg über `saetze/`
-- Ein neuer Fragensatz erscheint in der Auswahlliste erst, wenn er **auch** in `saetze/index.json`
-  eingetragen ist; «Datei …» lädt jede JSON direkt von der Festplatte
+- Ein neuer Fragensatz muss nur nach `saetze/` gelegt werden, dann steht er in der Auswahlliste;
+  «Datei …» lädt jede JSON direkt von der Festplatte, ohne Ablegen
 - Lokal geöffnet (`file://`) zeigt der QR-Code auf die GitHub-Pages-Adresse, weil Telefone
   `file://`-Links nicht öffnen können
 - Kein Notizfeld pro Frage in v1 – TN notieren ausserhalb des Tools

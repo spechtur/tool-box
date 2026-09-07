@@ -152,6 +152,13 @@
   .status.kurz { color: #2c6b3f; background: rgba(90,171,110,.20); border: 1px solid rgba(90,171,110,.45); }
   .status.lang { color: #8a4b00; background: rgba(251,185,0,.22); border: 1px solid rgba(251,185,0,.5); }
   .status[hidden] { display: none; }
+  .tipp {
+    margin-top: 9px; font-size: 12.5px; line-height: 1.55; color: #555; text-align: left;
+    background: rgba(255,255,255,.45); border: 1px solid rgba(0,0,0,.08);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .tipp[hidden] { display: none; }
+  .tipp code { font-size: 12px; background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px; }
 
   .toast {
     position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(12px);
@@ -185,9 +192,8 @@
         <input type="file" id="datei" accept=".json,application/json" hidden>
       </div>
       <div class="hint">
-        Die Auswahlliste kommt aus <code>saetze/index.json</code> – ein neuer Fragensatz taucht dort erst auf,
-        wenn du ihn zusätzlich zur JSON-Datei auch dort einträgst. Mit «Datei …» lädst du jede JSON direkt
-        von der Festplatte, ganz ohne Verzeichnis.
+        Die Auswahlliste zeigt alles, was im Repo unter <code>partnerinterview/saetze/</code> liegt.
+        Mit «Datei …» lädst du eine JSON direkt von der Festplatte, zum Ausprobieren ohne Ablegen.
       </div>
     </div>
 
@@ -227,9 +233,10 @@
         <button class="btn btn-sec" id="json-btn">⭳ JSON</button>
       </div>
       <div class="status" id="status" hidden></div>
+      <div class="tipp" id="tipp" hidden></div>
+      <div class="tipp" id="lokal" hidden></div>
       <div class="hint">
-        Der Fragensatz steckt vollständig im Link – kein Server, keine Sitzung, nichts wird gespeichert.
-        Je mehr Fragen, desto dichter der QR-Code.
+        Kein Server, keine Sitzung – die Teilnehmenden brauchen nur diesen Link.
       </div>
     </div>
   </div>
@@ -262,6 +269,11 @@ const SPEICHER = 'phgr-partnerinterview-vorbereitung';
 /* Lokal geöffnete Dateien ergeben file://-Links, die kein Telefon öffnen kann
    («Keine nutzbaren Daten gefunden»). Dann zeigt der QR-Code auf die Live-Seite. */
 const PUBLIC_BASE = 'https://spechtur.github.io/tool-box/partnerinterview/';
+
+/* Die Auswahlliste liest das Verzeichnis direkt aus dem Repo. Damit genügt es,
+   eine neue JSON nach saetze/ zu legen – kein zweiter Eintrag nötig.
+   Klappt das nicht (offline, Rate-Limit), springt saetze/index.json ein. */
+const REPO_API = 'https://api.github.com/repos/spechtur/tool-box/contents/partnerinterview/saetze';
 const LOKAL = location.protocol === 'file:';
 
 const $ = id => document.getElementById(id);
@@ -326,16 +338,42 @@ async function hinterlegeVorlage(slug) {
 
 /* ── Vorlagen aus saetze/ ────────────────────────────────── */
 async function ladeVorlagenliste() {
+  const gefunden = (await ausRepo()) || (await ausIndexDatei()) || [];
+  gefunden.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.slug;
+    o.textContent = s.titel || s.slug;
+    $('vorlage').appendChild(o);
+  });
+  /* Titel und Inhalte im Hintergrund nachziehen – der Inhalt wird ohnehin
+     für den Abgleich «passt das noch zum Satz im Repo?» gebraucht. */
+  gefunden.forEach(s => hinterlegeVorlage(s.slug).then(() => {
+    const satz = vorlagen[s.slug];
+    if (!satz || !satz.titel) return;
+    const o = [].find.call($('vorlage').options, x => x.value === s.slug);
+    if (o) o.textContent = satz.titel;
+  }));
+}
+
+async function ausRepo() {
+  try {
+    const res = await fetch(REPO_API, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!res.ok) throw new Error(res.status);
+    const dateien = await res.json();
+    if (!Array.isArray(dateien)) throw new Error('unerwartete Antwort');
+    return dateien
+      .filter(f => f.type === 'file' && /\.json$/i.test(f.name) && f.name !== 'index.json')
+      .map(f => ({ slug: f.name.replace(/\.json$/i, '') }))
+      .sort((a, b) => a.slug.localeCompare(b.slug, 'de'));
+  } catch (e) { return null; }
+}
+
+async function ausIndexDatei() {
   try {
     const res = await fetch('saetze/index.json', { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status);
-    ((await res.json()).saetze || []).forEach(s => {
-      const o = document.createElement('option');
-      o.value = s.slug;
-      o.textContent = s.titel || s.slug;
-      $('vorlage').appendChild(o);
-    });
-  } catch (e) { /* ohne Verzeichnis beginnt man eben leer */ }
+    return (await res.json()).saetze || [];
+  } catch (e) { return null; }
 }
 
 async function ladeVorlage() {
@@ -465,20 +503,25 @@ async function zeichneQR(s) {
   $('link-feld').textContent = aktuellerLink;
 
   st.hidden = false;
+  const tipp = $('tipp');
   if (kurzerLink) {
     st.className = 'status kurz';
-    st.textContent = 'Kurzer Link auf einen Fragensatz aus dem Repo – der QR-Code ist grob und auch vom '
-      + 'Beamer aus mühelos zu scannen.';
+    st.textContent = 'Grob gerasterter QR-Code – der lässt sich auch vom Beamer aus mühelos scannen.';
+    tipp.hidden = true;
   } else {
     st.className = 'status lang';
-    st.textContent = 'Der Fragensatz reist im Link mit (' + aktuellerLink.length + ' Zeichen), der QR-Code ist '
-      + 'entsprechend fein gerastert. Zeig ihn mit «Gross zeigen» im Vollbild, sonst wird das Scannen zäh. '
-      + 'Dauerhaft schöner: JSON herunterladen, in saetze/ ablegen, in saetze/index.json eintragen – '
-      + 'dann entsteht hier automatisch der kurze Link.';
+    st.textContent = 'Dieser Fragensatz steckt komplett im QR-Code, deshalb ist er fein gerastert. '
+      + 'Zeig ihn mit «Gross zeigen» im Vollbild, dann scannt er zuverlässig.';
+    tipp.hidden = false;
+    tipp.innerHTML = 'Brauchst du ihn öfter? Mit «⭳ JSON» herunterladen und die Datei im Repo unter '
+      + '<code>partnerinterview/saetze/</code> ablegen. Danach steht sie in der Auswahlliste – '
+      + 'und der QR-Code wird grob.';
   }
+  $('lokal').hidden = !LOKAL;
   if (LOKAL) {
-    st.textContent += ' Hinweis: Diese Seite läuft lokal, der QR-Code zeigt deshalb auf ' + PUBLIC_BASE
-      + ' – dort muss der Stand veröffentlicht sein.';
+    $('lokal').innerHTML = 'Diese Seite läuft lokal von der Festplatte. Telefone können solche Links nicht '
+      + 'öffnen, deshalb zeigt der QR-Code auf <code>' + PUBLIC_BASE + '</code> – der Fragensatz muss dort '
+      + 'also veröffentlicht sein.';
   }
 }
 
@@ -544,7 +587,7 @@ function ladeJsonHerunter() {
   const a = document.createElement('a');
   a.href = url; a.download = slug + '.json'; a.click();
   URL.revokeObjectURL(url);
-  toast('Datei nach saetze/ legen und in saetze/index.json eintragen – dann gibt es den kurzen Link ?set=' + slug);
+  toast('Datei im Repo unter partnerinterview/saetze/ ablegen – dann steht sie in der Auswahlliste.');
 }
 
 function machSlug(text) {
