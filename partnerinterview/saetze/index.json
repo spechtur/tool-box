@@ -1,5 +1,12 @@
 {
   "saetze": [
-    { "slug": "kultur-der-digitalitaet", "titel": "Ressourcen in einer Kultur der Digitalität" }
+    {
+      "slug": "kultur-der-digitalitaet",
+      "titel": "Ressourcen in einer Kultur der Digitalität"
+    },
+    {
+      "slug": "test",
+      "titel": "Test"
+    }
   ]
 }
