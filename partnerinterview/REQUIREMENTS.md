@@ -31,9 +31,9 @@ bleibt kontextneutral und ist so für spätere Einsatzszenarien wiederverwendbar
 |---|---------|-------------------|
 | F1 | Fragensatz per Link/QR laden | URL verweist auf einen bestimmten Fragensatz (Slug); TN sehen beim Öffnen direkt die volle Fragenliste |
 | F2 | Fragen an-/abwählen | Klick auf eine Frage streicht sie durch (visuell markiert, nicht entfernt); erneuter Klick macht das rückgängig; beliebig oft änderbar |
-| F3 | Auswahl bereinigen | Button „Bereinigen" reduziert die Liste endgültig auf die nicht gestrichenen Fragen für diese Interviewrunde |
+| F3 | Auswahl fixieren | Button „Interview fixieren" reduziert die Liste auf die nicht gestrichenen Fragen für diese Interviewrunde |
 | F4 | Timer | Dünner Balken oben im Screen, leert sich über die Zeit, Farbverlauf Grün → Gelb → Orange → Rot, akustisches Signal am Ende; Bedienelemente: Start / Pause / Stopp / Restart; keine Zeiteingabe in der TN-Ansicht (Dauer wird vorab im Fragensatz hinterlegt) |
-| F5 | Fragensatz-Verwaltung (David) | Fragensätze werden als einfache Textdateien/JSON gepflegt und im Repo abgelegt – kein Login, kein Upload-Interface für v1 |
+| F5 | Fragensatz-Verwaltung (David) | Vorbereitungsansicht `presenter.html`: Titel, Fragen, Timerdauer, QR-Code; Export als JSON für die Ablage in `saetze/` – kein Login |
 
 ---
 
@@ -52,7 +52,7 @@ bleibt kontextneutral und ist so für spätere Einsatzszenarien wiederverwendbar
 
 | Fehlerfall | Erwartetes Verhalten |
 |------------|---------------------|
-| Alle Fragen gestrichen, „Bereinigen" geklickt | Hinweis anzeigen, dass mind. 1 Frage übrig bleiben muss |
+| Alle Fragen gestrichen, „Interview fixieren" geklickt | Hinweis anzeigen, dass mind. 1 Frage übrig bleiben muss |
 | Fragensatz-Slug in URL existiert nicht | Freundliche Fehlermeldung, kein technischer Fehlertext |
 | Timer läuft ab ohne Interaktion | Ton spielt, Balken bleibt rot stehen, Restart jederzeit möglich |
 | Seite wird während Interview neu geladen/verlassen | Kein Datenverlust-Warnhinweis nötig, da ohnehin keine Daten persistiert werden |

@@ -17,8 +17,10 @@ wiederverwendbar für andere Einsatzszenarien.
 
 ## Tech-Stack
 
-- **Frontend:** Vanilla HTML/CSS/JS (Single File)
-- **Backend:** keins – Fragensätze als statische JSON-Dateien im Repo
+- **Frontend:** Vanilla HTML/CSS/JS – zwei Seiten: `presenter.html` (Vorbereitung) und `join.html` (TN)
+- **Backend:** keins – Fragensätze als statische JSON-Dateien in `saetze/` (Verzeichnis: `saetze/index.json`)
+- **Übergabe an die TN:** Fragensatz steckt deflate-komprimiert im URL-Fragment (`join.html#d=…`);
+  alternativ der kurze Weg über `join.html?set=slug` für Sätze, die im Repo liegen
 - **Hosting:** GitHub Pages – Ordner `partnerinterview/` im Repo github.com/spechtur/tool-box
 - **Deployment:** Push to main → automatisch live
 
@@ -55,7 +57,7 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 
 ### Timer-Balken (Spezifikation)
 
-- Dünner Balken, fixiert am oberen Bildschirmrand
+- 16 px hoher Balken, direkt unter der PHGR-Zeile; beide zusammen `position: sticky` am oberen Rand
 - Füllstand nimmt linear über die Zeit ab
 - Farbverlauf: Grün → Gelb → Orange → Rot (z. B. an Restzeit-Prozent gekoppelt)
 - Akustisches Signal beim Ablauf (kurzer, unaufdringlicher Ton)
@@ -91,7 +93,8 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 
 - v1 hat keine Bibliotheks-Übersichtsseite – Fragensätze werden nur über direkten Link/QR
   mit bekanntem Slug erreicht, von David vorbereitet
-- Nach „Bereinigen" stellt der Button „Neue Runde" die volle Liste wieder her (Rollentausch)
+- Nach „Interview fixieren" stellt der Button „Neue Runde" die volle Liste wieder her (Rollentausch)
+- Sehr lange Fragensätze ergeben einen dichten QR-Code; die Vorbereitung warnt ab 1800 Zeichen Linklänge
 - Kein Notizfeld pro Frage in v1 – TN notieren ausserhalb des Tools
 - Kein Upload-Interface für neue Fragensätze – David pflegt JSON-Dateien direkt im Repo
 

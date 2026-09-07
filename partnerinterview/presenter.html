@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partnerinterview vorbereiten · PHGR</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gelb: #c7d200; --tuerkis: #23b2c6; --rot: #ed6a69;
+    --orange: #fbb900; --violett: #6169af; --gruen: #5aab6e;
+    --dg: #878787; --mg: #c6c6c6; --hg: #ececec;
+  }
+  html, body { min-height: 100%; }
+  body {
+    font-family: Arial, Helvetica, sans-serif; color: #1a1a1a;
+    background: #eef1f3;
+    background-image:
+      radial-gradient(circle at 12% 8%,  rgba(199,210,0,.30),  transparent 45%),
+      radial-gradient(circle at 88% 14%, rgba(35,178,198,.28), transparent 48%),
+      radial-gradient(circle at 78% 92%, rgba(97,105,175,.24), transparent 46%),
+      radial-gradient(circle at 8% 88%,  rgba(251,185,0,.22),  transparent 44%);
+    background-attachment: fixed;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+
+  header {
+    background: var(--gelb); padding: 12px 24px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 40;
+    box-shadow: 0 2px 10px rgba(0,0,0,.10);
+  }
+  .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 20px; color: #111; }
+  .gr { font-variant: small-caps; font-weight: 300; font-size: 20px; color: #111; letter-spacing: .04em; }
+  .sep { width: 2px; height: 21px; background: rgba(0,0,0,.15); }
+  .header-title { font-size: 16px; font-weight: 700; color: #111; }
+  .back-link {
+    margin-left: auto; font-size: 12px; font-weight: 700; color: #333; text-decoration: none;
+    background: rgba(0,0,0,.10); padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+  }
+  .back-link:hover { background: rgba(0,0,0,.18); }
+
+  main {
+    flex: 1; width: 100%; max-width: 1040px; margin: 0 auto;
+    padding: 24px 18px 48px;
+    display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start;
+  }
+  .spalte { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  .glass {
+    background: rgba(255,255,255,.55);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    padding: 20px 22px;
+  }
+  .karten-titel {
+    font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--dg); margin-bottom: 12px;
+  }
+  .hint { font-size: 12.5px; line-height: 1.55; color: #555; margin-top: 9px; }
+
+  label { display: block; font-size: 13px; font-weight: 700; color: #333; margin-bottom: 6px; }
+
+  input[type=text], textarea, select {
+    width: 100%; font-family: inherit; font-size: 15px; color: #1a1a1a;
+    background: rgba(255,255,255,.75); border: 1px solid rgba(0,0,0,.14);
+    border-radius: 8px; padding: 11px 13px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input[type=text]:focus, textarea:focus, select:focus {
+    border-color: var(--tuerkis); box-shadow: 0 0 0 3px rgba(35,178,198,.18);
+  }
+  textarea { min-height: 260px; line-height: 1.65; resize: vertical; }
+
+  .zeile { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .zeile + .zeile { margin-top: 12px; }
+
+  .presets { display: flex; gap: 7px; flex-wrap: wrap; }
+  .preset {
+    padding: 8px 13px; border-radius: 8px; border: 1px solid rgba(0,0,0,.14);
+    background: rgba(255,255,255,.7); font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: all .15s;
+  }
+  .preset:hover { border-color: var(--tuerkis); color: var(--tuerkis); }
+  .preset.aktiv { background: var(--tuerkis); border-color: var(--tuerkis); color: #fff; }
+  .dauer-feld { width: 78px; text-align: center; font-weight: 700; }
+  .einheit { font-size: 13px; font-weight: 700; color: var(--dg); }
+
+  .btn {
+    border: none; border-radius: 8px; padding: 11px 17px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: opacity .15s, transform .1s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn:active { transform: scale(.97); }
+  .btn-sec { background: rgba(0,0,0,.06); color: #444; border: 1px solid rgba(0,0,0,.12); }
+  .btn-link { background: var(--tuerkis); color: #fff; }
+
+  #qr-box { text-align: center; }
+  #qr-bild {
+    display: inline-block; background: #fff; padding: 12px; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.10); line-height: 0;
+  }
+  #qr-bild img { display: block; width: 100%; height: auto; max-width: 300px; }
+  #qr-gross { margin-top: 11px; }
+  .link-feld {
+    margin-top: 12px; font-size: 11.5px; line-height: 1.5; color: #555; word-break: break-all;
+    background: rgba(255,255,255,.6); border: 1px solid rgba(0,0,0,.1);
+    border-radius: 8px; padding: 9px 11px; max-height: 92px; overflow: auto; text-align: left;
+  }
+  .warnung {
+    margin-top: 11px; font-size: 12.5px; line-height: 1.55; color: #8a4b00;
+    background: rgba(251,185,0,.22); border: 1px solid rgba(251,185,0,.5);
+    border-radius: 8px; padding: 10px 12px; text-align: left;
+  }
+  .warnung[hidden] { display: none; }
+
+  #overlay {
+    position: fixed; inset: 0; z-index: 90; display: none;
+    background: rgba(20,20,20,.86); align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px; padding: 24px; cursor: pointer;
+  }
+  #overlay.offen { display: flex; }
+  #overlay .karte { background: #fff; padding: 20px; border-radius: 16px; line-height: 0; }
+  #overlay .karte img { display: block; width: min(72vh, 84vw); height: auto; }
+  #overlay .titel { color: #fff; font-size: 21px; font-weight: 700; text-align: center; }
+  #overlay .schliessen { color: rgba(255,255,255,.65); font-size: 13px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(12px);
+    background: rgba(30,30,30,.92); color: #fff; font-size: 14px; font-weight: 600;
+    padding: 11px 18px; border-radius: 22px; z-index: 95; max-width: 90vw;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="sep"></div>
+  <div class="header-title">Partnerinterview · Vorbereitung</div>
+  <a class="back-link" href="../index.html">← tool-box</a>
+</header>
+
+<main>
+  <div class="spalte">
+
+    <div class="glass">
+      <div class="karten-titel">Fragensatz</div>
+      <div class="zeile">
+        <select id="vorlage" style="flex:1"><option value="">– leer beginnen –</option></select>
+        <button class="btn btn-sec" id="laden-btn">Laden</button>
+      </div>
+      <div class="hint">Vorbereitete Fragensätze aus dem Repo als Ausgangspunkt – du kannst sie hier frei anpassen.</div>
+    </div>
+
+    <div class="glass">
+      <div class="karten-titel">Titel</div>
+      <input type="text" id="titel" placeholder="z. B. Ressourcen in einer Kultur der Digitalität" maxlength="120">
+    </div>
+
+    <div class="glass">
+      <div class="karten-titel">Fragen · <span id="anzahl">0 Fragen</span></div>
+      <label for="fragen">Eine Frage pro Zeile</label>
+      <textarea id="fragen" placeholder="Welches digitale Werkzeug setzt du bereits sicher ein?&#10;Welche analoge Stärke hilft dir auch im Digitalen weiter?&#10;…"></textarea>
+      <div class="hint">Leerzeilen werden ignoriert. Die Teilnehmenden sehen zuerst alle Fragen und streichen weg, was sie nicht stellen möchten.</div>
+    </div>
+
+    <div class="glass">
+      <div class="karten-titel">Dauer einer Interviewrunde</div>
+      <div class="zeile"><div class="presets" id="presets"></div></div>
+      <div class="zeile">
+        <input type="text" inputmode="numeric" id="dauer" class="dauer-feld" value="5">
+        <span class="einheit">Minuten</span>
+      </div>
+      <div class="hint">Der Timer läuft auf dem Gerät der Teilnehmenden – sie starten ihn selbst, eine Zeiteingabe haben sie dort nicht.</div>
+    </div>
+
+  </div>
+
+  <div class="spalte">
+    <div class="glass" id="qr-box">
+      <div class="karten-titel">QR-Code für die Teilnehmenden</div>
+      <div id="qr-bild"></div>
+      <div id="qr-gross"><button class="btn btn-link" id="gross-btn">⛶ Gross zeigen</button></div>
+      <div class="link-feld" id="link-feld"></div>
+      <div class="zeile" style="margin-top:12px; justify-content:center">
+        <button class="btn btn-sec" id="kopieren-btn">🔗 Link kopieren</button>
+        <button class="btn btn-sec" id="vorschau-btn">👁 Vorschau</button>
+        <button class="btn btn-sec" id="json-btn">⭳ JSON</button>
+      </div>
+      <div class="warnung" id="warnung" hidden></div>
+      <div class="hint">
+        Der Fragensatz steckt vollständig im Link – kein Server, keine Sitzung, nichts wird gespeichert.
+        Je mehr Fragen, desto dichter der QR-Code.
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="overlay">
+  <div class="titel" id="overlay-titel"></div>
+  <div class="karte" id="overlay-bild"></div>
+  <div class="schliessen">Klicken zum Schliessen</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+const QR_API   = 'https://api.qrserver.com/v1/create-qr-code/';
+const PRESETS  = [3, 5, 7, 10, 15];
+const MAX_LINK = 1800;   // ab hier wird der QR-Code unangenehm dicht
+
+const $ = id => document.getElementById(id);
+let aktuellerLink = '';
+let neuZeichnen   = null;
+let toastTimer    = null;
+
+PRESETS.forEach(m => {
+  const b = document.createElement('button');
+  b.className = 'preset';
+  b.dataset.min = m;
+  b.textContent = m + ' min';
+  b.addEventListener('click', () => { $('dauer').value = m; aktualisiere(); });
+  $('presets').appendChild(b);
+});
+
+['titel', 'fragen', 'dauer'].forEach(id => $(id).addEventListener('input', aktualisiere));
+$('laden-btn').addEventListener('click', ladeVorlage);
+$('gross-btn').addEventListener('click', zeigeGross);
+$('kopieren-btn').addEventListener('click', kopiere);
+$('vorschau-btn').addEventListener('click', () => aktuellerLink ? window.open(aktuellerLink, '_blank') : toast('Es gibt noch keinen Link.'));
+$('json-btn').addEventListener('click', ladeJsonHerunter);
+$('overlay').addEventListener('click', () => $('overlay').classList.remove('offen'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('overlay').classList.remove('offen'); });
+
+ladeVorlagenliste();
+aktualisiere();
+
+/* ── Vorlagen aus saetze/ ────────────────────────────────── */
+async function ladeVorlagenliste() {
+  try {
+    const res = await fetch('saetze/index.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    const liste = (await res.json()).saetze || [];
+    liste.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.slug;
+      o.textContent = s.titel || s.slug;
+      $('vorlage').appendChild(o);
+    });
+    if (liste.length) { $('vorlage').value = liste[0].slug; ladeVorlage(); }
+  } catch (e) { /* ohne Verzeichnis beginnt man eben leer */ }
+}
+
+async function ladeVorlage() {
+  const slug = $('vorlage').value;
+  if (!slug) { $('titel').value = ''; $('fragen').value = ''; return aktualisiere(); }
+  try {
+    const res = await fetch('saetze/' + encodeURIComponent(slug) + '.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    const satz = await res.json();
+    $('titel').value  = satz.titel || '';
+    $('fragen').value = (satz.fragen || []).join('\n');
+    $('dauer').value  = Math.max(1, Math.round((satz.timer_sekunden || 300) / 60));
+    aktualisiere();
+  } catch (e) {
+    toast('Fragensatz «' + slug + '» konnte nicht geladen werden.');
+  }
+}
+
+/* ── Zustand einsammeln ──────────────────────────────────── */
+function lesen() {
+  return {
+    titel:  $('titel').value.trim(),
+    fragen: $('fragen').value.split('\n').map(z => z.trim()).filter(Boolean),
+    sekunden: Math.max(30, Math.min(3600, (parseInt($('dauer').value, 10) || 5) * 60))
+  };
+}
+
+function aktualisiere() {
+  const s = lesen();
+  $('anzahl').textContent = s.fragen.length + (s.fragen.length === 1 ? ' Frage' : ' Fragen');
+  const min = Math.round(s.sekunden / 60);
+  [].forEach.call(document.querySelectorAll('.preset'), b =>
+    b.classList.toggle('aktiv', Number(b.dataset.min) === min));
+
+  /* Der QR-Dienst wird erst nach kurzer Ruhe angefragt, nicht bei jedem Tastendruck. */
+  clearTimeout(neuZeichnen);
+  neuZeichnen = setTimeout(function () { zeichneQR(s); }, 350);
+}
+
+async function zeichneQR(s) {
+  if (!s.fragen.length) {
+    aktuellerLink = '';
+    $('qr-bild').innerHTML = '';
+    $('link-feld').textContent = 'Trag mindestens eine Frage ein, dann entsteht hier der Link.';
+    $('warnung').hidden = true;
+    return;
+  }
+  aktuellerLink = new URL('join.html', location.href).href + '#d=' + await einpacken(s);
+  $('qr-bild').innerHTML =
+    '<img src="' + QR_API + '?size=600x600&qzone=2&data=' + encodeURIComponent(aktuellerLink) +
+    '" alt="QR-Code zum Fragensatz">';
+  $('link-feld').textContent = aktuellerLink;
+
+  const w = $('warnung');
+  if (aktuellerLink.length > MAX_LINK) {
+    w.hidden = false;
+    w.textContent = 'Der Link ist mit ' + aktuellerLink.length + ' Zeichen recht lang, der QR-Code entsprechend dicht '
+      + '– auf dem Beamer möglicherweise schwer zu scannen. Kürze die Fragen, oder lade den Fragensatz als JSON '
+      + 'herunter, leg ihn in saetze/ ab und nutze den kurzen Link mit ?set=slug.';
+  } else {
+    w.hidden = true;
+  }
+}
+
+/* ── Nutzlast packen (Gegenstück zu join.html) ───────────── */
+async function einpacken(s) {
+  const roh = new TextEncoder().encode(JSON.stringify({ t: s.titel, s: s.sekunden, f: s.fragen }));
+  if (typeof CompressionStream === 'function') {
+    try {
+      const cs = new CompressionStream('deflate-raw');
+      const wr = cs.writable.getWriter(); wr.write(roh); wr.close();
+      return '1' + b64u(new Uint8Array(await new Response(cs.readable).arrayBuffer()));
+    } catch (e) { /* fällt unten auf unkomprimiert zurück */ }
+  }
+  return '0' + b64u(roh);
+}
+
+function b64u(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/* ── Aktionen ────────────────────────────────────────────── */
+function zeigeGross() {
+  if (!aktuellerLink) return toast('Es gibt noch keinen Link.');
+  $('overlay-titel').textContent = lesen().titel || 'Partnerinterview';
+  $('overlay-bild').innerHTML =
+    '<img src="' + QR_API + '?size=900x900&qzone=2&data=' + encodeURIComponent(aktuellerLink) +
+    '" alt="QR-Code zum Fragensatz">';
+  $('overlay').classList.add('offen');
+}
+
+async function kopiere() {
+  if (!aktuellerLink) return toast('Es gibt noch keinen Link.');
+  try {
+    await navigator.clipboard.writeText(aktuellerLink);
+    toast('Link kopiert.');
+  } catch (e) {
+    toast('Kopieren hat nicht geklappt – markier den Link im Feld von Hand.');
+  }
+}
+
+function ladeJsonHerunter() {
+  const s = lesen();
+  if (!s.fragen.length) return toast('Trag zuerst ein paar Fragen ein.');
+  const slug = machSlug($('vorlage').value || s.titel || 'fragensatz');
+  const inhalt = JSON.stringify(
+    { slug: slug, titel: s.titel, timer_sekunden: s.sekunden, fragen: s.fragen }, null, 2);
+  const url = URL.createObjectURL(new Blob([inhalt], { type: 'application/json;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = slug + '.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Leg die Datei in saetze/ ab – dann läuft auch der kurze Link mit ?set=' + slug);
+}
+
+function machSlug(text) {
+  return String(text).toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'fragensatz';
+}
+
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3400);
+}
+</script>
+</body>
+</html>
