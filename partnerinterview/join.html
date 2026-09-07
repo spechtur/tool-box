@@ -138,9 +138,41 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  @media (max-width: 420px) {
-    .btn { padding: 11px 14px; font-size: 14px; }
-    .btn-go, .btn-pause { min-width: 96px; }
+  /* ── Meldung zur Halbzeit und kurz vor Schluss ──────────── */
+  #melder {
+    position: fixed; inset: 0; z-index: 80; display: none;
+    align-items: center; justify-content: center; padding: 22px;
+    background: rgba(20,22,26,.55);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    cursor: pointer;
+  }
+  #melder.offen { display: flex; animation: auf .22s ease-out; }
+  @keyframes auf { from { opacity: 0 } to { opacity: 1 } }
+  #melder .tafel {
+    width: min(560px, 100%); max-height: 86vh; padding: 44px 30px 34px;
+    background: rgba(255,255,255,.90);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.7); border-radius: 22px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.30);
+    text-align: center; display: flex; flex-direction: column; gap: 14px;
+  }
+  #melder .wort { font-size: clamp(34px, 11vw, 54px); font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+  #melder .satz { font-size: 16px; line-height: 1.5; color: #4a4a4a; }
+  #melder .zu   { margin-top: 8px; align-self: center; }
+  #melder.halbzeit .wort { color: var(--violett); }
+  #melder.endspurt .wort { color: var(--rot); }
+
+  @media (max-width: 460px) {
+    /* Die Bedienzeile muss auf dem Handy in eine Zeile passen: Wörter weg,
+       Zeichen bleiben – nur der Hauptknopf behält seine Beschriftung. */
+    .footer-inner { flex-wrap: nowrap; gap: 7px; }
+    .btn { padding: 11px 12px; font-size: 14px; }
+    .btn .wort { display: none; }
+    .btn-go, .btn-pause { min-width: 0; }
+    /* Der jeweilige Hauptknopf behält sein Wort – nur die Nebenknöpfe
+       schrumpfen auf ihr Zeichen. */
+    .btn-go .wort, .btn-pause .wort, .btn-primary .wort { display: inline; }
+    #restzeit { font-size: 19px; min-width: 0; margin-right: 4px; }
     .intro h1 { font-size: 20px; }
   }
 </style>
@@ -169,6 +201,14 @@
 <footer id="footer" hidden>
   <div class="footer-inner" id="footer-inner"></div>
 </footer>
+
+<div id="melder">
+  <div class="tafel">
+    <div class="wort" id="melder-wort"></div>
+    <div class="satz" id="melder-satz"></div>
+    <button class="btn btn-primary zu" id="melder-zu">Weiter</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -208,6 +248,8 @@ let laeuft      = false;
 let tick        = null;
 let audioCtx    = null;
 let toastTimer  = null;
+let meilensteine = [];       // Restzeiten, bei denen eine Meldung erscheint
+let gemeldet     = new Set();
 
 const $ = id => document.getElementById(id);
 
@@ -220,11 +262,17 @@ const $ = id => document.getElementById(id);
     try { return starte(await auspacken(daten)); }
     catch (e) { return fehler(null, 'Der Link ist unvollständig oder beschädigt.'); }
   }
-  const slug = new URLSearchParams(location.search).get('set');
+  const p = new URLSearchParams(location.search);
+  const slug = p.get('set');
   try {
     const res = await fetch('saetze/' + encodeURIComponent(slug || DEFAULT_SLUG) + '.json', { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status);
-    starte(await res.json());
+    const satz = await res.json();
+    /* Kleine Abweichungen vom hinterlegten Satz reisen als Parameter mit,
+       damit der QR-Code kurz bleibt. */
+    if (p.get('t'))     satz.timer_sekunden = Number(p.get('t'));
+    if (p.get('titel')) satz.titel = p.get('titel');
+    starte(satz);
   } catch (e) {
     if (slug) fehler(slug); else starte(FALLBACK);
   }
@@ -235,6 +283,7 @@ function starte(satz) {
   if (!fragen.length) return fehler(null);
   dauer = Number(satz.timer_sekunden) > 0 ? Math.round(Number(satz.timer_sekunden)) : DEFAULT_SEKUNDEN;
   rest  = dauer;
+  setzeMeilensteine();
   $('titel').textContent = satz.titel || 'Partnerinterview';
   $('untertitel').textContent =
     'Tippe die Fragen an, die du in deinem Interview nicht stellen möchtest – sie werden durchgestrichen. ' +
@@ -307,6 +356,7 @@ function fixiere() {
 
 function neueRunde() {
   laeuft = false; clearInterval(tick); rest = dauer;
+  gemeldet.clear(); schliesseMelder();
   auswahl = null;
   gestrichen.clear();
   document.body.classList.remove('interview');
@@ -331,29 +381,66 @@ function zeichneFooter() {
     z.className = 'zaehler';
     z.textContent = offen + ' von ' + fragen.length + (offen === 1 ? ' Frage' : ' Fragen');
     box.appendChild(z);
-    box.appendChild(knopf('✓ Interview fixieren', 'btn-primary', fixiere));
+    box.appendChild(knopf('✓', 'Interview fixieren', 'btn-primary', fixiere));
     return;
   }
 
   const t = document.createElement('div');
   t.id = 'restzeit';
   box.appendChild(t);
-  box.appendChild(knopf(laeuft ? '❚❚ Pause' : '▶ Start', laeuft ? 'btn-pause' : 'btn-go', toggle));
-  box.appendChild(knopf('■ Stopp', 'btn-sec', stopp));
-  box.appendChild(knopf('↻ Restart', 'btn-sec', restart));
-  box.appendChild(knopf('↺ Neue Runde', 'btn-sec', neueRunde));
+  box.appendChild(knopf(laeuft ? '❚❚' : '▶', laeuft ? 'Pause' : 'Start', laeuft ? 'btn-pause' : 'btn-go', toggle));
+  box.appendChild(knopf('■', 'Stopp', 'btn-sec', stopp));
+  box.appendChild(knopf('↻', 'Restart', 'btn-sec', restart));
+  box.appendChild(knopf('↺', 'Neue Runde', 'btn-sec', neueRunde));
   zeigeZeit();
 }
 
-function knopf(label, cls, fn) {
+function knopf(zeichen, wort, cls, fn) {
   const b = document.createElement('button');
   b.className = 'btn ' + cls;
-  b.textContent = label;
+  b.innerHTML = '<span class="zeichen">' + zeichen + '</span><span class="wort"> ' + esc(wort) + '</span>';
+  b.title = wort;
+  b.setAttribute('aria-label', wort);
   b.addEventListener('click', () => { weckeAudio(); fn(); });
   return b;
 }
 
 /* ── Timer ───────────────────────────────────────────────── */
+/* Halbzeit und letzte Minute ergeben sich aus der eingestellten Dauer –
+   sie stehen nicht im Fragensatz und blähen den QR-Code deshalb nicht auf.
+   Zu kurze Runden bekommen weniger Meldungen, damit sie nicht kollidieren. */
+function setzeMeilensteine() {
+  meilensteine = [];
+  gemeldet.clear();
+  const halb = Math.floor(dauer / 2);
+  if (halb >= 120) {   // mindestens eine Minute Abstand zur Schlussmeldung
+    meilensteine.push({ bei: halb, wort: 'Halbzeit', satz: 'Die Hälfte der Zeit ist um – tauscht ihr schon, oder erzählt dieselbe Person weiter?' });
+  }
+  if (dauer >= 120) {
+    meilensteine.push({ bei: 60, wort: 'Noch eine Minute', satz: 'Kommt zu einem guten Schluss.' });
+  }
+}
+
+function pruefeMeilenstein() {
+  const m = meilensteine.find(x => x.bei === rest && !gemeldet.has(x.bei));
+  if (!m) return;
+  gemeldet.add(m.bei);
+  zeigeMelder(m);
+}
+
+function zeigeMelder(m) {
+  $('melder-wort').textContent = m.wort;
+  $('melder-satz').textContent = m.satz;
+  const el = $('melder');
+  el.className = 'offen ' + (m.bei === 60 ? 'endspurt' : 'halbzeit');
+  pling(m.bei === 60 ? 660 : 520);
+}
+
+function schliesseMelder() { $('melder').className = ''; }
+
+$('melder').addEventListener('click', schliesseMelder);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') schliesseMelder(); });
+
 function toggle() { laeuft ? pause() : start(); }
 
 function start() {
@@ -364,14 +451,15 @@ function start() {
   tick = setInterval(() => {
     rest = Math.max(0, rest - 1);
     zeigeZeit();
-    if (rest === 0) { laeuft = false; clearInterval(tick); gong(); zeichneFooter(); }
+    if (rest === 0) { laeuft = false; clearInterval(tick); schliesseMelder(); gong(); zeichneFooter(); }
+    else pruefeMeilenstein();
   }, 1000);
   zeichneFooter();
 }
 
 function pause()   { laeuft = false; clearInterval(tick); zeichneFooter(); }
-function stopp()   { laeuft = false; clearInterval(tick); rest = dauer; zeichneFooter(); }
-function restart() { laeuft = false; clearInterval(tick); rest = dauer; start(); }
+function stopp()   { laeuft = false; clearInterval(tick); rest = dauer; gemeldet.clear(); schliesseMelder(); zeichneFooter(); }
+function restart() { laeuft = false; clearInterval(tick); rest = dauer; gemeldet.clear(); schliesseMelder(); start(); }
 
 function zeigeZeit() {
   const anteil = dauer > 0 ? rest / dauer : 0;
@@ -411,6 +499,20 @@ function weckeAudio() {
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+/* Ein einzelner, kurzer Ton – deutlich zurückhaltender als der Schluss-Gong. */
+function pling(freq) {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sine'; osc.frequency.value = freq;
+  const t = audioCtx.currentTime;
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.22, t + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+  osc.start(t); osc.stop(t + 0.6);
 }
 
 function gong() {

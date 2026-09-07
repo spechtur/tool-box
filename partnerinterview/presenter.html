@@ -187,7 +187,7 @@
       <div class="karten-titel">Fragensatz</div>
       <div class="zeile">
         <select id="vorlage" style="flex:1"><option value="">– leer beginnen –</option></select>
-        <button class="btn btn-sec" id="laden-btn">Laden</button>
+        <button class="btn btn-sec" id="laden-btn" title="Eigene Änderungen verwerfen und den Fragensatz neu aus dem Repo holen">↺ Zurücksetzen</button>
         <button class="btn btn-sec" id="datei-btn">📂 Datei …</button>
         <input type="file" id="datei" accept=".json,application/json" hidden>
       </div>
@@ -295,7 +295,11 @@ PRESETS.forEach(m => {
 
 ['titel', 'fragen', 'dauer'].forEach(id => $(id).addEventListener('input', aktualisiere));
 $('vorlage').addEventListener('change', ladeVorlage);
-$('laden-btn').addEventListener('click', ladeVorlage);
+$('laden-btn').addEventListener('click', () => {
+  if (!$('vorlage').value) return toast('Wähl zuerst einen Fragensatz aus der Liste.');
+  delete vorlagen[$('vorlage').value];   // frisch holen, nicht aus dem Zwischenspeicher
+  ladeVorlage().then(() => toast('Fragensatz neu geladen.'));
+});
 $('datei-btn').addEventListener('click', () => $('datei').click());
 $('datei').addEventListener('change', ladeDatei);
 $('gross-btn').addEventListener('click', zeigeGross);
@@ -466,23 +470,28 @@ function basis() {
   return LOKAL ? PUBLIC_BASE : new URL('./', location.href).href;
 }
 
-/* Deckt sich die Eingabe mit einem Satz aus saetze/, genügt der kurze
-   Link – sein QR-Code ist ein Bruchteil so dicht wie der mit Nutzlast. */
+/* Nur die Fragen entscheiden, ob der kurze Link genügt – sie machen den
+   Löwenanteil der Nutzlast aus. Abweichende Dauer oder ein anderer Titel
+   reisen als kurze Parameter mit, statt den ganzen Satz in den Link zu zwingen. */
 function passenderSlug(s) {
   const slug = $('vorlage').value;
   const v = slug && vorlagen[slug];
-  if (!v) return null;
-  const gleich = (v.titel || '') === s.titel
-    && Number(v.timer_sekunden || 300) === s.sekunden
-    && Array.isArray(v.fragen)
-    && v.fragen.length === s.fragen.length
+  if (!v || !Array.isArray(v.fragen)) return null;
+  const gleich = v.fragen.length === s.fragen.length
     && v.fragen.every((f, i) => String(f).trim() === s.fragen[i]);
   return gleich ? slug : null;
 }
 
 async function baueLink(s) {
   const slug = passenderSlug(s);
-  if (slug) { kurzerLink = true; return basis() + 'join.html?set=' + encodeURIComponent(slug); }
+  if (slug) {
+    kurzerLink = true;
+    const v = vorlagen[slug];
+    let link = basis() + 'join.html?set=' + encodeURIComponent(slug);
+    if (s.sekunden !== Number(v.timer_sekunden || 300)) link += '&t=' + s.sekunden;
+    if (s.titel !== (v.titel || '')) link += '&titel=' + encodeURIComponent(s.titel);
+    return link;
+  }
   kurzerLink = false;
   return basis() + 'join.html#d=' + await einpacken(s);
 }

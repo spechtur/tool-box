@@ -21,8 +21,8 @@ wiederverwendbar für andere Einsatzszenarien.
 - **Backend:** keins – Fragensätze als statische JSON-Dateien in `saetze/`. Die Vorbereitung liest das
   Verzeichnis über die GitHub-Contents-API (CORS offen, 60 Anfragen/Stunde); `saetze/index.json`
   ist nur noch Rückfallebene für lokal/offline
-- **Übergabe an die TN:** bevorzugt der kurze Weg `join.html?set=slug` – die Vorbereitung erkennt
-  selbst, ob die Eingabe unverändert einem Satz aus `saetze/` entspricht, und baut dann diesen Link
+- **Übergabe an die TN:** bevorzugt der kurze Weg `join.html?set=slug` – für den Abgleich zählen nur
+  die **Fragen**; abweichende Dauer und abweichender Titel reisen als `&t=` und `&titel=` mit
   (QR-Version ~6 statt ~24, vom Beamer aus mühelos scannbar). Nur bei abweichender Eingabe reist der
   Fragensatz deflate-komprimiert im URL-Fragment mit (`join.html#d=…`)
 - **Hosting:** GitHub Pages – Ordner `partnerinterview/` im Repo github.com/spechtur/tool-box
@@ -58,6 +58,14 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 - Runde Ecken: `border-radius: 16px` (Cards), `8px` (Buttons)
 - Typografie: System-Font-Stack, Weights 400/600/700
 - Mobile-first: grosse Touch-Targets, Timer-Balken oben, restlicher Screen für Fragenliste
+
+### Meldungen während der Runde
+
+- Vollflächiges Overlay bei Halbzeit und bei einer Minute Restzeit, per Klick zu schliessen
+- Halbzeit nur, wenn sie mindestens bei 2:00 liegt (sonst zu nah an der Schlussmeldung),
+  Schlussmeldung ab 2 Minuten Rundendauer
+- Beides wird aus `timer_sekunden` abgeleitet und steht **nicht** im Fragensatz – der QR-Code
+  wächst dadurch nicht
 
 ### Timer-Balken (Spezifikation)
 
