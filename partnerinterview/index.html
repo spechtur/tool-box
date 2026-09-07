@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Partnerinterview · PHGR</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --gelb: #c7d200; --tuerkis: #23b2c6; --rot: #ed6a69;
+    --orange: #fbb900; --violett: #6169af; --gruen: #5aab6e;
+    --dg: #878787; --mg: #c6c6c6; --hg: #ececec;
+    --bar-h: 7px;
+  }
+  html, body { min-height: 100%; }
+  body {
+    font-family: Arial, Helvetica, sans-serif; color: #1a1a1a;
+    background: #eef1f3;
+    background-image:
+      radial-gradient(circle at 12% 8%,  rgba(199,210,0,.30),  transparent 45%),
+      radial-gradient(circle at 88% 14%, rgba(35,178,198,.28), transparent 48%),
+      radial-gradient(circle at 78% 92%, rgba(97,105,175,.24), transparent 46%),
+      radial-gradient(circle at 8% 88%,  rgba(251,185,0,.22),  transparent 44%);
+    background-attachment: fixed;
+    display: flex; flex-direction: column; min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* ── Timerbalken ─────────────────────────────────────── */
+  #bar-track {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--bar-h);
+    background: rgba(0,0,0,.10); z-index: 60;
+  }
+  #bar-fill {
+    height: 100%; width: 100%; background: var(--gruen);
+    transform-origin: left center;
+    transition: width .25s linear, background-color .6s linear;
+  }
+  #bar-fill.done { background: var(--rot); }
+
+  /* ── Kopf ────────────────────────────────────────────── */
+  header {
+    background: var(--gelb); padding: 12px 20px; margin-top: var(--bar-h);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .ph { font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 20px; color: #111; }
+  .gr { font-variant: small-caps; font-weight: 300; font-size: 20px; color: #111; letter-spacing: .04em; }
+  .sep { width: 2px; height: 21px; background: rgba(0,0,0,.15); }
+  .header-title { font-size: 16px; font-weight: 700; color: #111; }
+  .back-link {
+    margin-left: auto; font-size: 12px; font-weight: 700; color: #333; text-decoration: none;
+    background: rgba(0,0,0,.10); padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+  }
+  .back-link:hover { background: rgba(0,0,0,.18); }
+
+  /* ── Inhalt ──────────────────────────────────────────── */
+  main {
+    flex: 1; width: 100%; max-width: 720px; margin: 0 auto;
+    padding: 22px 16px 132px; display: flex; flex-direction: column; gap: 18px;
+  }
+
+  .glass {
+    background: rgba(255,255,255,.55);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  }
+
+  .intro { padding: 20px 22px; }
+  .intro h1 { font-size: 22px; font-weight: 800; line-height: 1.25; margin-bottom: 8px; }
+  .intro p  { font-size: 14px; line-height: 1.6; color: #4a4a4a; }
+  .phase-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: #fff; background: var(--tuerkis);
+    padding: 4px 10px; border-radius: 20px; margin-bottom: 10px;
+  }
+  .phase-tag.interview { background: var(--violett); }
+
+  #liste { display: flex; flex-direction: column; gap: 10px; list-style: none; }
+
+  .frage {
+    padding: 16px 18px; font-size: 16px; line-height: 1.45; cursor: pointer;
+    display: flex; gap: 12px; align-items: flex-start;
+    transition: opacity .18s, transform .1s, background-color .18s;
+  }
+  .frage:active { transform: scale(.99); }
+  .frage .nr {
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--tuerkis); color: #fff; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .frage.gestrichen { opacity: .42; background: rgba(255,255,255,.32); }
+  .frage.gestrichen .txt { text-decoration: line-through; }
+  .frage.gestrichen .nr { background: var(--mg); }
+
+  body.interview .frage { cursor: default; padding: 20px 22px; font-size: 19px; line-height: 1.4; }
+  body.interview .frage .nr { background: var(--violett); }
+
+  .hinweis {
+    padding: 22px; text-align: center; font-size: 15px; line-height: 1.6; color: #4a4a4a;
+  }
+  .hinweis strong { display: block; font-size: 17px; color: #1a1a1a; margin-bottom: 6px; }
+
+  /* ── Fussleiste ──────────────────────────────────────── */
+  footer {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(0,0,0,.08);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .footer-inner {
+    max-width: 720px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  }
+  .zaehler { font-size: 13px; font-weight: 700; color: var(--dg); margin-right: auto; }
+  #restzeit {
+    font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em; margin-right: auto; min-width: 74px;
+  }
+  #restzeit.aus { color: var(--rot); }
+
+  .btn {
+    border: none; border-radius: 8px; padding: 12px 18px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: opacity .15s, transform .1s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .4; cursor: default; transform: none; }
+  .btn-primary { background: var(--gelb); color: #111; }
+  .btn-go      { background: var(--gruen); color: #fff; min-width: 108px; }
+  .btn-pause   { background: var(--orange); color: #111; min-width: 108px; }
+  .btn-sec     { background: rgba(0,0,0,.06); color: #444; border: 1px solid rgba(0,0,0,.12); padding: 12px 14px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(12px);
+    background: rgba(30,30,30,.92); color: #fff; font-size: 14px; font-weight: 600;
+    padding: 11px 18px; border-radius: 22px; z-index: 70;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 420px) {
+    .btn { padding: 11px 14px; font-size: 14px; }
+    .btn-go, .btn-pause { min-width: 96px; }
+    .intro h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="bar-track"><div id="bar-fill"></div></div>
+
+<header>
+  <div><span class="ph">ph</span><span class="gr">GR</span></div>
+  <div class="sep"></div>
+  <div class="header-title">Partnerinterview</div>
+  <a class="back-link" href="../index.html">← tool-box</a>
+</header>
+
+<main>
+  <div class="intro glass" id="intro">
+    <div class="phase-tag" id="phase-tag">Auswahl</div>
+    <h1 id="titel">Fragensatz wird geladen …</h1>
+    <p id="untertitel">Einen Moment bitte.</p>
+  </div>
+  <ul id="liste"></ul>
+</main>
+
+<footer id="footer" hidden>
+  <div class="footer-inner" id="footer-inner"></div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* Notfall-Fragensatz: greift, wenn die Seite ohne ?set und ohne
+   erreichbare JSON-Datei geöffnet wird (z. B. lokal per Doppelklick). */
+const DEFAULT_SLUG = 'kultur-der-digitalitaet';
+const FALLBACK = {
+  titel: 'Ressourcen in einer Kultur der Digitalität',
+  timer_sekunden: 300,
+  fragen: [
+    'Welches digitale Werkzeug setzt du bereits so sicher ein, dass du es anderen zeigen könntest?',
+    'Wann hast du zuletzt gemerkt: «Das hat mit Technik richtig gut funktioniert»?',
+    'Welche analoge Stärke von dir hilft dir auch im Digitalen weiter?',
+    'Wen fragst du, wenn du bei einem digitalen Thema nicht weiterkommst?',
+    'Was hast du dir im letzten Jahr digital selbst beigebracht – und wie bist du dabei vorgegangen?',
+    'Welche Unsicherheit im Umgang mit Digitalität nimmst du bei dir wahr, ohne dass sie dich lähmt?',
+    'Woran merkst du, dass digitale Medien dem Lernen wirklich dienen?',
+    'Welche Regel oder Routine hat sich bei dir bewährt, damit Digitales im Alltag nicht ausufert?',
+    'Was würdest du an deiner Schule als Erstes ändern, wenn du freie Hand hättest?',
+    'Welche Erfahrung aus deiner eigenen Schulzeit prägt deinen Blick auf Digitalität heute noch?',
+    'Wo hat dein Fach durch Digitalität etwas gewonnen – und nicht nur etwas verloren?',
+    'Was möchtest du in den nächsten Monaten ausprobieren, auch wenn es schiefgehen könnte?'
+  ]
+};
+const DEFAULT_SEKUNDEN = 300;
+
+/* ── Zustand ─────────────────────────────────────────────── */
+let fragen      = [];        // alle Fragen des Satzes
+let gestrichen  = new Set(); // Indizes der durchgestrichenen Fragen
+let auswahl     = null;      // nach «Bereinigen»: die verbleibenden Fragen
+let dauer       = DEFAULT_SEKUNDEN;
+let rest        = DEFAULT_SEKUNDEN;
+let laeuft      = false;
+let tick        = null;
+let audioCtx    = null;
+let toastTimer  = null;
+
+const $ = id => document.getElementById(id);
+
+/* ── Fragensatz laden ────────────────────────────────────── */
+(async function init() {
+  const slug = new URLSearchParams(location.search).get('set');
+  try {
+    const res = await fetch('saetze/' + encodeURIComponent(slug || DEFAULT_SLUG) + '.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    starte(await res.json());
+  } catch (e) {
+    if (slug) fehler(slug); else starte(FALLBACK);
+  }
+})();
+
+function starte(satz) {
+  fragen = Array.isArray(satz.fragen) ? satz.fragen.filter(f => String(f).trim()) : [];
+  if (!fragen.length) return fehler(null);
+  dauer = Number(satz.timer_sekunden) > 0 ? Math.round(Number(satz.timer_sekunden)) : DEFAULT_SEKUNDEN;
+  rest  = dauer;
+  $('titel').textContent = satz.titel || 'Partnerinterview';
+  $('untertitel').textContent =
+    'Tippe die Fragen an, die du in deinem Interview nicht stellen möchtest – sie werden durchgestrichen. ' +
+    'Wenn deine Auswahl steht, tippe auf «Bereinigen».';
+  document.title = ($('titel').textContent) + ' · Partnerinterview';
+  zeichneListe();
+  zeichneFooter();
+  $('footer').hidden = false;
+}
+
+function fehler(slug) {
+  $('intro').hidden = true;
+  $('liste').innerHTML =
+    '<li class="hinweis glass"><strong>Diesen Fragensatz gibt es nicht.</strong>' +
+    (slug ? 'Der Link verweist auf «' + esc(slug) + '», dazu ist hier nichts hinterlegt. ' : '') +
+    'Bitte prüfe den QR-Code oder frag die Kursleitung nach dem richtigen Link.</li>';
+}
+
+/* ── Fragenliste ─────────────────────────────────────────── */
+function zeichneListe() {
+  const liste = $('liste');
+  liste.innerHTML = '';
+
+  if (auswahl) {
+    auswahl.forEach((text, i) => liste.appendChild(zeile(text, i + 1, false, null)));
+    return;
+  }
+  fragen.forEach((text, i) => {
+    liste.appendChild(zeile(text, i + 1, gestrichen.has(i), () => streiche(i)));
+  });
+}
+
+function zeile(text, nr, aus, onClick) {
+  const li = document.createElement('li');
+  li.className = 'frage glass' + (aus ? ' gestrichen' : '');
+  li.innerHTML = '<span class="nr">' + nr + '</span><span class="txt">' + esc(text) + '</span>';
+  if (onClick) {
+    li.setAttribute('role', 'button');
+    li.setAttribute('tabindex', '0');
+    li.setAttribute('aria-pressed', aus ? 'true' : 'false');
+    li.addEventListener('click', onClick);
+    li.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onClick(); }
+    });
+  }
+  return li;
+}
+
+function streiche(i) {
+  gestrichen.has(i) ? gestrichen.delete(i) : gestrichen.add(i);
+  zeichneListe();
+  zeichneFooter();
+}
+
+function bereinige() {
+  const bleibt = fragen.filter((_, i) => !gestrichen.has(i));
+  if (!bleibt.length) {
+    toast('Mindestens eine Frage muss stehen bleiben.');
+    return;
+  }
+  auswahl = bleibt;
+  document.body.classList.add('interview');
+  $('phase-tag').textContent = 'Interview';
+  $('phase-tag').classList.add('interview');
+  $('untertitel').textContent =
+    'Eine Person fragt, die andere erzählt. Startet den Timer – wenn er abgelaufen ist, ' +
+    'gebt euch eine kurze, ressourcenorientierte Rückmeldung.';
+  zeichneListe();
+  zeichneFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function neueRunde() {
+  stopp();
+  auswahl = null;
+  gestrichen.clear();
+  document.body.classList.remove('interview');
+  $('phase-tag').textContent = 'Auswahl';
+  $('phase-tag').classList.remove('interview');
+  $('untertitel').textContent =
+    'Rollentausch: Tippe die Fragen an, die du nicht stellen möchtest, und bereinige die Liste neu.';
+  zeichneListe();
+  zeichneFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Fussleiste ──────────────────────────────────────────── */
+function zeichneFooter() {
+  const box = $('footer-inner');
+  box.innerHTML = '';
+
+  if (!auswahl) {
+    const offen = fragen.length - gestrichen.size;
+    const z = document.createElement('div');
+    z.className = 'zaehler';
+    z.textContent = offen + ' von ' + fragen.length + (offen === 1 ? ' Frage' : ' Fragen');
+    box.appendChild(z);
+    box.appendChild(knopf('✓ Bereinigen', 'btn-primary', bereinige));
+    return;
+  }
+
+  const t = document.createElement('div');
+  t.id = 'restzeit';
+  box.appendChild(t);
+  box.appendChild(knopf(laeuft ? '❚❚ Pause' : '▶ Start', laeuft ? 'btn-pause' : 'btn-go', toggle));
+  box.appendChild(knopf('■ Stopp', 'btn-sec', stopp));
+  box.appendChild(knopf('↻ Restart', 'btn-sec', restart));
+  box.appendChild(knopf('↺ Neue Runde', 'btn-sec', neueRunde));
+  zeigeZeit();
+}
+
+function knopf(label, cls, fn) {
+  const b = document.createElement('button');
+  b.className = 'btn ' + cls;
+  b.textContent = label;
+  b.addEventListener('click', () => { weckeAudio(); fn(); });
+  return b;
+}
+
+/* ── Timer ───────────────────────────────────────────────── */
+function toggle() { laeuft ? pause() : start(); }
+
+function start() {
+  if (laeuft) return;
+  if (rest <= 0) rest = dauer;
+  laeuft = true;
+  clearInterval(tick);
+  tick = setInterval(() => {
+    rest = Math.max(0, rest - 1);
+    zeigeZeit();
+    if (rest === 0) { laeuft = false; clearInterval(tick); gong(); zeichneFooter(); }
+  }, 1000);
+  zeichneFooter();
+}
+
+function pause() { laeuft = false; clearInterval(tick); zeichneFooter(); }
+
+function stopp() { laeuft = false; clearInterval(tick); rest = dauer; zeigeZeit(); zeichneFooter(); }
+
+function restart() { laeuft = false; clearInterval(tick); rest = dauer; start(); }
+
+function zeigeZeit() {
+  const anteil = dauer > 0 ? rest / dauer : 0;
+  const fill = $('bar-fill');
+  fill.style.width = (anteil * 100).toFixed(2) + '%';
+  fill.style.backgroundColor = farbe(anteil);
+  fill.classList.toggle('done', rest === 0);
+  if (rest === 0) fill.style.width = '100%';
+
+  const feld = $('restzeit');
+  if (!feld) return;
+  const m = Math.floor(rest / 60), s = rest % 60;
+  feld.textContent = m + ':' + String(s).padStart(2, '0');
+  feld.classList.toggle('aus', rest === 0);
+}
+
+/* Grün → Gelb → Orange → Rot, linear über die Restzeit interpoliert. */
+function farbe(a) {
+  const stops = [
+    [0.00, [237, 106, 105]], // rot
+    [0.25, [251, 185,   0]], // orange
+    [0.55, [199, 210,   0]], // gelb
+    [1.00, [ 90, 171, 110]]  // grün
+  ];
+  a = Math.min(1, Math.max(0, a));
+  for (let i = 1; i < stops.length; i++) {
+    if (a <= stops[i][0]) {
+      const [p0, c0] = stops[i - 1], [p1, c1] = stops[i];
+      const t = (a - p0) / (p1 - p0);
+      const c = c0.map((v, k) => Math.round(v + (c1[k] - v) * t));
+      return 'rgb(' + c.join(',') + ')';
+    }
+  }
+  return 'rgb(90,171,110)';
+}
+
+/* ── Ton ─────────────────────────────────────────────────── */
+function weckeAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function gong() {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  [880, 660, 440].forEach((f, i) => {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sine'; osc.frequency.value = f;
+    const t = audioCtx.currentTime + i * 0.3;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.35, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    osc.start(t); osc.stop(t + 0.75);
+  });
+}
+
+/* ── Kleinkram ───────────────────────────────────────────── */
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+</body>
+</html>
