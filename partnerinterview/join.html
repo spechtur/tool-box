@@ -246,6 +246,7 @@ let dauer       = DEFAULT_SEKUNDEN;
 let rest        = DEFAULT_SEKUNDEN;
 let laeuft      = false;
 let tick        = null;
+let endeZeit    = 0;   // Zeitstempel, an dem die Runde ausläuft
 let audioCtx    = null;
 let toastTimer  = null;
 let meilensteine = [];       // Restzeiten, bei denen eine Meldung erscheint
@@ -421,11 +422,14 @@ function setzeMeilensteine() {
   }
 }
 
-function pruefeMeilenstein() {
-  const m = meilensteine.find(x => x.bei === rest && !gemeldet.has(x.bei));
-  if (!m) return;
-  gemeldet.add(m.bei);
-  zeigeMelder(m);
+/* Ausgelöst wird beim Unterschreiten, nicht beim exakten Treffer – sonst
+   fällt eine Meldung aus, wenn der Browser Sekunden überspringt. Wurden
+   mehrere auf einmal überholt, zählt die jüngste. */
+function pruefeMeilenstein(vorher) {
+  const faellig = meilensteine.filter(x => vorher > x.bei && rest <= x.bei && !gemeldet.has(x.bei));
+  if (!faellig.length) return;
+  faellig.forEach(x => gemeldet.add(x.bei));
+  zeigeMelder(faellig.reduce((a, b) => (a.bei <= b.bei ? a : b)));
 }
 
 function zeigeMelder(m) {
@@ -443,18 +447,27 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') schliesseMel
 
 function toggle() { laeuft ? pause() : start(); }
 
+/* Die Restzeit kommt aus einem Zeitstempel, nicht aus einem Zähler:
+   Sperrt sich der Bildschirm oder wechselt die TN die App, drosselt der
+   Browser das Intervall – ein Zähler würde dann nachgehen und einzelne
+   Sekunden überspringen. */
 function start() {
   if (laeuft) return;
-  if (rest <= 0) rest = dauer;
+  if (rest <= 0) { rest = dauer; gemeldet.clear(); }
+  endeZeit = Date.now() + rest * 1000;
   laeuft = true;
   clearInterval(tick);
-  tick = setInterval(() => {
-    rest = Math.max(0, rest - 1);
-    zeigeZeit();
-    if (rest === 0) { laeuft = false; clearInterval(tick); schliesseMelder(); gong(); zeichneFooter(); }
-    else pruefeMeilenstein();
-  }, 1000);
+  tick = setInterval(schlag, 250);
   zeichneFooter();
+}
+
+function schlag() {
+  const vorher = rest;
+  rest = Math.max(0, Math.round((endeZeit - Date.now()) / 1000));
+  if (rest === vorher) return;
+  zeigeZeit();
+  if (rest === 0) { laeuft = false; clearInterval(tick); schliesseMelder(); gong(); zeichneFooter(); }
+  else pruefeMeilenstein(vorher);
 }
 
 function pause()   { laeuft = false; clearInterval(tick); zeichneFooter(); }

@@ -62,8 +62,13 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 ### Meldungen während der Runde
 
 - Vollflächiges Overlay bei Halbzeit und bei einer Minute Restzeit, per Klick zu schliessen
-- Halbzeit nur, wenn sie mindestens bei 2:00 liegt (sonst zu nah an der Schlussmeldung),
-  Schlussmeldung ab 2 Minuten Rundendauer
+- Halbzeit nur, wenn sie mindestens bei 2:00 liegt (also ab 4 Minuten Rundendauer – sonst zu nah
+  an der Schlussmeldung), Schlussmeldung ab 2 Minuten Rundendauer. Die Vorbereitung zeigt den
+  Meldeplan unter dem Dauerfeld an; `meldeplan()` dort und `setzeMeilensteine()` in `join.html`
+  müssen übereinstimmen
+- Der Countdown rechnet aus einem Zeitstempel, nicht mit einem Zähler, und Meldungen lösen beim
+  **Unterschreiten** aus – sonst geht die Uhr nach bzw. fällt eine Meldung aus, wenn der Browser
+  das Intervall drosselt (Bildschirmsperre, App-Wechsel)
 - Beides wird aus `timer_sekunden` abgeleitet und steht **nicht** im Fragensatz – der QR-Code
   wächst dadurch nicht
 

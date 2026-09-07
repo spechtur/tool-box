@@ -217,6 +217,7 @@
         <span class="einheit">Minuten</span>
       </div>
       <div class="hint">Der Timer läuft auf dem Gerät der Teilnehmenden – sie starten ihn selbst, eine Zeiteingabe haben sie dort nicht.</div>
+      <div class="tipp" id="meldeplan"></div>
     </div>
 
   </div>
@@ -452,9 +453,27 @@ function stelleWiederHer() {
   } catch (e) { return false; }
 }
 
+/* Muss mit setzeMeilensteine() in join.html übereinstimmen. */
+function meldeplan(sekunden) {
+  const halb = Math.floor(sekunden / 2), plan = [];
+  if (halb >= 120)     plan.push(['Halbzeit', halb]);
+  if (sekunden >= 120) plan.push(['Noch eine Minute', 60]);
+  return plan;
+}
+
+function mmss(sek) { return Math.floor(sek / 60) + ':' + String(sek % 60).padStart(2, '0'); }
+
 function aktualisiere() {
   const s = lesen();
   $('anzahl').textContent = s.fragen.length + (s.fragen.length === 1 ? ' Frage' : ' Fragen');
+
+  const plan = meldeplan(s.sekunden);
+  $('meldeplan').innerHTML = plan.length
+    ? 'Bildschirmfüllende Meldungen bei dieser Dauer: '
+      + plan.map(([w, t]) => '<b>' + w + '</b> bei ' + mmss(t) + ' Restzeit').join(' und ')
+      + '. Die Teilnehmenden tippen sie weg.'
+    : 'Zu kurz für Zwischenmeldungen – erst ab 2 Minuten kommt «Noch eine Minute», '
+      + 'ab 4 Minuten zusätzlich die Halbzeit.';
   const min = Math.round(s.sekunden / 60);
   [].forEach.call(document.querySelectorAll('.preset'), b =>
     b.classList.toggle('aktiv', Number(b.dataset.min) === min));
