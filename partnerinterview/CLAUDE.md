@@ -19,8 +19,10 @@ wiederverwendbar für andere Einsatzszenarien.
 
 - **Frontend:** Vanilla HTML/CSS/JS – zwei Seiten: `presenter.html` (Vorbereitung) und `join.html` (TN)
 - **Backend:** keins – Fragensätze als statische JSON-Dateien in `saetze/` (Verzeichnis: `saetze/index.json`)
-- **Übergabe an die TN:** Fragensatz steckt deflate-komprimiert im URL-Fragment (`join.html#d=…`);
-  alternativ der kurze Weg über `join.html?set=slug` für Sätze, die im Repo liegen
+- **Übergabe an die TN:** bevorzugt der kurze Weg `join.html?set=slug` – die Vorbereitung erkennt
+  selbst, ob die Eingabe unverändert einem Satz aus `saetze/` entspricht, und baut dann diesen Link
+  (QR-Version ~6 statt ~24, vom Beamer aus mühelos scannbar). Nur bei abweichender Eingabe reist der
+  Fragensatz deflate-komprimiert im URL-Fragment mit (`join.html#d=…`)
 - **Hosting:** GitHub Pages – Ordner `partnerinterview/` im Repo github.com/spechtur/tool-box
 - **Deployment:** Push to main → automatisch live
 
@@ -94,7 +96,12 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 - v1 hat keine Bibliotheks-Übersichtsseite – Fragensätze werden nur über direkten Link/QR
   mit bekanntem Slug erreicht, von David vorbereitet
 - Nach „Interview fixieren" stellt der Button „Neue Runde" die volle Liste wieder her (Rollentausch)
-- Sehr lange Fragensätze ergeben einen dichten QR-Code; die Vorbereitung warnt ab 1800 Zeichen Linklänge
+- Fragensätze im Link ergeben dichte QR-Codes (~110 Module); die Vorbereitung sagt das an und
+  empfiehlt Vollbild bzw. den Weg über `saetze/`
+- Ein neuer Fragensatz erscheint in der Auswahlliste erst, wenn er **auch** in `saetze/index.json`
+  eingetragen ist; «Datei …» lädt jede JSON direkt von der Festplatte
+- Lokal geöffnet (`file://`) zeigt der QR-Code auf die GitHub-Pages-Adresse, weil Telefone
+  `file://`-Links nicht öffnen können
 - Kein Notizfeld pro Frage in v1 – TN notieren ausserhalb des Tools
 - Kein Upload-Interface für neue Fragensätze – David pflegt JSON-Dateien direkt im Repo
 

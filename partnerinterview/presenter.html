@@ -101,7 +101,7 @@
     display: inline-block; background: #fff; padding: 12px; border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0,0,0,.10); line-height: 0;
   }
-  #qr-bild img { display: block; width: 100%; height: auto; max-width: 300px; }
+  #qr-bild img { display: block; width: 100%; height: auto; max-width: 360px; }
   #qr-gross { margin-top: 11px; }
   .link-feld {
     margin-top: 12px; font-size: 11.5px; line-height: 1.5; color: #555; word-break: break-all;
@@ -125,6 +125,33 @@
   #overlay .karte img { display: block; width: min(72vh, 84vw); height: auto; }
   #overlay .titel { color: #fff; font-size: 21px; font-weight: 700; text-align: center; }
   #overlay .schliessen { color: rgba(255,255,255,.65); font-size: 13px; }
+
+  /* Vorschau im Telefonrahmen */
+  #vorschau {
+    position: fixed; inset: 0; z-index: 92; display: none;
+    background: rgba(20,20,20,.86); align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; padding: 20px;
+  }
+  #vorschau.offen { display: flex; }
+  #vorschau .rahmen {
+    background: #111; padding: 12px; border-radius: 28px;
+    box-shadow: 0 12px 50px rgba(0,0,0,.5); line-height: 0;
+  }
+  #vorschau iframe {
+    display: block; width: min(390px, 88vw); height: min(720px, 72vh);
+    border: 0; border-radius: 18px; background: #eef1f3;
+  }
+  #vorschau .leiste { display: flex; gap: 10px; align-items: center; }
+  #vorschau .info { color: rgba(255,255,255,.7); font-size: 12.5px; }
+  .btn-hell { background: rgba(255,255,255,.92); color: #1a1a1a; }
+
+  .status {
+    margin-top: 12px; font-size: 12.5px; line-height: 1.5; text-align: left;
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .status.kurz { color: #2c6b3f; background: rgba(90,171,110,.20); border: 1px solid rgba(90,171,110,.45); }
+  .status.lang { color: #8a4b00; background: rgba(251,185,0,.22); border: 1px solid rgba(251,185,0,.5); }
+  .status[hidden] { display: none; }
 
   .toast {
     position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(12px);
@@ -154,8 +181,14 @@
       <div class="zeile">
         <select id="vorlage" style="flex:1"><option value="">– leer beginnen –</option></select>
         <button class="btn btn-sec" id="laden-btn">Laden</button>
+        <button class="btn btn-sec" id="datei-btn">📂 Datei …</button>
+        <input type="file" id="datei" accept=".json,application/json" hidden>
       </div>
-      <div class="hint">Vorbereitete Fragensätze aus dem Repo als Ausgangspunkt – du kannst sie hier frei anpassen.</div>
+      <div class="hint">
+        Die Auswahlliste kommt aus <code>saetze/index.json</code> – ein neuer Fragensatz taucht dort erst auf,
+        wenn du ihn zusätzlich zur JSON-Datei auch dort einträgst. Mit «Datei …» lädst du jede JSON direkt
+        von der Festplatte, ganz ohne Verzeichnis.
+      </div>
     </div>
 
     <div class="glass">
@@ -193,7 +226,7 @@
         <button class="btn btn-sec" id="vorschau-btn">👁 Vorschau</button>
         <button class="btn btn-sec" id="json-btn">⭳ JSON</button>
       </div>
-      <div class="warnung" id="warnung" hidden></div>
+      <div class="status" id="status" hidden></div>
       <div class="hint">
         Der Fragensatz steckt vollständig im Link – kein Server, keine Sitzung, nichts wird gespeichert.
         Je mehr Fragen, desto dichter der QR-Code.
@@ -208,6 +241,15 @@
   <div class="schliessen">Klicken zum Schliessen</div>
 </div>
 
+<div id="vorschau">
+  <div class="leiste">
+    <button class="btn btn-hell" id="vorschau-zu">← Zurück zur Vorbereitung</button>
+    <button class="btn btn-hell" id="vorschau-neu">↻ Neu laden</button>
+  </div>
+  <div class="rahmen"><iframe id="vorschau-rahmen" title="Ansicht der Teilnehmenden"></iframe></div>
+  <div class="info">So sehen es die Teilnehmenden. Deine Eingaben bleiben erhalten.</div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -215,12 +257,20 @@
 
 const QR_API   = 'https://api.qrserver.com/v1/create-qr-code/';
 const PRESETS  = [3, 5, 7, 10, 15];
-const MAX_LINK = 1800;   // ab hier wird der QR-Code unangenehm dicht
+const SPEICHER = 'phgr-partnerinterview-vorbereitung';
+
+/* Lokal geöffnete Dateien ergeben file://-Links, die kein Telefon öffnen kann
+   («Keine nutzbaren Daten gefunden»). Dann zeigt der QR-Code auf die Live-Seite. */
+const PUBLIC_BASE = 'https://spechtur.github.io/tool-box/partnerinterview/';
+const LOKAL = location.protocol === 'file:';
 
 const $ = id => document.getElementById(id);
 let aktuellerLink = '';
+let kurzerLink    = false;   // zeigt der Link auf einen Satz aus saetze/?
+let vorlagen      = {};      // slug → Fragensatz, für den Abgleich
 let neuZeichnen   = null;
 let toastTimer    = null;
+let vorschauZaehler = 0;
 
 PRESETS.forEach(m => {
   const b = document.createElement('button');
@@ -232,30 +282,59 @@ PRESETS.forEach(m => {
 });
 
 ['titel', 'fragen', 'dauer'].forEach(id => $(id).addEventListener('input', aktualisiere));
+$('vorlage').addEventListener('change', ladeVorlage);
 $('laden-btn').addEventListener('click', ladeVorlage);
+$('datei-btn').addEventListener('click', () => $('datei').click());
+$('datei').addEventListener('change', ladeDatei);
 $('gross-btn').addEventListener('click', zeigeGross);
 $('kopieren-btn').addEventListener('click', kopiere);
-$('vorschau-btn').addEventListener('click', () => aktuellerLink ? window.open(aktuellerLink, '_blank') : toast('Es gibt noch keinen Link.'));
 $('json-btn').addEventListener('click', ladeJsonHerunter);
-$('overlay').addEventListener('click', () => $('overlay').classList.remove('offen'));
-document.addEventListener('keydown', e => { if (e.key === 'Escape') $('overlay').classList.remove('offen'); });
 
-ladeVorlagenliste();
-aktualisiere();
+$('vorschau-btn').addEventListener('click', oeffneVorschau);
+$('vorschau-zu').addEventListener('click', () => $('vorschau').classList.remove('offen'));
+$('vorschau-neu').addEventListener('click', oeffneVorschau);
+$('overlay').addEventListener('click', () => $('overlay').classList.remove('offen'));
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  $('overlay').classList.remove('offen');
+  $('vorschau').classList.remove('offen');
+});
+
+starte();
+
+/* ── Start: gespeicherten Zustand oder erste Vorlage ─────── */
+async function starte() {
+  await ladeVorlagenliste();
+  if (stelleWiederHer()) {
+    /* Vorlage im Hintergrund nachladen, damit der Abgleich für den
+       kurzen Link greift, ohne die wiederhergestellten Eingaben zu überschreiben. */
+    await hinterlegeVorlage($('vorlage').value);
+  } else {
+    const erste = $('vorlage').options[1];
+    if (erste) { $('vorlage').value = erste.value; await ladeVorlage(); }
+  }
+  aktualisiere();
+}
+
+async function hinterlegeVorlage(slug) {
+  if (!slug || vorlagen[slug]) return;
+  try {
+    const res = await fetch('saetze/' + encodeURIComponent(slug) + '.json', { cache: 'no-store' });
+    if (res.ok) vorlagen[slug] = await res.json();
+  } catch (e) { /* dann eben ohne Abgleich */ }
+}
 
 /* ── Vorlagen aus saetze/ ────────────────────────────────── */
 async function ladeVorlagenliste() {
   try {
     const res = await fetch('saetze/index.json', { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status);
-    const liste = (await res.json()).saetze || [];
-    liste.forEach(s => {
+    ((await res.json()).saetze || []).forEach(s => {
       const o = document.createElement('option');
       o.value = s.slug;
       o.textContent = s.titel || s.slug;
       $('vorlage').appendChild(o);
     });
-    if (liste.length) { $('vorlage').value = liste[0].slug; ladeVorlage(); }
   } catch (e) { /* ohne Verzeichnis beginnt man eben leer */ }
 }
 
@@ -266,16 +345,40 @@ async function ladeVorlage() {
     const res = await fetch('saetze/' + encodeURIComponent(slug) + '.json', { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status);
     const satz = await res.json();
-    $('titel').value  = satz.titel || '';
-    $('fragen').value = (satz.fragen || []).join('\n');
-    $('dauer').value  = Math.max(1, Math.round((satz.timer_sekunden || 300) / 60));
-    aktualisiere();
+    vorlagen[slug] = satz;
+    uebernimm(satz);
   } catch (e) {
-    toast('Fragensatz «' + slug + '» konnte nicht geladen werden.');
+    toast('«' + slug + '» konnte nicht geladen werden – liegt die Datei in saetze/?');
   }
 }
 
-/* ── Zustand einsammeln ──────────────────────────────────── */
+function ladeDatei(ev) {
+  const datei = ev.target.files && ev.target.files[0];
+  if (!datei) return;
+  const leser = new FileReader();
+  leser.onload = () => {
+    try {
+      const satz = JSON.parse(leser.result);
+      if (!Array.isArray(satz.fragen)) throw new Error('kein Feld "fragen"');
+      $('vorlage').value = '';
+      uebernimm(satz);
+      toast('«' + datei.name + '» geladen.');
+    } catch (e) {
+      toast('Diese Datei ist kein gültiger Fragensatz (' + e.message + ').');
+    }
+  };
+  leser.readAsText(datei);
+  ev.target.value = '';   // dieselbe Datei soll erneut wählbar bleiben
+}
+
+function uebernimm(satz) {
+  $('titel').value  = satz.titel || '';
+  $('fragen').value = (satz.fragen || []).join('\n');
+  $('dauer').value  = Math.max(1, Math.round((satz.timer_sekunden || 300) / 60));
+  aktualisiere();
+}
+
+/* ── Zustand ─────────────────────────────────────────────── */
 function lesen() {
   return {
     titel:  $('titel').value.trim(),
@@ -284,40 +387,98 @@ function lesen() {
   };
 }
 
+function merke() {
+  try {
+    localStorage.setItem(SPEICHER, JSON.stringify({
+      titel: $('titel').value, fragen: $('fragen').value,
+      dauer: $('dauer').value, vorlage: $('vorlage').value
+    }));
+  } catch (e) { /* privater Modus: dann eben ohne Gedächtnis */ }
+}
+
+function stelleWiederHer() {
+  try {
+    const g = JSON.parse(localStorage.getItem(SPEICHER) || 'null');
+    if (!g || !String(g.fragen || '').trim()) return false;
+    $('titel').value = g.titel || '';
+    $('fragen').value = g.fragen;
+    $('dauer').value = g.dauer || 5;
+    if (g.vorlage && [...$('vorlage').options].some(o => o.value === g.vorlage)) {
+      $('vorlage').value = g.vorlage;
+    }
+    return true;
+  } catch (e) { return false; }
+}
+
 function aktualisiere() {
   const s = lesen();
   $('anzahl').textContent = s.fragen.length + (s.fragen.length === 1 ? ' Frage' : ' Fragen');
   const min = Math.round(s.sekunden / 60);
   [].forEach.call(document.querySelectorAll('.preset'), b =>
     b.classList.toggle('aktiv', Number(b.dataset.min) === min));
+  merke();
 
   /* Der QR-Dienst wird erst nach kurzer Ruhe angefragt, nicht bei jedem Tastendruck. */
   clearTimeout(neuZeichnen);
   neuZeichnen = setTimeout(function () { zeichneQR(s); }, 350);
 }
 
+/* ── Link und QR-Code ────────────────────────────────────── */
+function basis() {
+  return LOKAL ? PUBLIC_BASE : new URL('./', location.href).href;
+}
+
+/* Deckt sich die Eingabe mit einem Satz aus saetze/, genügt der kurze
+   Link – sein QR-Code ist ein Bruchteil so dicht wie der mit Nutzlast. */
+function passenderSlug(s) {
+  const slug = $('vorlage').value;
+  const v = slug && vorlagen[slug];
+  if (!v) return null;
+  const gleich = (v.titel || '') === s.titel
+    && Number(v.timer_sekunden || 300) === s.sekunden
+    && Array.isArray(v.fragen)
+    && v.fragen.length === s.fragen.length
+    && v.fragen.every((f, i) => String(f).trim() === s.fragen[i]);
+  return gleich ? slug : null;
+}
+
+async function baueLink(s) {
+  const slug = passenderSlug(s);
+  if (slug) { kurzerLink = true; return basis() + 'join.html?set=' + encodeURIComponent(slug); }
+  kurzerLink = false;
+  return basis() + 'join.html#d=' + await einpacken(s);
+}
+
 async function zeichneQR(s) {
+  const st = $('status');
   if (!s.fragen.length) {
     aktuellerLink = '';
     $('qr-bild').innerHTML = '';
     $('link-feld').textContent = 'Trag mindestens eine Frage ein, dann entsteht hier der Link.';
-    $('warnung').hidden = true;
+    st.hidden = true;
     return;
   }
-  aktuellerLink = new URL('join.html', location.href).href + '#d=' + await einpacken(s);
+  aktuellerLink = await baueLink(s);
   $('qr-bild').innerHTML =
-    '<img src="' + QR_API + '?size=600x600&qzone=2&data=' + encodeURIComponent(aktuellerLink) +
+    '<img src="' + QR_API + '?size=800x800&qzone=4&data=' + encodeURIComponent(aktuellerLink) +
     '" alt="QR-Code zum Fragensatz">';
   $('link-feld').textContent = aktuellerLink;
 
-  const w = $('warnung');
-  if (aktuellerLink.length > MAX_LINK) {
-    w.hidden = false;
-    w.textContent = 'Der Link ist mit ' + aktuellerLink.length + ' Zeichen recht lang, der QR-Code entsprechend dicht '
-      + '– auf dem Beamer möglicherweise schwer zu scannen. Kürze die Fragen, oder lade den Fragensatz als JSON '
-      + 'herunter, leg ihn in saetze/ ab und nutze den kurzen Link mit ?set=slug.';
+  st.hidden = false;
+  if (kurzerLink) {
+    st.className = 'status kurz';
+    st.textContent = 'Kurzer Link auf einen Fragensatz aus dem Repo – der QR-Code ist grob und auch vom '
+      + 'Beamer aus mühelos zu scannen.';
   } else {
-    w.hidden = true;
+    st.className = 'status lang';
+    st.textContent = 'Der Fragensatz reist im Link mit (' + aktuellerLink.length + ' Zeichen), der QR-Code ist '
+      + 'entsprechend fein gerastert. Zeig ihn mit «Gross zeigen» im Vollbild, sonst wird das Scannen zäh. '
+      + 'Dauerhaft schöner: JSON herunterladen, in saetze/ ablegen, in saetze/index.json eintragen – '
+      + 'dann entsteht hier automatisch der kurze Link.';
+  }
+  if (LOKAL) {
+    st.textContent += ' Hinweis: Diese Seite läuft lokal, der QR-Code zeigt deshalb auf ' + PUBLIC_BASE
+      + ' – dort muss der Stand veröffentlicht sein.';
   }
 }
 
@@ -345,9 +506,22 @@ function zeigeGross() {
   if (!aktuellerLink) return toast('Es gibt noch keinen Link.');
   $('overlay-titel').textContent = lesen().titel || 'Partnerinterview';
   $('overlay-bild').innerHTML =
-    '<img src="' + QR_API + '?size=900x900&qzone=2&data=' + encodeURIComponent(aktuellerLink) +
+    '<img src="' + QR_API + '?size=1000x1000&qzone=4&data=' + encodeURIComponent(aktuellerLink) +
     '" alt="QR-Code zum Fragensatz">';
   $('overlay').classList.add('offen');
+}
+
+/* Vorschau läuft im Rahmen auf dieser Seite – kein Verlassen, keine
+   verlorenen Eingaben. Sie zeigt immer den lokalen Stand. */
+function oeffneVorschau() {
+  const s = lesen();
+  if (!s.fragen.length) return toast('Trag zuerst ein paar Fragen ein.');
+  einpacken(s).then(code => {
+    /* Nur der Hash zu ändern lädt ein iframe nicht neu – der Zähler erzwingt es. */
+    $('vorschau-rahmen').src =
+      new URL('join.html', location.href).href + '?v=' + (++vorschauZaehler) + '#d=' + code;
+    $('vorschau').classList.add('offen');
+  });
 }
 
 async function kopiere() {
@@ -370,7 +544,7 @@ function ladeJsonHerunter() {
   const a = document.createElement('a');
   a.href = url; a.download = slug + '.json'; a.click();
   URL.revokeObjectURL(url);
-  toast('Leg die Datei in saetze/ ab – dann läuft auch der kurze Link mit ?set=' + slug);
+  toast('Datei nach saetze/ legen und in saetze/index.json eintragen – dann gibt es den kurzen Link ?set=' + slug);
 }
 
 function machSlug(text) {
@@ -385,7 +559,7 @@ function toast(text) {
   el.textContent = text;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3400);
+  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 4200);
 }
 </script>
 </body>
