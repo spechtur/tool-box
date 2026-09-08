@@ -1,14 +1,15 @@
 {
   "slug": "demo-zum-ausprobieren",
   "titel": "Demo zum Ausprobieren",
-  "timer_sekunden": 480,
+  "timer_sekunden": 240,
   "fragen": [
-    "Frage 1",
-    "Frage 2",
-    "Frage 3",
-    "Frage 4",
-    "Frage 5",
-    "Frage 6",
-    "Frage 7"
+    "Womit hast du dich heute Morgen als Erstes beschäftigt?",
+    "Was gelingt dir gerade richtig gut?",
+    "Worauf freust du dich in den nächsten Wochen?",
+    "Was hast du zuletzt sein lassen – und war es eine Erleichterung?",
+    "Welche Frage würdest du gern einmal gestellt bekommen?",
+    "Wenn du eine Stunde geschenkt bekämst: wofür?",
+    "Wobei vergisst du die Zeit?",
+    "Diese Fragen sind nur ein Beispiel: In der Vorbereitung trägst du deine eigenen ein und legst sie als neuen Fragensatz ab."
   ]
 }
