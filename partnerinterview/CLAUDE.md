@@ -99,6 +99,9 @@ in der URL (z. B. `?set=kultur-der-digitalitaet`).
 ## Konventionen
 
 - Alle Texte auf Deutsch (Du-Form für TN-Ansprache)
+- Rollenlogik: Es wählt die Person, die **befragt wird** – sie streicht weg, was sie nicht gestellt
+  bekommen möchte, und kann eigene Fragen ergänzen. Texte in `join.html`, `presenter.html` und der
+  tool-box-Karte müssen diese Richtung konsistent benennen
 - Keine externen CDN-Abhängigkeiten wenn möglich (offline-tauglich)
 - Kein Login, keine Nutzerkonten
 - Kein Speichern von TN-Daten (Antworten, Notizen) über die Browser-Session hinaus

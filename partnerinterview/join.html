@@ -97,6 +97,25 @@
   body.interview .frage { cursor: default; padding: 20px 22px; font-size: 19px; line-height: 1.4; }
   body.interview .frage .nr { background: var(--violett); }
 
+  #eigene { padding: 16px 18px; }
+  #eigene label {
+    display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--dg); margin-bottom: 9px;
+  }
+  .eigene-zeile { display: flex; gap: 9px; align-items: stretch; }
+  #eigene-text {
+    flex: 1; min-width: 0; font-family: inherit; font-size: 16px; color: #1a1a1a;
+    background: rgba(255,255,255,.75); border: 1px solid rgba(0,0,0,.14);
+    border-radius: 8px; padding: 12px 13px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #eigene-text:focus { border-color: var(--tuerkis); box-shadow: 0 0 0 3px rgba(35,178,198,.18); }
+  #eigene-btn { white-space: nowrap; }
+  @media (max-width: 460px) {
+    .eigene-zeile { flex-direction: column; }
+    #eigene-btn { width: 100%; }
+  }
+
   .hinweis { padding: 22px; text-align: center; font-size: 15px; line-height: 1.6; color: #4a4a4a; }
   .hinweis strong { display: block; font-size: 17px; color: #1a1a1a; margin-bottom: 6px; }
 
@@ -196,6 +215,15 @@
     <p id="untertitel">Einen Moment bitte.</p>
   </div>
   <ul id="liste"></ul>
+
+  <div class="glass" id="eigene" hidden>
+    <label for="eigene-text">Eigene Frage ergänzen</label>
+    <div class="eigene-zeile">
+      <input type="text" id="eigene-text" maxlength="300" autocomplete="off"
+             placeholder="Was möchtest du gefragt werden?">
+      <button class="btn btn-primary" id="eigene-btn" type="button">+ Hinzufügen</button>
+    </div>
+  </div>
 </main>
 
 <footer id="footer" hidden>
@@ -287,13 +315,15 @@ function starte(satz) {
   setzeMeilensteine();
   $('titel').textContent = satz.titel || 'Partnerinterview';
   $('untertitel').textContent =
-    'Tippe die Fragen an, die du in deinem Interview nicht stellen möchtest – sie werden durchgestrichen. ' +
-    'Wenn deine Auswahl steht, tippe auf «Interview fixieren».';
+    'Tippe die Fragen an, die du im anschliessenden Interview nicht gestellt bekommen möchtest – sie ' +
+    'werden durchgestrichen. Unten kannst du eigene Fragen ergänzen. Wenn deine Auswahl steht, tippe ' +
+    'auf «Interview fixieren».';
   document.title = $('titel').textContent + ' · Partnerinterview';
   zeichneListe();
   zeichneFooter();
   zeigeZeit();
   $('footer').hidden = false;
+  $('eigene').hidden = false;
 }
 
 function fehler(slug, zusatz) {
@@ -334,6 +364,29 @@ function zeile(text, nr, aus, onClick) {
   return li;
 }
 
+/* Eigene Fragen landen am Ende der Liste und verhalten sich danach wie
+   jede andere: antippbar, streichbar, in der nächsten Runde wieder dabei. */
+function ergaenze() {
+  const feld = $('eigene-text');
+  const text = feld.value.trim();
+  if (!text) return feld.focus();
+  if (fragen.some(f => f.toLowerCase() === text.toLowerCase())) {
+    feld.select();
+    return toast('Diese Frage steht schon in der Liste.');
+  }
+  fragen.push(text);
+  feld.value = '';
+  zeichneListe();
+  zeichneFooter();
+  $('liste').lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  toast('Frage ergänzt.');
+}
+
+$('eigene-btn').addEventListener('click', ergaenze);
+$('eigene-text').addEventListener('keydown', ev => {
+  if (ev.key === 'Enter') { ev.preventDefault(); ergaenze(); }
+});
+
 function streiche(i) {
   gestrichen.has(i) ? gestrichen.delete(i) : gestrichen.add(i);
   zeichneListe();
@@ -344,6 +397,7 @@ function fixiere() {
   const bleibt = fragen.filter((_, i) => !gestrichen.has(i));
   if (!bleibt.length) return toast('Mindestens eine Frage muss stehen bleiben.');
   auswahl = bleibt;
+  $('eigene').hidden = true;   // die Liste steht jetzt fest
   document.body.classList.add('interview');
   $('phase-tag').textContent = 'Interview';
   $('phase-tag').classList.add('interview');
@@ -360,11 +414,12 @@ function neueRunde() {
   gemeldet.clear(); schliesseMelder();
   auswahl = null;
   gestrichen.clear();
+  $('eigene').hidden = false;
   document.body.classList.remove('interview');
   $('phase-tag').textContent = 'Auswahl';
   $('phase-tag').classList.remove('interview');
   $('untertitel').textContent =
-    'Rollentausch: Tippe die Fragen an, die du nicht stellen möchtest, und fixiere die Liste neu.';
+    'Rollentausch: Tippe die Fragen an, die du nicht gestellt bekommen möchtest, und fixiere die Liste neu.';
   zeichneListe();
   zeichneFooter();
   zeigeZeit();

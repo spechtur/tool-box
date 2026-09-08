@@ -30,7 +30,8 @@ bleibt kontextneutral und ist so für spätere Einsatzszenarien wiederverwendbar
 | # | Feature | Akzeptanzkriterium |
 |---|---------|-------------------|
 | F1 | Fragensatz per Link/QR laden | URL verweist auf einen bestimmten Fragensatz (Slug); TN sehen beim Öffnen direkt die volle Fragenliste |
-| F2 | Fragen an-/abwählen | Klick auf eine Frage streicht sie durch (visuell markiert, nicht entfernt); erneuter Klick macht das rückgängig; beliebig oft änderbar |
+| F2 | Fragen an-/abwählen | Die zu interviewende Person streicht durch Antippen die Fragen, die sie **nicht gestellt bekommen** möchte (visuell markiert, nicht entfernt); erneuter Klick macht das rückgängig; beliebig oft änderbar |
+| F2b | Eigene Frage ergänzen | Textfeld unterhalb der Liste; die ergänzte Frage erscheint am Ende und verhält sich wie jede andere |
 | F3 | Auswahl fixieren | Button „Interview fixieren" reduziert die Liste auf die nicht gestrichenen Fragen für diese Interviewrunde |
 | F4 | Timer | Dünner Balken oben im Screen, leert sich über die Zeit, Farbverlauf Grün → Gelb → Orange → Rot, akustisches Signal am Ende; Bedienelemente: Start / Pause / Stopp / Restart; keine Zeiteingabe in der TN-Ansicht (Dauer wird vorab im Fragensatz hinterlegt) |
 | F5 | Fragensatz-Verwaltung (David) | Vorbereitungsansicht `presenter.html`: Titel, Fragen, Timerdauer, QR-Code; Export als JSON für die Ablage in `saetze/` – kein Login |
