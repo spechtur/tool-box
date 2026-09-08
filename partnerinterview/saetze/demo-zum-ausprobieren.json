@@ -1,6 +1,6 @@
 {
-  "slug": "test",
-  "titel": "Test",
+  "slug": "demo-zum-ausprobieren",
+  "titel": "Demo zum Ausprobieren",
   "timer_sekunden": 480,
   "fragen": [
     "Frage 1",

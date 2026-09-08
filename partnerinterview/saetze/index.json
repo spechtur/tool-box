@@ -1,12 +1,16 @@
 {
   "saetze": [
     {
-      "slug": "kultur-der-digitalitaet",
-      "titel": "Ressourcen in einer Kultur der Digitalität"
+      "slug": "digitalitaet-eigene-ressourcen",
+      "titel": "Eigene Ressourcen in einer Kultur der Digitalität"
     },
     {
-      "slug": "test",
-      "titel": "Test"
+      "slug": "digitalitaet-ressourcen-im-unterricht",
+      "titel": "Digitale und analoge Ressourcen im Unterricht"
+    },
+    {
+      "slug": "demo-zum-ausprobieren",
+      "titel": "Demo zum Ausprobieren"
     }
   ]
 }
