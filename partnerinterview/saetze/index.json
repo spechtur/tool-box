@@ -1,12 +1,36 @@
 {
   "saetze": [
     {
+      "slug": "digitalitaet-ressourcen-im-unterricht",
+      "titel": "Digitale und analoge Ressourcen im Unterricht"
+    },
+    {
       "slug": "digitalitaet-eigene-ressourcen",
       "titel": "Eigene Ressourcen in einer Kultur der Digitalität"
     },
     {
-      "slug": "digitalitaet-ressourcen-im-unterricht",
-      "titel": "Digitale und analoge Ressourcen im Unterricht"
+      "slug": "kennenlernen-gruppenstart",
+      "titel": "Kennenlernen und Gruppenstart"
+    },
+    {
+      "slug": "ki-in-der-eigenen-praxis",
+      "titel": "Künstliche Intelligenz in der eigenen Praxis"
+    },
+    {
+      "slug": "lernbegleitung",
+      "titel": "Lernbegleitung"
+    },
+    {
+      "slug": "loesungsorientierung",
+      "titel": "Lösungsorientierung"
+    },
+    {
+      "slug": "persoenliche-staerken",
+      "titel": "Persönliche Stärken"
+    },
+    {
+      "slug": "rueckblick-lerneinheit",
+      "titel": "Rückblick auf eine Lerneinheit"
     },
     {
       "slug": "demo-zum-ausprobieren",

@@ -1,0 +1,20 @@
+{
+  "slug": "persoenliche-staerken",
+  "titel": "Persönliche Stärken",
+  "timer_sekunden": 300,
+  "fragen": [
+    "Wofür kommen andere zu dir?",
+    "Welche Fähigkeit fällt dir so leicht, dass du sie kaum für eine Stärke hältst?",
+    "Was würde deine liebste Kollegin über dich sagen?",
+    "Erzähl von etwas, auf das du zu Recht stolz bist.",
+    "Welche Schwierigkeit hast du überstanden – und was hat dir dabei geholfen?",
+    "Wann warst du zuletzt richtig in deinem Element?",
+    "Was tust du gut, auch wenn niemand zuschaut?",
+    "Welche Stärke hast du dir hart erarbeitet?",
+    "Was gibt dir Energie zurück, wenn ein Tag anstrengend war?",
+    "Welche Eigenschaft von dir wird manchmal missverstanden?",
+    "Was hast du in den letzten Jahren an dir schätzen gelernt?",
+    "Welche Stärke würdest du gern öfter einsetzen?",
+    "Wenn du eine Sache an deiner Arbeit selbst bestimmen dürftest – welche wäre es?"
+  ]
+}
