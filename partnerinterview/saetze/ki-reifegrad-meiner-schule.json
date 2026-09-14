@@ -1,0 +1,25 @@
+{
+  "slug": "ki-reifegrad-meiner-schule",
+  "titel": "KI-Reifegrad meiner Schule",
+  "timer_sekunden": 240,
+  "fragen": [
+    "S1 Erzähl mir, wie bei euch bisher über KI gesprochen wurde – wo, mit wem, wie oft?",
+    "S2 Was würde eine neue Kollegin über eure KI-Pläne erfahren, wenn sie nachfragt?",
+    "S3 Wie hat sich eure Haltung zu KI seit dem ersten Aufkommen des Themas verändert?",
+    "O1 Wer kümmert sich bei euch um KI-Fragen, wenn sie auftauchen?",
+    "O2 Wie läuft es ab, wenn zwei Fachschaften unterschiedliche KI-Erfahrungen gemacht haben?",
+    "O3 Erzähl mir, wie eine KI-bezogene Entscheidung bei euch zuletzt zustande kam.",
+    "M1 Erzähl mir von der letzten Weiterbildung oder dem letzten Gespräch zu KI bei euch.",
+    "M2 Wen würdest du fragen, wenn du Hilfe beim Prompting bräuchtest?",
+    "M3 Wie unterscheiden sich Kolleginnen und Kollegen bei euch im Umgang mit KI?",
+    "T1 Welche KI-Tools sind bei euch im Umlauf, und wie sind die entstanden?",
+    "T2 Wie ist bei euch geregelt, welche Tools genutzt werden?",
+    "T3 Erzähl mir, wie jemand bei euch typischerweise an ein neues KI-Tool kommt.",
+    "U1 Erzähl mir von einer Unterrichtssequenz, in der KI eine Rolle gespielt hat.",
+    "U2 Wie hat sich der KI-Einsatz im Unterricht bei euch über die Zeit entwickelt?",
+    "U3 Was machen Lernende bei euch typischerweise mit KI, wenn sie sie einsetzen?",
+    "R1 Wie ist bei euch geregelt, was Lernende mit KI dürfen?",
+    "R2 Was würdest du einem Elternteil erzählen, das nach eurem Datenschutz bei KI-Tools fragt?",
+    "R3 Erzähl mir von einer Situation, in der eine KI-bezogene rechtliche oder ethische Frage aufgetaucht ist."
+  ]
+}
