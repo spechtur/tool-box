@@ -1,18 +1,37 @@
 name: Supabase Keep-Alive
 
+# Hält das Free-Plan-Projekt «tool-box» aktiv, indem täglich eine echte
+# Datenbankabfrage an die Mini-Tabelle public.heartbeat geschickt wird.
+# Die Tabelle enthält keine Personendaten und ist für anon nur lesbar.
+
 on:
   schedule:
-    - cron: '0 6 */5 * *'  # alle 5 Tage um 06:00 UTC
-  workflow_dispatch:         # manuell auslösbar im GitHub-Dashboard
+    - cron: '17 5 * * *'   # täglich um 05:17 UTC
+  workflow_dispatch:        # manuell auslösbar unter «Actions»
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    env:
+      # Der Publishable Key ist laut Supabase öffentlich unbedenklich
+      # (er steckt ohnehin in den HTML-Tools). Schutz bietet die RLS.
+      SUPABASE_URL: https://vslukenxtwllvrejkjav.supabase.co
+      SUPABASE_KEY: sb_publishable_4Fo-JBYFiYXzQgo70BHnMA_-Ysy7E5k
     steps:
-      - name: Supabase anpingen
+      - name: Heartbeat-Abfrage
         run: |
-          curl --silent --fail \
-            "https://vslukenxtwllvrejkjav.supabase.co/rest/v1/feedback_submissions?limit=1" \
-            -H "apikey: sb_publishable_4Fo-JBYFiYXzQgo70BHnMA_-Ysy7E5k" \
-            -H "Authorization: Bearer sb_publishable_4Fo-JBYFiYXzQgo70BHnMA_-Ysy7E5k"
-          echo "Supabase erfolgreich angepingt."
+          # Wichtig: Publishable Key NUR im apikey-Header.
+          # Im Authorization-Header wird er als ungültiges JWT abgelehnt.
+          response=$(curl --silent --show-error --fail-with-body \
+            --retry 3 --retry-delay 20 --retry-all-errors \
+            "$SUPABASE_URL/rest/v1/heartbeat?select=id,note" \
+            -H "apikey: $SUPABASE_KEY")
+
+          echo "Antwort: $response"
+
+          if echo "$response" | grep -q '"keep-alive"'; then
+            echo "✅ Supabase ist aktiv und hat geantwortet."
+          else
+            echo "❌ Unerwartete Antwort – Projekt evtl. pausiert?"
+            exit 1
+          fi
